@@ -1,0 +1,156 @@
+Version 0.7.4
+2004-02-16
+Fixed wrong call to SIGNAL-PPCRE-SIGNAL-ERROR in lexer.lisp (caught by Peter Graves)
+Added :CL-PPCRE to *FEATURES* (for CL-INTERPOL)
+Compiler macro for SPLIT
+
+Version 0.7.3
+2004-01-28
+Fixed bug in CURRENT-MIN-REST for lookaheads (reported by Thomas-Paz Hartman)
+Added tests for this bug
+
+Version 0.7.2
+2004-01-27
+Fixed typo (SUBSEQ/NSUBSEQ) in SPLIT (thanks to Alan Ruttenberg)
+Updated docs with respect to ECL (thanks to Alex Mizrahi)
+Mention FreeBSD port in docs
+
+Version 0.7.1
+2003-10-24
+Fixed version numbers in docs (thanks to Sébastien Saint-Sevin)
+
+Version 0.7.0
+2003-10-23
+New macros REGISTER-GROUPS-BIND and DO-REGISTER-GROUPS
+Added SHAREP keyword argument to most API functions and macros
+Mention CL-INTERPOL in docs
+Partial code cleanup (using WITH-UNIQUE-NAMES and REBINDING)
+
+Version 0.6.1
+2003-10-11
+Added EXTERNAL-FORMAT keyword args to CL-PPCRE-TEST:TEST for some CLs (thanks to JP Massar and Scott D. Kalter)
+Fixed bug with REGEX-REPLACE and REGEX-REPLACE-ALL when (= START END) was true
+Added doc sections for quoting problems and backslash confusions (thanks to conversations with Peter Seibel)
+Disable quoting in definition of QUOTE-SECTIONS so you can always safely rebuild CL-PPCRE
+
+Version 0.6.0
+2003-10-07
+CL-PPCRE now has its own condition types
+Added support for Perl's \Q and \E (Peter Seibel convinced me to do it) - see QUOTE-META-CHARS and *ALLOW-QUOTING*
+Added tests for this new feature
+Threaded tests are more verbose now and use only keyword args
+
+Version 0.5.9
+2003-10-03
+Changed "^" optimizations with respect to constant end strings with offsets (bug caught by Yexuan Gui)
+Added tests for this bug
+Removed *.dos files from CL-PPCRE-TEST tests (thanks to JP Massar)
+Added threaded tests for SBCL (thanks to Christophe Rhodes)
+
+Version 0.5.8
+2003-09-17
+Optimizations for ".*" were too optimistic when look-behinds were involved
+Added tests for this bug
+Removed *.dos files
+
+Version 0.5.7
+2003-08-20
+Fixed (CL-PPCRE:SCAN "(.)X$" "ABCX" :START 4) bug (spotted by Tibor Simko)
+Forgot to export *REGEX-CHAR-CODE-LIMIT* in Corman version of DEFPACKAGE
+Removed Emacs local variables from source code (finally...)
+Mention Gentoo in docs
+
+Version 0.5.6
+2003-06-30
+Replaced wrong COPY-REGEX code for WORD-BOUNDARY objects (detected by Max Goldberg)
+Added info about possible TRUENAME problems with ACL in README (thanks to Kevin Layer for providing a patch for this)
+
+Version 0.5.5
+2003-06-09
+Patch for SBCL/Debian compatibility by Kevin Rosenberg
+Simpler version of compiler macro
+Availability through asdf-install
+
+Version 0.5.4
+2003-04-09
+Added DESTRUCTIVE keyword to CREATE-SCANNER
+
+Version 0.5.3
+2003-03-31
+Fixed bug in REGEX-REPLACE (replacement string couldn't contain literal backslash)
+Fixed bug in definition of CHAR-CLASS (since 0.5.0 the hash slot may be NIL - CMUCL's new PCL detects this)
+Micro-optimization in INSERT-CHAR-CLASS-TESTER: CHAR-NOT-GREATERP instead of CHAR-DOWNCASE
+
+Version 0.5.2
+2003-03-28
+Better compiler macro (thanks to Kent M. Pitman)
+
+Version 0.5.1
+2003-03-27
+Removed compiler macro
+
+Version 0.5.0
+2003-03-27
+Lexer, parser, and converter mostly re-written to reduce consing and increase speed
+Get rid of FIX-POS in lexer and parser, "ism" flags are handled after parsing now
+Smaller test suite (again) due to literal embedding of line breaks
+Seperate test files for DOS line endings
+Replaced constant +REGEX-CHAR-CODE-LIMIT+ with special variable *REGEX-CHAR-CODE-LIMIT*
+
+Version 0.4.1
+2003-03-19
+Added compiler macro for SCAN
+Changed test suite to be nicer to Corman Lisp and ECL (see docs for new syntax)
+Incorporated visual feedback (dots) in test suite (thanks to JP Massar)
+Added README file
+Replaced STRING-LIST-TO-SIMPLE-STRING with a much improved version by JP Massar
+
+Version 0.4.0
+2003-02-27
+Added *USE-BMH-MATCHER*
+
+Version 0.3.2
+2003-02-21
+Added load.lisp
+Various minor changes for Corman Lisp compatibility (thanks to Karsten Poeck and JP Massar)
+
+Version 0.3.1
+2003-01-18
+Bugfix in CREATE-SCANNER (didn't work if flags were given and arg was a parse-tree)
+
+Version 0.3.0
+2003-01-12
+Added new features to REGEX-REPLACE and REGEX-REPLACE-ALL
+
+Version 0.2.0
+2003-01-11
+Make SPLIT more Perl-compatible, including new keyword parameters
+
+Version 0.1.4
+2003-01-10
+Don't move "^" and "\A" while iterating with DO-SCANS
+Added link to Debian package
+
+Version 0.1.3
+2002-12-25
+More usable MK:DEFSYSTEM files (courtesy of Hannu Koivisto)
+Fixed typo in documentation
+
+Version 0.1.2
+2002-12-22
+Added version numbers for Debian packaging
+Be friendly to case-sensitive ACL images (courtesy of Kevin Rosenberg and Douglas Crosher)
+"Fixed" two cases where declarations came after docstrings (because of bugs in Corman Lisp and older CMUCL versions)
+Added #-cormanlisp to hide (INCF (THE FIXNUM POS)) from Corman Lisp
+Added file doc/benchmarks.2002-12-22.txt
+
+Version 0.1.1
+2002-12-21
+Added asdf system definitions by Marco Baringer
+Small additions to documentation
+Correct (Emacs) local variables list in closures.lisp and api.lisp
+Added this CHANGELOG
+
+Version 0.1.0
+2002-12-20
+Initial release
