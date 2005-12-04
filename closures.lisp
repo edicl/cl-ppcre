@@ -1,10 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/closures.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/closures.lisp,v 1.29 2005/05/16 16:29:23 edi Exp $
 
 ;;; Here we create the closures which together build the final
 ;;; scanner.
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -38,12 +38,7 @@
   "Like STRING=, i.e. compares the special string *STRING* from START1
 to END1 with STRING2 from START2 to END2. Note that there's no
 boundary check - this has to be implemented by the caller."
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (type fixnum start1 end1 start2 end2))
   (loop for string1-idx of-type fixnum from start1 below end1
         for string2-idx of-type fixnum from start2 below end2
@@ -54,12 +49,7 @@ boundary check - this has to be implemented by the caller."
   "Like STRING-EQUAL, i.e. compares the special string *STRING* from
 START1 to END1 with STRING2 from START2 to END2. Note that there's no
 boundary check - this has to be implemented by the caller."
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (type fixnum start1 end1 start2 end2))
   (loop for string1-idx of-type fixnum from start1 below end1
         for string2-idx of-type fixnum from start2 below end2
@@ -67,12 +57,7 @@ boundary check - this has to be implemented by the caller."
                            (schar string2 string2-idx))))
 
 (defgeneric create-matcher-aux (regex next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (:documentation "Creates a closure which takes one parameter,
 START-POS, and tests whether REGEX can match *STRING* at START-POS
 such that the call to NEXT-FN after the match would succeed."))
@@ -399,14 +384,10 @@ against CHR-EXPR."
 
 (defun word-boundary-p (start-pos)
   "Check whether START-POS is a word-boundary within *STRING*."
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (type fixnum start-pos))
-  (let ((1-start-pos (1- start-pos)))
+  (let ((1-start-pos (1- start-pos))
+        (*start-pos* (or *real-start-pos* *start-pos*)))
     ;; either the character before START-POS is a word-constituent and
     ;; the character at START-POS isn't...
     (or (and (or (= start-pos *end-pos*)
@@ -568,6 +549,13 @@ against CHR-EXPR."
     (declare (type function next-fn inner-matcher))
     (lambda (start-pos)
       (let ((next-pos (funcall inner-matcher start-pos)))
+        (and next-pos
+             (funcall next-fn next-pos))))))
+
+(defmethod create-matcher-aux ((filter filter) next-fn)
+  (let ((fn (fn filter)))
+    (lambda (start-pos)
+      (let ((next-pos (funcall fn start-pos)))
         (and next-pos
              (funcall next-fn next-pos))))))
 

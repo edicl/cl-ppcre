@@ -1,10 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/scanner.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/scanner.lisp,v 1.26 2005/07/19 23:18:15 edi Exp $
 
 ;;; Here the scanner for the actual regex as well as utility scanners
 ;;; for the constant start and end strings are created.
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -37,7 +37,8 @@
   (let ((char-compare (if case-insensitive-p 'char-equal 'char=)))
     `(lambda (start-pos)
       (declare (type fixnum start-pos))
-      (if (> (the fixnum (+ start-pos m)) *end-pos*)
+      (if (or (minusp start-pos)
+              (> (the fixnum (+ start-pos m)) *end-pos*))
         nil
         (loop named bmh-matcher
               for k of-type fixnum = (+ start-pos m -1)
@@ -52,12 +53,7 @@
                                  (return-from bmh-matcher (1+ i)))))))))
 
 (defun create-bmh-matcher (pattern case-insensitive-p)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Returns a Boyer-Moore-Horspool matcher which searches the (special)
 simple-string *STRING* for the first occurence of the substring
 PATTERN. The search starts at the position START-POS within *STRING*
@@ -72,11 +68,12 @@ instead. (BMH matchers are faster but need much more space.)"
       (return-from create-bmh-matcher
         (lambda (start-pos)
           (declare (type fixnum start-pos))
-          (search pattern
-                  *string*
-                  :start2 start-pos
-                  :end2 *end-pos*
-                  :test test)))))
+          (and (not (minusp start-pos))
+               (search pattern
+                       *string*
+                       :start2 start-pos
+                       :end2 *end-pos*
+                       :test test))))))
   (let* ((m (length pattern))
 	 (skip (make-array *regex-char-code-limit*
 			  :element-type 'fixnum
@@ -97,16 +94,12 @@ instead. (BMH matchers are faster but need much more space.)"
   (let ((char-compare (if case-insensitive-p 'char-equal 'char=)))
     `(lambda (start-pos)
       (declare (type fixnum start-pos))
-      (loop for i of-type fixnum from start-pos below *end-pos*
-            thereis (and (,char-compare (schar *string* i) chr) i)))))
+      (and (not (minusp start-pos))
+           (loop for i of-type fixnum from start-pos below *end-pos*
+                 thereis (and (,char-compare (schar *string* i) chr) i))))))
 
 (defun create-char-searcher (chr case-insensitive-p)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Returns a function which searches the (special) simple-string
 *STRING* for the first occurence of the character CHR. The search
 starts at the position START-POS within *STRING* and stops before
@@ -119,17 +112,16 @@ case-insensitive or not."
 (declaim (inline newline-skipper))
 
 (defun newline-skipper (start-pos)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (type fixnum start-pos))
   "Find the next occurence of a character in *STRING* which is behind
 a #\Newline."
-  (loop for i of-type fixnum from start-pos below *end-pos*
-        thereis (and (char= (schar *string* i) #\Newline)
+  ;; we can start with (1- START-POS) without testing for (PLUSP
+  ;; START-POS) because we know we'll never call NEWLINE-SKIPPER on
+  ;; the first iteration
+  (loop for i of-type fixnum from (1- start-pos) below *end-pos*
+        thereis (and (char= (schar *string* i)
+                            #\Newline)
                      (1+ i))))
 
 (defmacro insert-advance-fn (advance-fn)
@@ -198,6 +190,7 @@ ADVANCE-FN. This is a utility macro used by CREATE-SCANNER-AUX."
                (unless (setq *end-string-pos* (funcall end-string-test
                                                        end-test-pos))
                  (when (and (= 1 (the fixnum end-anchored-p))
+                            (> *end-pos* scan-start-pos)
                             (char= #\Newline (schar *string* (1- *end-pos*))))
                    ;; if we didn't find an end string candidate from
                    ;; END-TEST-POS and if a #\Newline at the end is
@@ -328,12 +321,7 @@ ADVANCE-FN. This is a utility macro used by CREATE-SCANNER-AUX."
                            rep-num
                            zero-length-num
                            reg-num)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (type fixnum min-len zero-length-num rep-num reg-num))
   "Auxiliary function to create and return a scanner \(which is
 actually a closure). Used by CREATE-SCANNER."

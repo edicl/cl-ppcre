@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/parser.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/parser.lisp,v 1.21 2005/08/03 21:11:27 edi Exp $
 
 ;;; The parser will - with the help of the lexer - parse a regex
 ;;; string and convert it into a "parse tree" (see docs for details
@@ -7,7 +7,7 @@
 ;;; illegal parse trees. It is assumed that the conversion process
 ;;; later on will track them down.
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -36,16 +36,11 @@
 (in-package #:cl-ppcre)
 
 (defun group (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <group>.
 The productions are: <group> -> \"(\"<regex>\")\"
                                 \"(?:\"<regex>\")\"
-                                \"(?<\"<regex>\")\"
+                                \"(?>\"<regex>\")\"
                                 \"(?<flags>:\"<regex>\")\"
                                 \"(?=\"<regex>\")\"
                                 \"(?!\"<regex>\")\"
@@ -154,12 +149,7 @@ Will return <parse-tree> or (<grouping-type> <parse-tree>) where
             open-token))))
 
 (defun greedy-quant (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <greedy-quant>.
 The productions are: <greedy-quant> -> <group> | <group><quantifier>
 where <quantifier> is parsed by the lexer function GET-QUANTIFIER.
@@ -173,12 +163,7 @@ Will return <parse-tree> or (:GREEDY-REPETITION <min> <max> <parse-tree>)."
       group)))
 
 (defun quant (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <quant>.
 The productions are: <quant> -> <greedy-quant> | <greedy-quant>\"?\".
 Will return the <parse-tree> returned by GREEDY-QUANT and optionally
@@ -193,12 +178,7 @@ change :GREEDY-REPETITION to :NON-GREEDY-REPETITION."
     greedy-quant))
 
 (defun seq (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <seq>.
 The productions are: <seq> -> <quant> | <quant><seq>.
 Will return <parse-tree> or (:SEQUENCE <parse-tree> <parse-tree>)."
@@ -263,12 +243,7 @@ Will return <parse-tree> or (:SEQUENCE <parse-tree> <parse-tree>)."
       :void)))
   
 (defun reg-expr (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <regex>, a complete regular expression.
 The productions are: <regex> -> <seq> | <seq>\"|\"<regex>.
 Will return <parse-tree> or (:ALTERNATION <parse-tree> <parse-tree>)."
@@ -313,12 +288,7 @@ Will return <parse-tree> or (:ALTERNATION <parse-tree> <parse-tree>)."
               seq)))))))
 
 (defun reverse-strings (parse-tree)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (cond ((stringp parse-tree)
           (nreverse parse-tree))
         ((consp parse-tree)
@@ -330,12 +300,7 @@ Will return <parse-tree> or (:ALTERNATION <parse-tree> <parse-tree>)."
         (t parse-tree)))
 
 (defun parse-string (string)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Translate the regex string STRING into a parse tree."
   (let* ((lexer (make-lexer string))
          (parse-tree (reverse-strings (reg-expr lexer))))

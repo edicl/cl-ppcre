@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/lexer.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/lexer.lisp,v 1.24 2005/04/01 21:29:09 edi Exp $
 
 ;;; The lexer's responsibility is to convert the regex string into a
 ;;; sequence of tokens which are in turn consumed by the parser.
@@ -9,7 +9,7 @@
 ;;; has opened so far. (The latter is necessary for interpreting
 ;;; strings like "\\10" correctly.)
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -39,12 +39,7 @@
 
 (declaim (inline map-char-to-special-class))
 (defun map-char-to-special-char-class (chr)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Maps escaped characters like \"\\d\" to the tokens which represent
 their associated character classes."
   (case chr
@@ -62,12 +57,7 @@ their associated character classes."
       :non-whitespace-char-class)))
 
 (locally
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (defstruct (lexer (:constructor make-lexer-internal))
     "LEXER structures are used to hold the regex string which is
 currently lexed and to keep track of the lexer's state."
@@ -86,30 +76,20 @@ currently lexed and to keep track of the lexer's state."
 
 (defun make-lexer (string)
   (declare (inline make-lexer-internal)
-           (type string string))
+           #-genera (type string string))
   (make-lexer-internal :str (maybe-coerce-to-simple-string string)
                        :len (length string)))
 
 (declaim (inline end-of-string-p))
 (defun end-of-string-p (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Tests whether we're at the end of the regex string."
   (<= (lexer-len lexer)
       (lexer-pos lexer)))
 
 (declaim (inline looking-at-p))
 (defun looking-at-p (lexer chr)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Tests whether the next character the lexer would see is CHR.
 Does not respect extended mode."
   (and (not (end-of-string-p lexer))
@@ -118,12 +98,7 @@ Does not respect extended mode."
 
 (declaim (inline next-char-non-extended))
 (defun next-char-non-extended (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Returns the next character which is to be examined and updates the
 POS slot. Does not respect extended mode."
   (cond ((end-of-string-p lexer)
@@ -134,12 +109,7 @@ POS slot. Does not respect extended mode."
             (incf (lexer-pos lexer))))))
 
 (defun next-char (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Returns the next character which is to be examined and updates the
 POS slot. Respects extended mode, i.e.  whitespace, comments, and also
 nested comments are skipped if applicable."
@@ -203,12 +173,7 @@ nested comments are skipped if applicable."
 
 (declaim (inline fail))
 (defun fail (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Moves (LEXER-POS LEXER) back to the last position stored in
 \(LEXER-LAST-POS LEXER) and pops the LAST-POS stack."
   (unless (lexer-last-pos lexer)
@@ -217,12 +182,7 @@ nested comments are skipped if applicable."
   nil)
 
 (defun get-number (lexer &key (radix 10) max-length no-whitespace-p)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Read and consume the number the lexer is currently looking at and
 return it. Returns NIL if no number could be identified.
 RADIX is used as in PARSE-INTEGER. If MAX-LENGTH is not NIL we'll read
@@ -252,12 +212,7 @@ we don't tolerate whitespace in front of the number."
 
 (declaim (inline try-number))
 (defun try-number (lexer &key (radix 10) max-length no-whitespace-p)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Like GET-NUMBER but won't consume anything if no number is seen."
   ;; remember current position
   (push (lexer-pos lexer) (lexer-last-pos lexer))
@@ -269,16 +224,11 @@ we don't tolerate whitespace in front of the number."
 
 (declaim (inline make-char-from-code))
 (defun make-char-from-code (number error-pos)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Create character from char-code NUMBER. NUMBER can be NIL
 which is interpreted as 0. ERROR-POS is the position where
 the corresponding number started within the regex string."
-  ;; Only look at rightmost eight bits in compliance with Perl
+  ;; only look at rightmost eight bits in compliance with Perl
   (let ((code (logand #o377 (the fixnum (or number 0)))))
     (or (and (< code char-code-limit)
              (code-char code))
@@ -288,12 +238,7 @@ the corresponding number started within the regex string."
          number))))
 
 (defun unescape-char (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Convert the characters(s) following a backslash into a token
 which is returned. This function is to be called when the backslash
 has already been consumed. Special character classes like \\W are
@@ -351,12 +296,7 @@ handled elsewhere."
         chr))))
 
 (defun collect-char-class (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Reads and consumes characters from regex string until a right
 bracket is seen. Assembles them into a list \(which is returned) of
 characters, character ranges, like \(:RANGE #\\A #\\E) for a-e, and
@@ -437,12 +377,7 @@ we're inside a range or not."
        "Missing right bracket to close character class"))))
 
 (defun maybe-parse-flags (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Reads a sequence of modifiers \(including #\\- to reverse their
 meaning) and returns a corresponding list of \"flag\" tokens.  The
 \"x\" modifier is treated specially in that it dynamically modifies
@@ -478,12 +413,7 @@ the behaviour of the lexer itself via the special variable
     (decf (lexer-pos lexer))))
 
 (defun get-quantifier (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Returns a list of two values (min max) if what the lexer is looking
 at can be interpreted as a quantifier. Otherwise returns NIL and
 resets the lexer to its old position."
@@ -533,12 +463,7 @@ resets the lexer to its old position."
         (fail lexer)))))
 
 (defun get-token (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Returns and consumes the next token from the regex string (or NIL)."
   ;; remember starting position for UNGET-TOKEN function
   (push (lexer-pos lexer)
@@ -737,12 +662,7 @@ resets the lexer to its old position."
 
 (declaim (inline unget-token))
 (defun unget-token (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Moves the lexer back to the last position stored in the LAST-POS stack."
   (if (lexer-last-pos lexer)
     (setf (lexer-pos lexer)
@@ -751,12 +671,7 @@ resets the lexer to its old position."
 
 (declaim (inline start-of-subexpr-p))
 (defun start-of-subexpr-p (lexer)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Tests whether the next token can start a valid sub-expression, i.e.
 a stand-alone regex."
   (let* ((pos (lexer-pos lexer))

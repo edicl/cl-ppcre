@@ -6,14 +6,12 @@
   <title>CL-PPCRE - portable Perl-compatible regular expressions for Common Lisp</title>
   <style type="text/css">
   pre { padding:5px; background-color:#e0e0e0 }
-  a.none { text-decoration: none; color:black }
-  a.none:visited { text-decoration: none; color:black }
-  a.none:active { text-decoration: none; color:black }
-  a.none:hover { text-decoration: none; color:black }
   a { text-decoration: none; }
-  a:visited { text-decoration: none; }
-  a:active { text-decoration: underline; }
-  a:hover { text-decoration: underline; }
+  a.none:hover { border:1px solid white; }
+  a { border:1px solid white; }
+  a:hover   { border: 1px solid black; } 
+  a.noborder { border:0px }
+  a.noborder:hover { border:0px }
   </style>
 </head>
 
@@ -47,7 +45,7 @@ to CLISP's own regex implementation which is also written in
 C.
 
 <li>It is <b>portable</b>, i.e. the code aims to be strictly <a
-href="http://www.lispworks.com/reference/HyperSpec/Front/index.htm">ANSI-compliant</a>. If
+href="http://www.lispworks.com/documentation/HyperSpec/Front/index.htm">ANSI-compliant</a>. If
 you encounter any deviations this is an error and should be
 reported to <a
 href="#mail">the mailing list</a>. CL-PPCRE has been
@@ -55,16 +53,18 @@ successfully tested with the following Common Lisp implementations:
 
 <ul>
 
-<li><a href="http://www.franz.com/products/allegrocl/">Allegro Common Lisp</a> (6.2 trial on Gentoo Linux 1.1a)
-<li><a href="http://clisp.sourceforge.net/">CLISP</a> (2.30 on Gentoo Linux 1.1a and 2.29 on Windows XP pro)
-<li><a href="http://www.cons.org/cmucl/">CMUCL</a> (18e on Gentoo Linux 1.1a)
-<li><a href="http://www.cormanlisp.com/">Corman Lisp</a> (2.5 on Windows XP pro)
-<li><a href="http://ecls.sourceforge.net/">ECL</a> (0.9c on Gentoo Linux 1.1a)
-<li><a href="http://www.digitool.com/">Macintosh Common Lisp</a> (4.3 demo on MacOS 9.1 - only tested with CL-PPCRE 0.1.x)
-<li><a href="http://openmcl.clozure.com/">OpenMCL</a> (0.13.4 on MacOS X 10.2.2 - only tested with CL-PPCRE 0.1.x)
-<li><a href="http://sbcl.sourceforge.net/">SBCL</a> (0.8.4 on Gentoo Linux 1.1a)
-<li><a href="http://www.scieneer.com/scl/">Scieneer Common Lisp</a> (1.1.1 evaluation on Gentoo Linux 1.1a - only tested with CL-PPCRE 0.1.x)
-<li><a href="http://www.lispworks.com/">Xanalys LispWorks</a> (4.2.7 professional on Gentoo Linux 1.1a and 4.3.6 professional on Windows XP pro)
+<li><a href="http://www.franz.com/products/allegrocl/">Allegro Common Lisp</a>
+<li><a href="http://armedbear.org/abcl.html">Armed Bear Common Lisp</a>
+<li><a href="http://clisp.sourceforge.net/">CLISP</a>
+<li><a href="http://www.cons.org/cmucl/">CMUCL</a>
+<li><a href="http://www.cormanlisp.com/">Corman Lisp</a>
+<li><a href="http://ecls.sourceforge.net/">ECL</a>
+<li><a href="http://www.symbolics.com/">Genera</a>
+<li><a href="http://www.digitool.com/">Macintosh Common Lisp</a>
+<li><a href="http://openmcl.clozure.com/">OpenMCL</a>
+<li><a href="http://sbcl.sourceforge.net/">SBCL</a>
+<li><a href="http://www.scieneer.com/scl/">Scieneer Common Lisp</a>
+<li><a href="http://www.lispworks.com/">LispWorks</a>
 
 </ul>
 
@@ -116,14 +116,26 @@ license</b></a> so you can basically do with it whatever you want.
 
 </ul>
 
+CL-PPCRE has been used successfully in various applications like <a
+href="http://nostoc.stanford.edu/Docs/">BioLingua</a>, <a
+href="http://www.hpc.unm.edu/~download/LoGS/">LoGS</a>, <a href="http://cafespot.net/">CafeSpot</a>, <a href="http://www.eboy.com/">Eboy</a>, or <a
+href="http://weitz.de/regex-coach/">The Regex Coach</a>.
+
+<p>
+<font color=red>Download shortcut:</font> <a href="http://weitz.de/files/cl-ppcre.tar.gz">http://weitz.de/files/cl-ppcre.tar.gz</a>.
+
 </blockquote>
 
 <br>&nbsp;<br><h3><a class=none name="contents">Contents</a></h3>
 <ol>
-  <li><a href="#howto">How to use CL-PPCRE</a>
+  <li><a href="#install">Download and installation</a>
+  <li><a href="#mail">Support and mailing lists</a>
+  <li><a href="#dict">The CL-PPCRE dictionary</a>
   <ol>
-    <li><a href="#create-scanner1"><code>create-scanner</code></a> (for Perl regex strings)
+    <li><a href="#create-scanner"><code>create-scanner</code></a> (for Perl regex strings)
     <li><a href="#create-scanner2"><code>create-scanner</code></a> (for parse trees)
+    <li><a href="#parse-tree-synonym"><code>parse-tree-synonym</code></a>
+    <li><a href="#define-parse-tree-synonym"><code>define-parse-tree-synonym</code></a>
     <li><a href="#scan"><code>scan</code></a>
     <li><a href="#scan-to-strings"><code>scan-to-strings</code></a>
     <li><a href="#register-groups-bind"><code>register-groups-bind</code></a>
@@ -148,8 +160,7 @@ license</b></a> so you can basically do with it whatever you want.
     <li><a href="#ppcre-syntax-error-string"><code>ppcre-syntax-error-string</code></a>
     <li><a href="#ppcre-syntax-error-pos"><code>ppcre-syntax-error-pos</code></a>
   </ol>
-  <li><a href="#install">Download and installation</a>
-  <li><a href="#mail">Support and mailing lists</a>
+  <li><a href="#filters">Filters</a>
   <li><a href="#test">Testing CL-PPCRE</a>
   <li><a href="#perl">Compatibility with Perl</a>
     <ol>
@@ -173,19 +184,84 @@ license</b></a> so you can basically do with it whatever you want.
     <li><a href="#backslash">Backslashes may confuse you...</a>
   </ol>
   <li><a href="#remarks">Remarks</a>
+  <li><a href="#allegro">AllegroCL compatibility mode</a>
   <li><a href="#ack">Acknowledgements</a>
 </ol>
 
-<br>&nbsp;<br><h3><a class=none name="howto">How to use CL-PPCRE</a></h3>
+<br>&nbsp;<br><h3><a name="install" class=none>Download and installation</a></h3>
+
+CL-PPCRE together with this documentation can be downloaded from <a
+href="http://weitz.de/files/cl-ppcre.tar.gz">http://weitz.de/files/cl-ppcre.tar.gz</a>. The
+current version is 1.2.12.  A <a
+href="CHANGELOG">CHANGELOG</a> is available.
+<p>
+If you're on <a href="http://www.debian.org/">Debian</a> you should
+probably use the <a
+href="http://packages.debian.org/cgi-bin/search_packages.pl?keywords=cl-ppcre&searchon=names&version=all&release=all">cl-ppcre
+Debian package</a> which is available thanks to <a href="http://pvaneynd.mailworks.org/">Peter van Eynde</a> and <a href="http://b9.com/">Kevin
+Rosenberg</a>. There's also a port
+for <a href="http://www.cliki.net/gentoo">Gentoo Linux</a> thanks to Matthew Kennedy and a <a href="http://www.freebsd.org/cgi/url.cgi?ports/textproc/cl-ppcre/pkg-descr">FreeBSD port</a> thanks to Henrik Motakef.
+Installation via <a
+href="http://www.cliki.net/asdf-install">asdf-install</a> should as well
+be possible.
+<p>
+CL-PPCRE comes with simple system definitions for <a
+href="http://www.cliki.net/mk-defsystem">MK:DEFSYSTEM</a> and <a
+href="http://www.cliki.net/asdf">asdf</a> so you can either adapt it
+to your needs or just unpack the archive and from within the CL-PPCRE
+directory start your Lisp image and evaluate the form
+<code>(mk:compile-system &quot;cl-ppcre&quot;)</code> (or the
+equivalent one for asdf) which should compile and load the whole
+system.
+<p>
+If for some reason you don't want to use MK:DEFSYSTEM or asdf you
+can just <code>LOAD</code> the file <code>load.lisp</code> or you
+can also get away with something like this:
+
+<pre>
+(loop for name in '("packages" "specials" "util" "errors" "lexer"
+                    "parser" "regex-class" "convert" "optimize"
+                    "closures" "repetition-closures" "scanner" "api")
+      do (compile-file (make-pathname :name name
+                                      :type "lisp"))
+         (load name))
+</pre>
+
+Note that on CL implementations which use the Python compiler
+(i.e. CMUCL, SBCL, SCL) you can concatenate the compiled object files
+to create one single object file which you can load afterwards:
+
+<pre>
+cat {packages,specials,util,errors,lexer,parser,regex-class,convert,optimize,closures,repetition-closures,scanner,api}.x86f > cl-ppcre.x86f
+</pre>
+
+(Replace &quot;.<code>x86f</code>&quot; with the correct suffix for
+your platform.)
+<p>
+Note that there is <em>no</em> public CVS repository for CL-PPCRE - the repository at <a href="http://common-lisp.net/">common-lisp.net</a> is out of date and not in sync with the (current) version distributed from <a href="http://weitz.de/">weitz.de</a>.
+
+
+<br>&nbsp;<br><h3><a name="mail" class=none>Support and mailing lists</a></h3>
+
+For questions, bug reports, feature requests, improvements, or patches
+please use the <a
+href="http://common-lisp.net/mailman/listinfo/cl-ppcre-devel">cl-ppcre-devel
+mailing list</a>. If you want to be notified about future releases
+subscribe to the <a
+href="http://common-lisp.net/mailman/listinfo/cl-ppcre-announce">cl-ppcre-announce
+mailing list</a>. These mailing lists were made available thanks to
+the services of <a href="http://common-lisp.net/">common-lisp.net</a>.
+
+<br>&nbsp;<br><h3><a class=none name="dict">The CL-PPCRE dictionary</a></h3>
 
 CL-PPCRE exports the following symbols:
 
-<p><br>[Function]
-<br><a class=none name="create-scanner1"><b>create-scanner</b> <i>string <tt>&amp;key</tt> case-insensitive-mode multi-line-mode single-line-mode extended-mode destructive</i> =&gt; <i>scanner</i></a>
+<p><br>[Method]
+<br><a class=none name="create-scanner"><b>create-scanner</b> <i>(string string)<tt>&amp;key</tt> case-insensitive-mode multi-line-mode single-line-mode extended-mode destructive</i> =&gt; <i>scanner</i></a>
 
 <blockquote><br> Accepts a string which is a regular expression in
 Perl syntax and returns a closure which will scan strings for this
-regular expression. The mode keyboard arguments are equivalent to the
+regular expression. The mode keyword arguments are equivalent to the
 <code>&quot;imsx&quot;</code> modifiers in Perl. The
 <code>destructive</code> keyword will be ignored.
 <p>
@@ -236,12 +312,17 @@ The keyword arguments are just for your
 convenience. You can always use embedded modifiers like
 <code>&quot;(?i-s)&quot;</code> instead.</blockquote>
 
+<p><br>[Method]
+<br><a class=none name="create-scanner"><b>create-scanner</b> <i>(function function)<tt>&amp;key</tt> case-insensitive-mode multi-line-mode single-line-mode extended-mode destructive</i> =&gt; <i>scanner</i></a>
+<blockquote><br>
+In this case <code><i>function</i></code> should be a scanner returned by another invocation of <code>CREATE-SCANNER</code>. It will be returned as is.
+</blockquote>
 
-<p><br>[Function]
-<br><a class=none name="create-scanner2"><b>create-scanner</b> <i>parse-tree <tt>&amp;key</tt> case-insensitive-mode multi-line-mode single-line-mode extended-mode destructive</i> =&gt; <i>scanner</i></a>
+<p><br>[Method]
+<br><a class=none name="create-scanner2"><b>create-scanner</b> <i>(parse-tree t)<tt>&amp;key</tt> case-insensitive-mode multi-line-mode single-line-mode extended-mode destructive</i> =&gt; <i>scanner</i></a>
 <blockquote><br>
 This is similar to <a
-href="#create-scanner1"><code>CREATE-SCANNER</code></a> above but
+href="#create-scanner"><code>CREATE-SCANNER</code></a> for regex strings above but
 accepts a <em>parse tree</em> as its first argument. A parse tree is an S-expression
 conforming to the following syntax:
 
@@ -289,6 +370,11 @@ and <code>:NOT-SINGLE-LINE-MODE-P</code> are equivalent to Perl's
 <code>&quot;(?-s)&quot;</code>. As usual, changes applied to modes are
 kept local to the innermost enclosing grouping or clustering
 construct.
+
+</li><li>All other symbols will signal an error of type <a
+href="#ppcre-syntax-error"><code>PPCRE-SYNTAX-ERROR</code></a>
+<em>unless</em> they are defined to be <a
+href="#parse-tree-synonym"><em>parse tree synonyms</em></a>.
 
 <li><code>(:FLAGS {&lt;modifier&gt;}*)</code> where
 <code>&lt;modifier&gt;</code> is one of the modifier symbols from
@@ -357,6 +443,14 @@ beginning with 1.
 <code>&lt;<i>number</i>&gt;</code> is a positive integer is a back-reference to a
 register group.
 
+<li><a class=none name="filterdef"><code>(:FILTER &lt;<i>function</i>&gt; <tt>&amp;optional</tt>
+&lt;<i>length</i>&gt;)</code></a> where
+<code>&lt;<i>function</i>&gt;</code> is a <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_f.htm#function_designator">function
+designator</a> and <code>&lt;<i>length</i>&gt;</code> is a
+non-negative integer or <code>NIL</code> is a user-defined <a
+href="#filters">filter</a>.
+
 <li><code>(:CHAR-CLASS|:INVERTED-CHAR-CLASS
 {&lt;<i>item</i>&gt;}*)</code> where <code>&lt;<i>item</i>&gt;</code>
 is either a character, a <em>character range</em>, or a symbol for a
@@ -379,10 +473,10 @@ Perl regex strings when given to <code>CREATE-SCANNER</code>. To
 circumvent this you can always use the equivalent parse tree <code>(:GROUP
 &lt;<i>string</i>&gt;)</code> instead.
 <p>
-Note that currently <code>CREATE-SCANNER</code> doesn't always check
+Note that <code>CREATE-SCANNER</code> doesn't always check
 for the well-formedness of its first argument, i.e. you are expected
-to provide <em>correct</em> parse trees. This will most likely change in
-future releases.
+to provide <em>correct</em> parse trees.
+
 <p>
 The usage of the keyword argument <code>extended-mode</code> obviously
 doesn't make sense if <code>CREATE-SCANNER</code> is applied to parse
@@ -418,6 +512,72 @@ regex strings to parse trees. Here are some examples:
 (:SEQUENCE (:POSITIVE-LOOKAHEAD #\a) #\b)
 </pre></blockquote>
 
+<p><br>[Accessor]
+<br><a class="none" name="parse-tree-synonym"><b>parse-tree-synonym</b> <i>symbol</i> =&gt; <i>parse-tree</i>
+<br><tt>(setf (</tt><b>parse-tree-synonym</b> <i>symbol</i>) <i>new-parse-tree</i><tt>)</tt></a>
+
+</p><blockquote><br>
+Any symbol (unless it's a keyword with a special meaning in parse
+trees) can be made a "synonym", i.e. an abbreviation, for another parse
+tree by this accessor. <code>PARSE-TREE-SYNONYM</code> returns <code>NIL</code> if <code><i>symbol</i></code> isn't a synonym yet.
+<p>
+Here's an example:
+
+</p><pre>* (cl-ppcre::parse-string "a*b+")
+(:SEQUENCE (:GREEDY-REPETITION 0 NIL #\a) (:GREEDY-REPETITION 1 NIL #\b))
+
+* (defun my-repetition (char min)
+    `(:greedy-repetition ,min nil ,char))
+MY-REPETITION
+
+* (setf (parse-tree-synonym 'a*) (my-repetition #\a 0))
+(:GREEDY-REPETITION 0 NIL #\a)
+
+* (setf (parse-tree-synonym 'b+) (my-repetition #\b 1))
+(:GREEDY-REPETITION 1 NIL #\b)
+
+* (let ((scanner (create-scanner '(:sequence a* b+))))
+    (dolist (string '("ab" "b" "aab" "a" "x"))
+      (print (scan scanner string)))
+    (values))
+0
+0
+0
+NIL
+NIL
+
+* (parse-tree-synonym 'a*)
+(:GREEDY-REPETITION 0 NIL #\a)
+
+* (parse-tree-synonym 'a+)
+NIL
+</pre></blockquote>
+
+<p><br>[Macro]
+<br><a class="none" name="define-parse-tree-synonym"><b>define-parse-tree-synonym</b> <i>name parse-tree</i> =&gt; <i>parse-tree</i></a>
+
+</p><blockquote><br>
+This is a convenience macro for parse tree synonyms defined as
+
+<pre>(defmacro define-parse-tree-synonym (name parse-tree)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (parse-tree-synonym ',name) ',parse-tree)))
+</pre>
+
+so you can write code like this:
+
+<pre>
+(define-parse-tree-synonym a-z
+  (:char-class (:range #\a #\z) (:range #\a #\z)))
+
+(define-parse-tree-synonym a-z*
+  (:greedy-repetition 0 nil a-z))
+
+(defun ascii-char-tester (string)
+  (scan '(:sequence :start-anchor a-z* :end-anchor)
+        string))
+</pre></blockquote>
+
 <p><br>
 <b>For the rest of this section </b><code><i>regex</i></code><b> can
 always be a string (which is interpreted as a Perl regular
@@ -430,7 +590,7 @@ href="#scan"><code>SCAN</code></a><b>.</b>
 
 
 
-<p><br>[Function]
+<p><br>[Standard Generic Function]
 <br><a class=none name="scan"><b>scan</b> <i>regex target-string <tt>&amp;key</tt> start end</i> =&gt; <i>match-start, match-end, reg-starts, reg-ends</i></a>
 
 <blockquote><br>
@@ -525,7 +685,15 @@ Examples:
 Evaluates <code><i>statement*</i></code> with the variables in <code><i>var-list</i></code> bound to the
 corresponding register groups after <code><i>target-string</i></code> has been matched
 against <code><i>regex</i></code>, i.e. each variable is either
-bound to a string or to <code>NIL</code>. If there is no match, the <code><i>statement*</i></code> forms are <em>not</em>
+bound to a string or to <code>NIL</code>.
+As a shortcut, the elements of <code><i>var-list</i></code> can also be lists of the form <code>(FN&nbsp;VAR)</code> where <code>VAR</code> is the variable symbol
+and <code>FN</code> is a <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_f.htm#function_designator">function
+designator</a> (which is evaluated) denoting a function which is to be applied to the string before the result is bound to <code>VAR</code>.
+To make this even more convenient the form <code>(FN&nbsp;VAR1&nbsp;...VARn)</code> can be used as an abbreviation for
+<code>(FN&nbsp;VAR1)&nbsp;...&nbsp;(FN&nbsp;VARn).
+<p>
+If there is no match, the <code><i>statement*</i></code> forms are <em>not</em>
 executed. For each element of
 <code><i>var-list</i></code> which is <code>NIL</code> there's no binding to the corresponding register
 group. The number of variables in <code><i>var-list</i></code> must not be greater than
@@ -537,15 +705,22 @@ share structure with <code><i>target-string</i></code>.
       (&quot;((a)|(b)|(c))+&quot; &quot;abababc&quot; :sharedp t)
     (list first second third fourth))
 (&quot;c&quot; &quot;a&quot; &quot;b&quot; &quot;c&quot;)
+
 * (register-groups-bind (nil second third fourth)
       <font color=orange>;; note that we don't bind the first and fifth register group</font>
       (&quot;((a)|(b)|(c))()+&quot; &quot;abababc&quot; :start 6)
     (list second third fourth))
 (NIL NIL &quot;c&quot;)
+
 * (register-groups-bind (first)
       (&quot;(a|b)+&quot; &quot;accc&quot; :start 1)
     (format t &quot;This will not be printed: ~A&quot; first))
 NIL
+
+* (register-groups-bind (fname lname (#'parse-integer date month year))
+      (&quot;(\\w+)\\s+(\\w+)\\s+(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})&quot; &quot;Frank Zappa 21.12.1940&quot;)
+    (list fname lname (encode-universal-time 0 0 0 date month year)))
+("Frank" "Zappa" 1292882400)
 </pre>
 </blockquote>
 
@@ -639,7 +814,7 @@ CROSSFOOT
 6
 </pre>
 
-Of course, in real life you would do this with <a href="#do-matches"><code>DO-MATCHES</code></a> and use the <code><i>start</i></code> and <code><i>end</i></code> keyword parameters of <a href="http://www.lispworks.com/reference/HyperSpec/Body/f_parse_.htm"><code>PARSE-INTEGER</code></a>.</blockquote>
+Of course, in real life you would do this with <a href="#do-matches"><code>DO-MATCHES</code></a> and use the <code><i>start</i></code> and <code><i>end</i></code> keyword parameters of <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_parse_.htm"><code>PARSE-INTEGER</code></a>.</blockquote>
 
 <p><br>[Macro]
 <br><a class=none name="do-register-groups"><b>do-register-groups</b> <i>var-list (regex target-string <tt>&amp;optional</tt> result-form <tt>&amp;key</tt> start end sharedp) declaration* statement*</i> =&gt; <i>result*</i></a>
@@ -648,7 +823,7 @@ Of course, in real life you would do this with <a href="#do-matches"><code>DO-MA
 Iterates over <code><i>target-string</i></code> and tries to match <code><i>regex</i></code> as often as
 possible evaluating <code><i>statement*</i></code> with the variables in <code><i>var-list</i></code> bound to the
 corresponding register groups for each match in turn, i.e. each
-variable is either bound to a string or to <code>NIL</code>. The number of
+variable is either bound to a string or to <code>NIL</code>. You can use the same shortcuts and abbreviations as in <a href="#register-groups-bind"><code>REGISTER-GROUPS-BIND</code></a>. The number of
 variables in <code><i>var-list</i></code> must not be greater than the number of register
 groups. For each element of
 <code><i>var-list</i></code> which is <code>NIL</code> there's no binding to the corresponding register
@@ -669,6 +844,14 @@ match. If <code><i>sharedp</i></code> is true, the substrings may share structur
 (&quot;b&quot; NIL &quot;b&quot; NIL) 
 (&quot;c&quot; NIL NIL &quot;c&quot;)
 NIL
+
+* (let (result)
+    (do-register-groups ((#'parse-integer n) (#'intern sign) whitespace)
+        (&quot;(\\d+)|(\\+|-|\\*|/)|(\\s+)&quot; &quot;12*15 - 42/3&quot;)
+      (unless whitespace
+        (push (or n sign) result)))
+    (nreverse result))
+(12 * 15 - 42 / 3)
 </pre>
 </blockquote>
 
@@ -787,7 +970,7 @@ frob")
 
 
 <p><br>[Function]
-<br><a class=none name="regex-replace"><b>regex-replace</b> <i>regex target-string replacement <tt>&amp;key</tt> start end preserve-case</i> =&gt; <i>list</i></a>
+<br><a class=none name="regex-replace"><b>regex-replace</b> <i>regex target-string replacement <tt>&amp;key</tt> start end preserve-case simple-calls</i> =&gt; <i>list</i></a>
 
 <blockquote><br> Try to match <code><i>target-string</i></code>
 between <code><i>start</i></code> and <code><i>end</i></code> against
@@ -804,7 +987,7 @@ match, <code>&quot;\`&quot;</code> for the part of
 <code>N</code>th register where <code>N</code> is a positive integer.
 <p>
 <code><i>replacement</i></code> can also be a <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/26_glo_f.htm#function_designator">function
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_f.htm#function_designator">function
 designator</a> in which case the match will be replaced with the
 result of calling the function designated by
 <code><i>replacement</i></code> with the arguments
@@ -815,6 +998,15 @@ result of calling the function designated by
 <code><i>reg-ends</i></code> are arrays holding the start and end
 positions of matched registers (or <code>NIL</code>) - the meaning of
 the other arguments should be obvious.)
+<p>
+If <code><i>simple-calls</i></code> is true, a function designated by
+<code><i>replacement</i></code> will instead be called with the
+arguments <code><i>match</i></code>, <code><i>register-1</i></code>,
+..., <code><i>register-n</i></code> where <code><i>match</i></code> is
+the whole match as a string and <code><i>register-1</i></code> to
+<code><i>register-n</i></code> are the matched registers, also as
+strings (or <code>NIL</code>). Note that these strings share structure with
+<code><i>target-string</i></code> so you must not modify them.
 <p>
 Finally, <code><i>replacement</i></code> can be a list where each
 element is a string (which will be inserted verbatim), one of the
@@ -829,7 +1021,7 @@ If <code><i>preserve-case</i></code> is true (default is
 <code>NIL</code>), the replacement will try to preserve the case (all
 upper case, all lower case, or capitalized) of the match. The result
 will always be a <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/26_glo_f.htm#fresh">fresh</a>
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_f.htm#fresh">fresh</a>
 string, even if <code><i>regex</i></code> doesn't match.
 <p>
 Examples:
@@ -860,7 +1052,7 @@ Examples:
 
 
 <p><br>[Function]
-<br><a class=none name="regex-replace-all"><b>regex-replace-all</b> <i>regex target-string replacement <tt>&amp;key</tt> start end preserve-case</i> =&gt; <i>list</i></a>
+<br><a class=none name="regex-replace-all"><b>regex-replace-all</b> <i>regex target-string replacement <tt>&amp;key</tt> start end preserve-case simple-calls</i> =&gt; <i>list</i></a>
 
 <blockquote><br>
 Like <a href="#regex-replace"><code>REGEX-REPLACE</code></a> but replaces all matches.
@@ -912,6 +1104,34 @@ HOW-MANY
                               "foo{...}bar{.....}{..}baz{....}frob"
                               (list "[" 'how-many " dots]"))
 "foo[3 dots]bar[5 dots][2 dots]baz[4 dots]frob"
+
+* (let ((qp-regex (cl-ppcre:create-scanner "[\\x80-\\xff]")))
+    (defun encode-quoted-printable (string)
+      "Convert 8-bit string to quoted-printable representation.
+Version using SIMPLE-CALLS keyword argument."
+      <font color=orange>;; ;; won't work for Corman Lisp because non-ASCII characters aren't 8-bit there</font>
+      (flet ((convert (match)
+               (format nil "=~2,'0x" (char-code (char match 0)))))
+        (cl-ppcre:regex-replace-all qp-regex string #'convert
+                                    :simple-calls t))))
+
+Converted ENCODE-QUOTED-PRINTABLE.
+ENCODE-QUOTED-PRINTABLE
+
+* (encode-quoted-printable "F&ecirc;te S&oslash;rensen na&iuml;ve H&uuml;hner Stra&szlig;e")
+"F=EAte S=F8rensen na=EFve H=FChner Stra=DFe"
+
+* (defun how-many (match first-register)
+    (declare (ignore match))
+    (format nil "~A" (length first-register)))
+HOW-MANY
+
+* (cl-ppcre:regex-replace-all "{(.+?)}"
+                              "foo{...}bar{.....}{..}baz{....}frob"
+                              (list "[" 'how-many " dots]")
+                              :simple-calls t)
+
+"foo[3 dots]bar[5 dots][2 dots]baz[4 dots]frob"
 </pre></blockquote>
 
 <p><br>[Function]
@@ -919,7 +1139,7 @@ HOW-MANY
 
 <blockquote><br>
 Like <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/f_apropo.htm"><code>APROPOS</code></a>
+href="http://www.lispworks.com/documentation/HyperSpec/Body/f_apropo.htm"><code>APROPOS</code></a>
 but searches for interned symbols which match the regular expression
 <code><i>regex</i></code>. The output is implementation-dependent. If
 <code><i>case-insensitive</i></code> is true (which is the default)
@@ -983,7 +1203,7 @@ FOOBOO [variable] value: 43
 
 <blockquote><br>
 Like <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/f_apropo.htm"><code>APROPOS-LIST</code></a>
+href="http://www.lispworks.com/documentation/HyperSpec/Body/f_apropo.htm"><code>APROPOS-LIST</code></a>
 but searches for interned symbols which match the regular expression
 <code><i>regex</i></code>. If <code><i>case-insensitive</i></code> is
 true (which is the default) and <code><i>regex</i></code> isn't
@@ -1001,18 +1221,18 @@ Example (continued from above):
 
 <blockquote><br>This variable controls whether scanners take into
 account all characters of your CL implementation or only those the <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/f_char_c.htm#char-code"><code>CHAR-CODE</code></a>
+href="http://www.lispworks.com/documentation/HyperSpec/Body/f_char_c.htm#char-code"><code>CHAR-CODE</code></a>
 of which is not larger than its value. It is only relevant if the
 regular expression contains certain character classes. The default is
 <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/v_char_c.htm"><code>CHAR-CODE-LIMIT</code></a>,
+href="http://www.lispworks.com/documentation/HyperSpec/Body/v_char_c.htm"><code>CHAR-CODE-LIMIT</code></a>,
 and you might see significant speed and space improvements during
 scanner <em>creation</em> if, say, your target strings only contain <a
 href="http://wwwwbs.cs.tu-berlin.de/user/czyborra/charsets/">ISO-8859-1</a>
 characters and you're using an implementation like AllegroCL,
-LispWorks, or CLISP where <code>CHAR-CODE-LIMIT</code> has a value
-much higher than 255. The <a href="#test">test suite</a> will
-automatically set <code>*REGEX-CHAR-CODE-LIMIT*</code> to 255 while
+CLISP, LispWorks, or SBCL where <code>CHAR-CODE-LIMIT</code> has a value
+much higher than 256. The <a href="#test">test suite</a> will
+automatically set <code>*REGEX-CHAR-CODE-LIMIT*</code> to 256 while
 you're running the default test.
 <p>
 Here's an example with LispWorks:
@@ -1028,8 +1248,8 @@ Allocation   = 546600 bytes standard / 2162611 bytes fixlen
 0 Page faults
 #&lt;closure 20654AF2&gt;
 
-CL-USER 24 > (time (let ((cl-ppcre:*regex-char-code-limit* 255)) (cl-ppcre:create-scanner "[3\\D]")))
-Timing the evaluation of (LET ((CL-PPCRE:*REGEX-CHAR-CODE-LIMIT* 255)) (CL-PPCRE:CREATE-SCANNER "[3\\D]"))
+CL-USER 24 > (time (let ((cl-ppcre:*regex-char-code-limit* 256)) (cl-ppcre:create-scanner "[3\\D]")))
+Timing the evaluation of (LET ((CL-PPCRE:*REGEX-CHAR-CODE-LIMIT* 256)) (CL-PPCRE:CREATE-SCANNER "[3\\D]"))
 
 user time    =      0.000
 system time  =      0.000
@@ -1042,7 +1262,7 @@ Allocation   = 3336 bytes standard / 8338 bytes fixlen
 Note: Due to the nature of <code>LOAD-TIME-VALUE</code> and the <a
 href="#compiler-macro">compiler macro for <code>SCAN</code></a> some
 scanners might be created in a <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/26_glo_n.htm#null_lexical_environment">null
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_n.htm#null_lexical_environment">null
 lexical environment</a> at load time or at compile time so be careful
 to which value <code>*REGEX-CHAR-CODE-LIMIT*</code> is bound at that
 time. The default value should always yield correct results unless you
@@ -1052,14 +1272,14 @@ play dirty tricks with implementation-dependent behaviour, though.</blockquote>
 <br><a class=none name="use-bmh-matchers"><b>*use-bmh-matchers*</b></a>
 
 <blockquote><br>Usually, the scanners created by <a
-href="#create-scanner1"><code>CREATE-SCANNER</code></a> (or
+href="#create-scanner"><code>CREATE-SCANNER</code></a> (or
 implicitely by other functions and macros) will use fast <a
 href="http://www-igm.univ-mlv.fr/~lecroq/string/node18.html">Boyer-Moore-Horspool
 matchers</a> to check for constant strings at the start or end of the
 regular expression. If <code>*USE-BMH-MATCHERS*</code> is
 <code>NIL</code> (the default is <code>T</code>), the standard
 function <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/f_search.htm"><code>SEARCH</code></a>
+href="http://www.lispworks.com/documentation/HyperSpec/Body/f_search.htm"><code>SEARCH</code></a>
 will be used instead. This will usually be a bit slower but can save
 lots of space if you're storing many scanners. The <a
 href="#test">test suite</a> will automatically set
@@ -1069,7 +1289,7 @@ the default test.
 Note: Due to the nature of <code>LOAD-TIME-VALUE</code> and the <a
 href="#compiler-macro">compiler macro for <code>SCAN</code></a> some
 scanners might be created in a <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/26_glo_n.htm#null_lexical_environment">null
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_n.htm#null_lexical_environment">null
 lexical environment</a> at load time or at compile time so be careful
 to which value <code>*USE-BMH-MATCHERS*</code> is bound at that
 time.</blockquote>
@@ -1134,7 +1354,7 @@ href="#*allow-quoting*"><code>*ALLOW-QUOTING*</code></a> is
 non-word characters (everything except ASCII characters, digits and
 underline) of <code>STRING</code> are quoted by prepending a
 backslash similar to Perl's <code>quotemeta</code> function. It always returns a <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/26_glo_f.htm#fresh">fresh</a>
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_f.htm#fresh">fresh</a>
 string.
 <pre>
 * (cl-ppcre:quote-meta-chars &quot;[a-z]*&quot;)
@@ -1147,7 +1367,7 @@ string.
 <blockquote><br>
 Every error signaled by CL-PPCRE is of type
 <code>PPCRE-ERROR</code>. This is a direct subtype of <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/e_smp_er.htm"><code>SIMPLE-ERROR</code></a>
+href="http://www.lispworks.com/documentation/HyperSpec/Body/e_smp_er.htm"><code>SIMPLE-ERROR</code></a>
 without any additional slots or options.
 </blockquote>
 
@@ -1210,7 +1430,7 @@ encountered (or <code>NIL</code> if the error happened while trying to
 convert a parse tree). This might be particularly useful when <a
 href="#*allow-quoting*"><code>*ALLOW-QUOTING*</code></a> is
 <em>true</em> because in this case the offending string might not be the one you gave to the <a
-href="#create-scanner1"><code>CREATE-SCANNER</code></a> function.
+href="#create-scanner"><code>CREATE-SCANNER</code></a> function.
 </blockquote>
 
 <p><br>[Function]
@@ -1225,69 +1445,185 @@ convert a parse tree).
 </blockquote>
 
 
-<br>&nbsp;<br><h3><a name="install" class=none>Download and installation</a></h3>
+<br>&nbsp;<br><h3><a name="filters" class=none>Filters</a></h3>
 
-CL-PPCRE together with this documentation can be downloaded from <a
-href="http://weitz.de/files/cl-ppcre.tgz">http://weitz.de/files/cl-ppcre.tgz</a>. The
-current version is 0.7.4 - older versions are
-available for download through URLs like
-<code>http://weitz.de/files/cl-ppcre-&lt;version&gt;.tgz</code>. A <a
-href="CHANGELOG">CHANGELOG</a> is available.
+Because several users have asked for it, CL-PPCRE now offers
+&quot;filters&quot; (see <a href="#filterdef">above</a> for syntax)
+which are basically arbitrary, user-defined functions that can act as
+regex building blocks. Filters can only be used within <a
+href="#create-scanner2">parse trees</a>, not within Perl regex
+strings.
 <p>
-If you're on <a href="http://www.debian.org/">Debian</a> you should
-probably use the <a
-href="http://packages.debian.org/cgi-bin/search_packages.pl?keywords=cl-ppcre&searchon=names&version=all&release=all">cl-ppcre
-Debian package</a> which is available thanks to <a href="http://b9.com/">Kevin
-Rosenberg</a>. There's also a port
-for <a href="http://www.cliki.net/gentoo">Gentoo Linux</a> thanks to Matthew Kennedy and a <a href="http://www.freebsd.org/cgi/url.cgi?ports/textproc/cl-ppcre/pkg-descr">FreeBSD port</a> thanks to Henrik Motakef.
-Installation via <a
-href="http://www.cliki.net/asdf-install">asdf-install</a> should as well
-be possible.
+Note that filters are currently considered an experimental feature and
+their API might change in the future.
 <p>
-CL-PPCRE comes with simple system definitions for <a
-href="http://www.cliki.net/mk-defsystem">MK:DEFSYSTEM</a> and <a
-href="http://www.cliki.net/asdf">asdf</a> so you can either adapt it
-to your needs or just unpack the archive and from within the CL-PPCRE
-directory start your Lisp image and evaluate the form
-<code>(mk:compile-system &quot;cl-ppcre&quot;)</code> (or the
-equivalent one for asdf) which should compile and load the whole
-system.
+A filter is defined by its <em>filter function</em> which must be a
+function of one argument. During the parsing process this function
+might be called once or several times or it might not be called at
+all. If it's called its argument is an integer <code><i>pos</i></code>
+which is the current position within the target string. The filter can
+either return <code>NIL</code> (which means that the subexpression
+represented by this filter didn't match) or an integer not smaller
+than <code><i>pos</i></code> for success. A zero-length assertion
+should return <code><i>pos</i></code> itself while a filter which
+wants to consume <code>N</code> characters should return
+<code>(+&nbsp;POS&nbsp;N)</code>.
 <p>
-If for some reason you don't want to use MK:DEFSYSTEM or asdf you
-can just <code>LOAD</code> the file <code>load.lisp</code> or you
-can also get away with something like this:
+If you supply the optional value <code><i>length</i></code> and it is
+not <code>NIL</code> then this is a promise to the regex engine that
+your filter will <em>always</em> consume <em>exactly</em>
+<code><i>length</i></code> characters. The regex engine might use this
+information for optimization purposes but it is otherwise irrelevant
+to the outcome of the matching process.
+<p>
+The filter function can access the following special variables from
+its code body:
+<ul>
 
+<li><code>CL-PPCRE::*STRING*</code>: The target (a string) of the
+current matching process.
+
+<li><code>CL-PPCRE::*START-POS*</code> and
+<code>CL-PPCRE::*END-POS*</code>: The start and end (integers) indices
+of the current matching process. These correspond to the
+<code>START</code> and <code>END</code> keyword parameters of <a
+href="#scan"><code>SCAN</code></a>.
+
+<li><code>CL-PPCRE::*REAL-START-POS*</code>: The initial starting
+position. This is only relevant for repeated scans (as in <a
+href="#do-scans"><code>DO-SCANS</code></a>) where
+<code>CL-PPCRE::*START-POS*</code> will be moved forward while
+<code>CL-PPCRE::*REAL-START-POS*</code> won't. For normal scans the
+value of this variable is <code>NIL</code>.
+
+<li><CODE>CL-PPCRE::*REG-STARTS*</CODE> and
+<CODE>CL-PPCRE::*REG-ENDS*</CODE>: Two simple vectors which denote the
+start and end indices of registers within the regular expression. The
+first register is indexed by&nbsp;0. If a register hasn't matched yet
+then its corresponding entry in <CODE>CL-PPCRE::*REG-STARTS*</CODE> is
+<code>NIL</code>.
+
+</ul>
+
+These variables should be considered read-only. Do <em>not</em> change
+these values unless you really know what you're doing!
+<p>
+Note that the names of the variables are not exported from the
+<code>CL-PPCRE</code> package because there's currently no guarantee
+that they will be available in future releases.
+<p>
+Here are some filter examples:
 <pre>
-(loop for name in '("packages" "specials" "util" "errors" "lexer"
-                    "parser" "regex-class" "convert" "optimize"
-                    "closures" "repetition-closures" "scanner" "api")
-      do (compile-file (make-pathname :name name
-                                      :type "lisp"))
-         (load name))
+* (defun my-info-filter (pos)
+    &quot;Show some info about the matching process.&quot;
+    (format t &quot;Called at position ~A~%&quot; pos)
+    (loop with dim = (array-dimension cl-ppcre::*reg-starts* 0)
+          for i below dim
+          for reg-start = (aref cl-ppcre::*reg-starts* i)
+          for reg-end = (aref cl-ppcre::*reg-ends* i)
+          do (format t &quot;Register ~A is currently &quot; (1+ i))
+          when reg-start
+               (write-string cl-ppcre::*string* nil
+            do (write-char #\')
+               (write-string cl-ppcre::*string* nil
+                     :start reg-start :end reg-end)
+               (write-char #\')
+          else
+            do (write-string &quot;unbound&quot;)
+          do (terpri))
+    (terpri)
+    pos)
+MY-INFO-FILTER
+
+* (scan '(:sequence
+           (:register
+             (:greedy-repetition 0 nil
+                                 (:char-class (:range #\a #\z))))
+           (:filter my-info-filter 0) &quot;X&quot;)
+        &quot;bYcdeX&quot;)
+Called at position 1
+Register 1 is currently 'b'
+
+Called at position 0
+Register 1 is currently ''
+
+Called at position 1
+Register 1 is currently ''
+
+Called at position 5
+Register 1 is currently 'cde'
+
+2
+6
+#(2)
+#(5)
+
+* (scan '(:sequence
+           (:register
+             (:greedy-repetition 0 nil
+                                 (:char-class (:range #\a #\z))))
+           (:filter my-info-filter 0) &quot;X&quot;)
+        &quot;bYcdeZ&quot;)
+NIL
+
+* (defun my-weird-filter (pos)
+    &quot;Only match at this point if either pos is odd and the character
+  we're looking at is lowerrcase or if pos is even and the next two
+  characters we're looking at are uppercase. Consume these characters if
+  there's a match.&quot;
+    (format t &quot;Trying at position ~A~%&quot; pos)
+    (cond ((and (oddp pos)
+                (&lt; pos cl-ppcre::*end-pos*)
+                (lower-case-p (char cl-ppcre::*string* pos)))
+           (1+ pos))
+          ((and (evenp pos)
+                (&lt; (1+ pos) cl-ppcre::*end-pos*)
+                (upper-case-p (char cl-ppcre::*string* pos))
+                (upper-case-p (char cl-ppcre::*string* (1+ pos))))
+           (+ pos 2))
+          (t nil)))
+MY-WEIRD-FILTER
+
+* (defparameter *weird-regex*
+                `(:sequence &quot;+&quot; (:filter ,#'my-weird-filter) &quot;+&quot;))
+*WEIRD-REGEX*
+
+* (scan *weird-regex* &quot;+A++a+AA+&quot;)
+Trying at position 1
+Trying at position 3
+Trying at position 4
+Trying at position 6
+5
+9
+#()
+#()
+
+* (fmakunbound 'my-weird-filter)
+MY-WEIRD-FILTER
+
+* (scan *weird-regex* &quot;+A++a+AA+&quot;)
+Trying at position 1
+Trying at position 3
+Trying at position 4
+Trying at position 6
+5
+9
+#()
+#()
 </pre>
 
-Note that on CL implementations which use the Python compiler
-(i.e. CMUCL, SBCL, SCL) you can concatenate the compiled object files
-to create one single object file which you can load afterwards:
+Note that in the second call to <code>SCAN</code> our filter wasn't
+invoked at all - it was optimized away by the regex engine because it
+knew that it couldn't match. Also note that <code>*WEIRD-REGEX*</code>
+still worked after we removed the global function definition of
+<code>MY-WEIRD-FILTER</code> because the regular expression had
+captured the original definition.
 
-<pre>
-cat {packages,specials,util,errors,lexer,parser,regex-class,convert,optimize,closures,repetition-closures,scanner,api}.x86f > cl-ppcre.x86f
-</pre>
+<p>
 
-(Replace &quot;.<code>x86f</code>&quot; with the correct suffix for
-your platform.)
-
-
-<br>&nbsp;<br><h3><a name="mail" class=none>Support and mailing lists</a></h3>
-
-For questions, bug reports, feature requests, improvements, or patches
-please use the <a
-href="http://common-lisp.net/mailman/listinfo/cl-ppcre-devel">cl-ppcre-devel
-mailing list</a>. If you want to be notified about future releases
-subscribe to the <a
-href="http://common-lisp.net/mailman/listinfo/cl-ppcre-announce">cl-ppcre-announce
-mailing list</a>. These mailing lists were made available thanks to
-the services of <a href="http://common-lisp.net/">common-lisp.net</a>.
+For more ideas about what you can do with filters see <a
+href="http://common-lisp.net/pipermail/cl-ppcre-devel/2004-October/000069.html">this
+thread</a> on the <a href="#mail">mailing list</a>.
 
 <br>&nbsp;<br><h3><a name="test" class=none>Testing CL-PPCRE</a></h3>
 
@@ -1317,7 +1653,7 @@ NIL
 * (cl-ppcre-test:test)
 
 <font color=orange>;; ....
-;; (a list of <a href="#perl">incompatibilities with Perl</a>)</font color=orange>
+;; (a list of <a class=noborder href="#perl">incompatibilities with Perl</a>)</font color=orange>
 </pre>
 
 (If you're not using MK:DEFSYSTEM or asdf it suffices to build
@@ -1398,7 +1734,7 @@ translates <code>&quot;\r&quot;</code> to <code>(CODE-CHAR
 <h4><a name="alpha" class=none>What about <code>&quot;\w&quot;</code>?</a></h4>
 
 CL-PPCRE uses <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/f_alphan.htm"><code>ALPHANUMERICP</code></a>
+href="http://www.lispworks.com/documentation/HyperSpec/Body/f_alphan.htm"><code>ALPHANUMERICP</code></a>
 to decide whether a character matches Perl's
 <code>&quot;\w&quot;</code>, so depending on your CL implementation
 you might encounter differences between Perl and CL-PPCRE when
@@ -1410,7 +1746,7 @@ matching non-ASCII characters.
 
 The <a href="">CL-PPCRE test suite</a> can also be used for
 benchmarking purposes: If you call <code>perltest.pl</code> with a
-command line argument it will be interpreted as the number of seconds
+command line argument it will be interpreted as the minimum number of seconds
 each test should run. Perl will time its tests accordingly and create
 output which, when fed to <code>CL-PPCRE-TEST:TEST</code>, will result
 in a benchmark. Here's an example:
@@ -1554,13 +1890,13 @@ for you automatically.
 <p>
 However, beginning with version&nbsp;0.5.2, CL-PPCRE uses a <a
 name="compiler-macro"
-href="http://www.lispworks.com/reference/HyperSpec/Body/26_glo_c.htm#compiler_macro">compiler
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_c.htm#compiler_macro">compiler
 macro</a> and <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/s_ld_tim.htm"><code>LOAD-TIME-VALUE</code></a>
+href="http://www.lispworks.com/documentation/HyperSpec/Body/s_ld_tim.htm"><code>LOAD-TIME-VALUE</code></a>
 to make sure that the scanner is only built once if the first argument
-to <a href="#scan"><code>SCAN</code></a>, <a href="#scan-to-strings"><code>SCAN-TO-STRINGS</code></a>, <a href="#split"><code>SPLIT</code></a>, or
-<a href="#regex-replace"><code>REGEX-REPLACE</code></a> is a <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/26_glo_c.htm#constant_form">constant
+to <a href="#scan"><code>SCAN</code></a>, <a href="#scan-to-strings"><code>SCAN-TO-STRINGS</code></a>, <a href="#split"><code>SPLIT</code></a>, 
+<a href="#regex-replace"><code>REGEX-REPLACE</code></a>, or <a href="#regex-replace-all"><code>REGEX-REPLACE-ALL</code></a> is a <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_c.htm#constant_form">constant
 form</a>. (But see the notes for <a
 href="#regex-char-code-limit"><code>*REGEX-CHAR-CODE-LIMIT*</code></a> and
 <a href="#use-bmh-matchers"><code>*USE-BMH-MATCHERS*</code></a>.)
@@ -1674,7 +2010,7 @@ target strings.
 <p>
 Another thing to consider is that, for performance reasons, CL-PPCRE
 assumes that most of the target strings you're trying to match are <a
-href="http://www.lispworks.com/reference/HyperSpec/Body/t_smp_st.htm">simple
+href="http://www.lispworks.com/documentation/HyperSpec/Body/t_smp_st.htm">simple
 strings</a> and coerces non-simple strings to simple strings before
 scanning them. If you plan on working with non-simple strings mostly
 you might consider modifying the CL-PPCRE source code. This is easy:
@@ -1746,6 +2082,8 @@ TARGET
 With CMUCL the situation is better and worse at the same time. It will
 take a lot longer until CMUCL gives up but if it gives up the whole
 Lisp image will silently die (at least on my machine):
+<p>
+[Note: This was true for CMUCL&nbsp;18e - CMUCL&nbsp;19a behaves in a much nicer way and gives you a chance to recover.]
 
 <pre>
 * (defun target (n) (concatenate 'string (make-string n :initial-element #\a) "b"))
@@ -1900,6 +2238,50 @@ IBM Thinkpad T23 laptop (Pentium&nbsp;III 1.2&nbsp;GHz,
 768&nbsp;MB&nbsp;RAM) running <a href="http://www.gentoo.org/">Gentoo
 Linux</a> 1.1a.
 
+<br>&nbsp;<br><h3><a class=none name="allegro">AllegroCL compatibility mode</a></h3>
+
+Since autumn 2004 <a
+href="http://www.franz.com/products/allegrocl/">AllegroCL</a> offers
+<a
+href="http://www.franz.com/support/documentation/7.0/doc/regexp.htm">a
+new regular expression API</a> with a syntax very similar to
+CL-PPCRE. Although CL-PPCRE is quite fast already, AllegroCL's engine will
+most likely be even faster (but only on AllegroCL, of course).  However, you might want to
+stick to CL-PPCRE because you have a "legacy" application or because
+you want your code to be portable to other Lisp implementations.
+Therefore, beginning from version 1.2.0, CL-PPCRE offers a
+"compatibility mode" where you can continue using the CL-PPCRE API as
+described <a href="#dict">above</a> but deploy the AllegroCL regex
+engine under the hood. (The details are: Calls to <a
+href="#create-scanner"><code>CREATE-SCANNER</code></a> and <a
+href="#scan"><code>SCAN</code></a> are dispatched to their AllegroCL
+counterparts <a
+href="http://www.franz.com/support/documentation/7.0/doc/operators/excl/compile-re.htm"><code>EXCL:COMPILE-RE</code></a>
+and <a
+href="http://www.franz.com/support/documentation/7.0/doc/operators/excl/match-re.htm"><code>EXCL:MATCH-RE</code></a>
+while everything else is left as is.)
+<p>
+The advantage of this mode is that you'll get a much smaller image and
+most likely faster code. (But note that CL-PPCRE needs to do a small amount of work to massage AllegroCL's output into the format expected by CL-PPCRE.) The downside is that your code won't be
+fully compatible with CL-PPCRE anymore. Here are some of the
+differences (most of which probably don't matter very often):
+<ul>
+<li>The AllegroCL engine doesn't offer <a
+href="#parse-tree-synonym">parse tree synonyms</a> and <a href="#filters">filters</a>.
+<li>The AllegroCL engine <a href="http://www.franz.com/support/documentation/7.0/doc/regexp.htm#regexp-new-compatibility-2">will choke on some regular expressions involving curly braces</a> that are accepted by Perl and CL-PPCRE's native engine.
+<li>The AllegroCL engine's case-folding mode switch (which is used instead of CL-PPCRE's <a href="#create-scanner"><code>:CASE-INSENSITIVE</code> keyword parameter</a>) <a href="http://www.franz.com/support/documentation/7.0/doc/regexp.htm#regexp-new-matching-2">is currently only effective for ASCII characters</a>.
+<li>CL-PPCRE's engine doesn't understand the <a href="http://www.franz.com/support/documentation/7.0/doc/regexp.htm#regexp-new-capturing-2">named register groups</a> provided by AllegroCL.
+<li>The AllegroCL engine <a href="http://www.franz.com/support/documentation/7.0/doc/regexp.htm#regexp-new-compatibility-2">doesn't support</a> <a href="#*allow-quoting*">quoting of metacharacters</a>.
+<li>In AllegroCL compatibility mode compiled regular expressions (as returned by <a href="#create-scanner"><code>CREATE-SCANNER</code></a>) aren't functions but structures.
+</ul>
+For more details about the AllegroCL engine and possible deviations from CL-PPCRE see the <a href="http://www.franz.com/support/documentation/7.0/doc/regexp.htm">documentation</a> at the <a href="http://www.franz.com/">Franz Inc. website</a>.
+<p>
+To use the AllegroCL compatibility mode you have to
+<pre>
+(push :use-acl-regexp2-engine *features*)
+</pre>
+<em>before</em> you compile CL-PPCRE.
+
 <br>&nbsp;<br><h3><a class=none name="ack">Acknowledgements</a></h3>
 
 Although I didn't use their code I was heavily inspired by looking at
@@ -1927,7 +2309,7 @@ where I wrote most of the code and thanks to my wife for lending me
 her PowerBook to test CL-PPCRE with MCL and OpenMCL.
 
 <p>
-$Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/doc/index.html,v 1.1 2004/06/23 08:27:10 hans Exp $
+$Header: /usr/local/cvsrep/cl-ppcre/doc/index.html,v 1.131 2005/11/01 09:51:02 edi Exp $
 <p><a href="http://weitz.de/index.html">BACK TO MY HOMEPAGE</a>
 
 </body>

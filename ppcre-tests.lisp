@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE-TEST; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/ppcre-tests.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/ppcre-tests.lisp,v 1.31 2005/08/23 12:23:13 edi Exp $
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -26,18 +26,6 @@
 ;;; WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-(in-package #:cl-user)
-
-#-:cormanlisp
-(defpackage #:cl-ppcre-test
-  (:use #:cl #:cl-ppcre)
-  (:export #:test))
-
-#+:cormanlisp
-(defpackage "CL-PPCRE-TEST"
-  (:use "CL" "CL-PPCRE")
-  (:export "TEST"))
 
 (in-package #:cl-ppcre-test)
 
@@ -64,12 +52,7 @@
                                multi-line-mode
                                single-line-mode
                                extended-mode)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Auxiliary function used by TEST to benchmark a regex scanner
 against Perl timings."
   (declare (type string string))
@@ -90,12 +73,7 @@ against Perl timings."
       lispworks
       (and sbcl sb-thread))
 (defun threaded-scan (scanner target-string &key (threads 10) (repetitions 5000))
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Auxiliary function used by TEST to check whether SCANNER is thread-safe."
   (full-gc)
   (let ((collector (make-array threads))
@@ -155,32 +133,26 @@ against Perl timings."
                                   :defaults *cl-ppcre-test-base-directory*)
                    file-name-provided-p)
                   threaded)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (ignorable threaded))
   "Loop through all test cases in FILE-NAME and print report. Only in
 LispWorks and SCL: If THREADED is true, also test whether the scanners
 work multi-threaded."
   (with-open-file (stream file-name
-                          #+(or :allegro :clisp :scl)
+                          #+(or :allegro :clisp :scl :sbcl)
                           :external-format
-                          #+(or :allegro :clisp :scl)
+                          #+(or :allegro :clisp :scl :sbcl)
                           (if file-name-provided-p
                             :default
-                            #+:allegro :iso-8859-1
-                            #+:clisp charset:iso-8859-1
-                            #+:scl :iso-8859-1))
+                            #+(or :allegro :scl :sbcl) :iso-8859-1
+                            #+:clisp charset:iso-8859-1))
     (loop with testcount of-type fixnum = 0
           with *regex-char-code-limit* = (if file-name-provided-p
                                            *regex-char-code-limit*
                                            ;; the standard test suite
-                                           ;; doesn't need full
-                                           ;; Unicode support
-                                           255)
+                                           ;; doesn't need Unicode
+                                           ;; support
+                                           256)
           with *allow-quoting* = (if file-name-provided-p
                                    *allow-quoting*
                                    t)

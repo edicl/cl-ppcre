@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/load.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/load.lisp,v 1.13 2005/04/01 21:29:09 edi Exp $
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz.  All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz.  All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -27,36 +27,41 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-user)
+(in-package :cl-user)
 
-(defparameter *cl-ppcre-base-directory*
-  (make-pathname :name nil :type nil :version nil
-                 :defaults (parse-namestring *load-truename*)))
-
-(loop for file in '("packages"
+(let ((cl-ppcre-base-directory
+        (make-pathname :name nil :type nil :version nil
+                       :defaults (parse-namestring *load-truename*)))
+      must-compile)
+  (with-compilation-unit ()
+    (dolist (file '("packages"
                     "specials"
                     "util"
                     "errors"
-                    "lexer"
-                    "parser"
-                    "regex-class"
-                    "convert"
-                    "optimize"
-                    "closures"
-                    "repetition-closures"
-                    "scanner"
+                    #-:use-acl-regexp2-engine "lexer"
+                    #-:use-acl-regexp2-engine "parser"
+                    #-:use-acl-regexp2-engine "regex-class"
+                    #-:use-acl-regexp2-engine "convert"
+                    #-:use-acl-regexp2-engine "optimize"
+                    #-:use-acl-regexp2-engine "closures"
+                    #-:use-acl-regexp2-engine "repetition-closures"
+                    #-:use-acl-regexp2-engine "scanner"
                     "api"
-                    "ppcre-tests")
-      do (let ((pathname (make-pathname :name file :type "lisp" :version nil
-                                        :defaults *cl-ppcre-base-directory*)))
-           #-:cormanlisp
-           (let ((compiled-pathname (compile-file-pathname pathname)))
-             (unless (probe-file compiled-pathname)
-               (compile-file pathname))
-             (setq pathname compiled-pathname))
-           (load pathname)))
-
-
+                    "ppcre-tests"))
+      (let ((pathname (make-pathname :name file :type "lisp" :version nil
+                                     :defaults cl-ppcre-base-directory)))
+        ;; don't use COMPILE-FILE in Corman Lisp, it's broken - LOAD
+        ;; will yield compiled functions anyway
+        #-:cormanlisp
+        (let ((compiled-pathname (compile-file-pathname pathname)))
+          (unless (and (not must-compile)
+                       (probe-file compiled-pathname)
+                       (< (file-write-date pathname)
+                          (file-write-date compiled-pathname)))
+            (setq must-compile t)
+            (compile-file pathname))
+          (setq pathname compiled-pathname))
+        (load pathname)))))
 
 
 

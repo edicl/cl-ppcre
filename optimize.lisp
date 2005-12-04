@@ -1,10 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/optimize.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/optimize.lisp,v 1.26 2005/04/13 15:35:57 edi Exp $
 
 ;;; This file contains optimizations which can be applied to converted
 ;;; parse trees.
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -32,37 +32,8 @@
 
 (in-package #:cl-ppcre)
 
-(defun string-list-to-simple-string (string-list)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Concatenates a list of strings to one simple-string."
-  ;; this function provided by JP Massar; note that we can't use APPLY
-  ;; with CONCATENATE here because of CALL-ARGUMENTS-LIMIT
-  (let ((total-size 0))
-    (declare (type fixnum total-size))
-    (dolist (string string-list)
-      (declare (type string string))
-      (incf total-size (length string)))
-    (let ((result-string (make-sequence 'simple-string total-size))
-          (curr-pos 0))
-      (declare (type fixnum curr-pos))
-      (dolist (string string-list)
-        (declare (type string string))
-        (replace result-string string :start1 curr-pos)
-        (incf curr-pos (length string)))
-      result-string)))
-
 (defgeneric flatten (regex)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (:documentation "Merges adjacent sequences and alternations, i.e. it
 transforms #<SEQ #<STR \"a\"> #<SEQ #<STR \"b\"> #<STR \"c\">>> to
 #<SEQ #<STR \"a\"> #<STR \"b\"> #<STR \"c\">>. This is a destructive
@@ -148,17 +119,12 @@ operation on REGEX."))
       regex)
     (t
       ;; otherwise (ANCHOR, BACK-REFERENCE, CHAR-CLASS, EVERYTHING,
-      ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, and WORD-BOUNDARY) do
-      ;; nothing
+      ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY)
+      ;; do nothing
       regex)))
 
 (defgeneric gather-strings (regex)
-    (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+    (declare #.*standard-optimize-settings*)
   (:documentation "Collects adjacent strings or characters into one
 string provided they have the same case mode. This is a destructive
 operation on REGEX."))
@@ -310,19 +276,14 @@ operation on REGEX."))
       regex)
     (t
       ;; otherwise (ANCHOR, BACK-REFERENCE, CHAR-CLASS, EVERYTHING,
-      ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, and WORD-BOUNDARY) do
-      ;; nothing
+      ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY)
+      ;; do nothing
       regex)))
 
 ;; Note that START-ANCHORED-P will be called after FLATTEN and GATHER-STRINGS.
 
 (defgeneric start-anchored-p (regex &optional in-seq-p)
-    (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+    (declare #.*standard-optimize-settings*)
   (:documentation "Returns T if REGEX starts with a \"real\" start
 anchor, i.e. one that's not in multi-line mode, NIL otherwise. If
 IN-SEQ-P is true the function will return :ZERO-LENGTH if REGEX is a
@@ -378,6 +339,12 @@ zero-length assertion."))
       (if in-seq-p
         :zero-length
         nil))
+    (filter
+      (if (and in-seq-p
+               (len regex)
+               (zerop (len regex)))
+        :zero-length
+        nil))
     (t
       ;; BACK-REFERENCE, CHAR-CLASS, EVERYTHING, and STR
       nil)))
@@ -385,12 +352,7 @@ zero-length assertion."))
 ;; Note that END-STRING-AUX will be called after FLATTEN and GATHER-STRINGS.
 
 (defgeneric end-string-aux (regex &optional old-case-insensitive-p)
-    (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+    (declare #.*standard-optimize-settings*)
   (:documentation "Returns the constant string (if it exists) REGEX
 ends with wrapped into a STR object, otherwise NIL.
 OLD-CASE-INSENSITIVE-P is the CASE-INSENSITIVE-P slot of the last STR
@@ -509,19 +471,17 @@ function called by END-STRIN.)"))
                      :case-insensitive-p :void))
     (t
       ;; (ALTERNATION, BACK-REFERENCE, BRANCH, CHAR-CLASS, EVERYTHING,
-      ;; REPETITION)
+      ;; REPETITION, FILTER)
       nil)))
+
+(defgeneric end-string (regex)
+  (declare #.*standard-optimize-settings*)
+  (:documentation "Returns the constant string (if it exists) REGEX ends with wrapped
+into a STR object, otherwise NIL."))
 
 (defmethod end-string ((regex regex))
   (declare (special end-string-offset))
-    (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Returns the constant string (if it exists) REGEX ends with wrapped
-into a STR object, otherwise NIL."
+    (declare #.*standard-optimize-settings*)
   ;; LAST-STR points to the last STR object (seen from the end) that's
   ;; part of END-STRING; CONTINUEP is set to T if we stop collecting
   ;; in the middle of a SEQ
@@ -539,12 +499,7 @@ into a STR object, otherwise NIL."
               end-string-offset (offset last-str))))))
 
 (defgeneric compute-min-rest (regex current-min-rest)
-    (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+    (declare #.*standard-optimize-settings*)
   (:documentation "Returns the minimal length of REGEX plus
 CURRENT-MIN-REST. This is similar to REGEX-MIN-LENGTH except that it
 recurses down into REGEX and sets the MIN-REST slots of REPETITION
@@ -566,6 +521,9 @@ objects."))
 
 (defmethod compute-min-rest ((str str) current-min-rest)
   (+ current-min-rest (len str)))
+    
+(defmethod compute-min-rest ((filter filter) current-min-rest)
+  (+ current-min-rest (or (len filter) 0)))
     
 (defmethod compute-min-rest ((repetition repetition) current-min-rest)
   (setf (min-rest repetition) current-min-rest)

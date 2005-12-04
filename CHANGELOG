@@ -1,3 +1,124 @@
+Version 1.2.12
+2005-11-01
+REGEX-APROPOS-AUX now also uses :INHERITED
+Fixed typo in parser.lisp (thanks to Derek Peschel)
+Fixed value of *REGEX-CHAR-CODE-LIMIT* in docs and test (thanks to Christophe Rhodes)
+
+Version 1.2.11
+2005-08-01
+Added external format for SBCL in ppcre-tests.lisp (thanks to Christophe Rhodes)
+
+Version 1.2.10
+2005-07-20
+Fixed bug in CHAR-SEARCHER-AUX (caught by Peter Schuller)
+Don't redefine what's already there (for LispWorks)
+
+Version 1.2.9
+2005-06-27
+Hide compiler macros from CCL (thanks to Karsten Poeck)
+
+Version 1.2.8
+2005-06-10
+Change EQ to EQL in REGEX-LENGTH for ANSI conformance and ABCL compatibility (thanks to Peter Graves)
+
+Version 1.2.7
+2005-05-16
+Added lispworks-defsystem.lisp (thanks to Wade Humeniuk)
+Fixed bug in WORD-BOUNDARY-P
+
+Version 1.2.6
+2005-04-13
+Added some DEFGENERICs to appease SBCL (thanks to Alan Shields)
+Removed wrong FTYPE declaration for STR (thanks to Alan Shields)
+
+Version 1.2.5
+2005-03-09
+Customizable optimize qualities (thanks to Damien Kick)
+
+Version 1.2.4
+2005-03-07
+Changed DEBUG optimize quality from 0 to 1
+
+Version 1.2.3
+2005-02-02
+Wrapped WITH-COMPILATION-UNIT around loop in load.lisp
+
+Version 1.2.2
+2005-02-02
+Fixed bug in hash table optimization (introduced in 1.1.0)
+
+Version 1.2.1
+2005-01-25
+There was a wrong read-time conditional in api.lisp, sorry
+
+Version 1.2.0
+2005-01-24
+AllegroCL compatibility mode
+Fixed broken load.lisp file (caught by Jim Prewett and Zach Beane)
+
+Version 1.1.0
+2005-01-23
+Cleaned up load.lisp and cl-ppcre.asd
+Make large hash tables smaller, if possible
+Correct treatment of constant regular expressions in DO-SCANS
+
+Version 1.0.0
+2004-12-22
+Special anniversary release... :)
+
+Version 0.9.4
+2004-12-18
+Fixed bug in NORMALIZE-VAR-LIST (caught by Dave Roberts)
+
+Version 0.9.3
+2004-12-09
+Fixed bug in CREATE-SCANNER-AUX (caught by Allan Ruttenberg and Gary Byers)
+
+Version 0.9.2
+2004-12-06
+More compiler macros (thanks to Allan Ruttenberg)
+
+Version 0.9.1
+2004-11-29
+Shortcuts for REGISTER-GROUPS-BIND and DO-REGISTER-GROUPS (suggested by Alexander Kjeldaas)
+
+Version 0.9.0
+2004-10-14
+Experimental support for "filters"
+Bugfix for standalone regular expressions (ACCUMULATE-START-P wasn't set to NIL)
+
+Version 0.8.1
+2004-09-30
+Patches for Genera 8.5 (thanks to Patrick O'Donnell)
+
+Version 0.8.0
+2004-09-16
+Added parse tree synonyms (thanks to Patrick O'Donnell)
+
+Version 0.7.9
+2004-07-13
+Fixed bug in DO-SCANS (caught by Jan Rychter)
+
+Version 0.7.8
+2004-07-13
+New SIMPLE-CALLS keyword argument for REGEX-REPLACE(-ALL)
+Added environment parameter to compiler macros (thanks to c.l.l article <aczhx5hj.fsf@ccs.neu.edu> by Joe Marshall)
+Added compiler macros for SCAN-TO-STRINGS and REGEX-REPLACE(-ALL) (they somehow got lost)
+
+Version 0.7.7
+2004-05-19
+Fixed bug in NEWLINE-SKIPPER (caught by RegexCoach user Thomas-Paz Hartman)
+Added doc strings for PPCRE-SYNTAX-ERROR and friends (after playing with slime-apropos-package)
+Added hyperdoc support
+
+Version 0.7.6
+2004-04-20
+The closures created by CREATE-BMH-MATCHER now cleanly cope with negative arguments (bug caught by Damien Kick)
+
+Version 0.7.5
+2004-04-19
+Fixed a bug with constant-length repetitions of . (dot) in single-line mode (caught by RegexCoach user Lee Gold)
+
 Version 0.7.4
 2004-02-16
 Fixed wrong call to SIGNAL-PPCRE-SIGNAL-ERROR in lexer.lisp (caught by Peter Graves)
@@ -6,7 +127,7 @@ Compiler macro for SPLIT
 
 Version 0.7.3
 2004-01-28
-Fixed bug in CURRENT-MIN-REST for lookaheads (reported by Thomas-Paz Hartman)
+Fixed bug in CURRENT-MIN-REST for lookaheads (reported by RegexCoach user Thomas-Paz Hartman)
 Added tests for this bug
 
 Version 0.7.2

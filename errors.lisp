@@ -1,7 +1,7 @@
-;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE-LISP; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/errors.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
+;;; $Header: /usr/local/cvsrep/cl-ppcre/errors.lisp,v 1.14 2005/04/01 21:29:09 edi Exp $
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -50,7 +50,19 @@ this type."))
                      (simple-condition-format-control condition)
                      (simple-condition-format-arguments condition)
                      (ppcre-syntax-error-pos condition)
-                     (ppcre-syntax-error-string condition)))))
+                     (ppcre-syntax-error-string condition))))
+  (:documentation "Signaled if CL-PPCRE's parser encounters an error
+when trying to parse a regex string or to convert a parse tree into
+its internal representation."))
+
+(setf (documentation 'ppcre-syntax-error-string 'function)
+      "Returns the string the parser was parsing when the error was
+encountered \(or NIL if the error happened while trying to convert a
+parse tree).")
+
+(setf (documentation 'ppcre-syntax-error-pos 'function)
+      "Returns the position within the string where the error occured
+\(or NIL if the error happened while trying to convert a parse tree")
 
 (define-condition ppcre-invocation-error (ppcre-error)
   ()

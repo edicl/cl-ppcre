@@ -1,11 +1,11 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/regex-class.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/regex-class.lisp,v 1.26 2005/06/10 10:23:42 edi Exp $
 
 ;;; This file defines the REGEX class and some utility methods for
 ;;; this class. REGEX objects are used to represent the (transformed)
 ;;; parse trees internally
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -33,221 +33,243 @@
 
 (in-package #:cl-ppcre)
 
-(locally
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  (defclass regex ()
-    ()
-    (:documentation "The REGEX base class. All other classes inherit from this one."))
+;; Genera need the eval-when, here, or the types created by the class
+;; definitions aren't seen by the typep calls later in the file.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (locally
+    (declare #.*standard-optimize-settings*)
+    (defclass regex ()
+         ()
+      (:documentation "The REGEX base class. All other classes inherit
+from this one."))
 
 
-  (defclass seq (regex)
-    ((elements :initarg :elements
-               :accessor elements
-               :type cons
-               :documentation "A list of REGEX objects."))
-    (:documentation "SEQ objects represents sequences of
+    (defclass seq (regex)
+         ((elements :initarg :elements
+                    :accessor elements
+                    :type cons
+                    :documentation "A list of REGEX objects."))
+      (:documentation "SEQ objects represents sequences of
 regexes. (Like \"ab\" is the sequence of \"a\" and \"b\".)"))
 
-  (defclass alternation (regex)
-    ((choices :initarg :choices
-              :accessor choices
-              :type cons
-              :documentation "A list of REGEX objects"))
-    (:documentation "ALTERNATION objects represent alternations of
+    (defclass alternation (regex)
+         ((choices :initarg :choices
+                   :accessor choices
+                   :type cons
+                   :documentation "A list of REGEX objects"))
+      (:documentation "ALTERNATION objects represent alternations of
 regexes. (Like \"a|b\" ist the alternation of \"a\" or \"b\".)"))
 
-  (defclass lookahead (regex)
-    ((regex :initarg :regex
-            :accessor regex
-            :documentation "The REGEX object we're checking.")
-     (positivep :initarg :positivep
-                :reader positivep
-                :documentation "Whether this assertion is positive."))
-    (:documentation "LOOKAHEAD objects represent look-ahead assertions."))
+    (defclass lookahead (regex)
+         ((regex :initarg :regex
+                 :accessor regex
+                 :documentation "The REGEX object we're checking.")
+          (positivep :initarg :positivep
+                     :reader positivep
+                     :documentation "Whether this assertion is positive."))
+      (:documentation "LOOKAHEAD objects represent look-ahead assertions."))
 
-  (defclass lookbehind (regex)
-    ((regex :initarg :regex
-            :accessor regex
-            :documentation "The REGEX object we're checking.")
-     (positivep :initarg :positivep
-                :reader positivep
-                :documentation "Whether this assertion is positive.")
-     (len :initarg :len
-          :accessor len
-          :type fixnum
-          :documentation "The (fixed) length of the enclosed regex."))
-    (:documentation "LOOKBEHIND objects represent look-behind assertions."))
-
-  (defclass repetition (regex)
-    ((regex :initarg :regex
-            :accessor regex
-            :documentation "The REGEX that's repeated.")
-     (greedyp :initarg :greedyp
-              :reader greedyp
-              :documentation "Whether the repetition is greedy.")
-     (minimum :initarg :minimum
-              :accessor minimum
-              :type fixnum
-              :documentation "The minimal number of repetitions.")
-     (maximum :initarg :maximum
-              :accessor maximum
-              :documentation "The maximal number of repetitions.
-Can be NIL for unbounded.")
-     (min-len :initarg :min-len
-              :reader min-len
-              :documentation "The minimal length of the enclosed regex.")
-     (len :initarg :len
-          :reader len
-          :documentation "The length of the enclosed regex. NIL if unknown.")
-     (min-rest :initform 0
-               :accessor min-rest
+    (defclass lookbehind (regex)
+         ((regex :initarg :regex
+                 :accessor regex
+                 :documentation "The REGEX object we're checking.")
+          (positivep :initarg :positivep
+                     :reader positivep
+                     :documentation "Whether this assertion is positive.")
+          (len :initarg :len
+               :accessor len
                :type fixnum
-               :documentation "The minimal number of characters which must
+               :documentation "The (fixed) length of the enclosed regex."))
+      (:documentation "LOOKBEHIND objects represent look-behind assertions."))
+
+    (defclass repetition (regex)
+         ((regex :initarg :regex
+                 :accessor regex
+                 :documentation "The REGEX that's repeated.")
+          (greedyp :initarg :greedyp
+                   :reader greedyp
+                   :documentation "Whether the repetition is greedy.")
+          (minimum :initarg :minimum
+                   :accessor minimum
+                   :type fixnum
+                   :documentation "The minimal number of repetitions.")
+          (maximum :initarg :maximum
+                   :accessor maximum
+                   :documentation "The maximal number of repetitions.
+Can be NIL for unbounded.")
+          (min-len :initarg :min-len
+                   :reader min-len
+                   :documentation "The minimal length of the enclosed regex.")
+          (len :initarg :len
+               :reader len
+               :documentation "The length of the enclosed regex. NIL
+if unknown.")
+          (min-rest :initform 0
+                    :accessor min-rest
+                    :type fixnum
+                    :documentation "The minimal number of characters which must
 appear after this repetition.")
-     (contains-register-p :initarg :contains-register-p
-                          :reader contains-register-p
-                          :documentation "If the regex contains a register."))
-    (:documentation "REPETITION objects represent repetitions of regexes."))
+          (contains-register-p :initarg :contains-register-p
+                               :reader contains-register-p
+                               :documentation "If the regex contains a register."))
+      (:documentation "REPETITION objects represent repetitions of regexes."))
 
-  (defclass register (regex)
-    ((regex :initarg :regex
-            :accessor regex
-            :documentation "The inner regex.")
-     (num :initarg :num
-          :reader num
-          :type fixnum
-          :documentation "The number of this register, starting from 0.
+    (defclass register (regex)
+         ((regex :initarg :regex
+                 :accessor regex
+                 :documentation "The inner regex.")
+          (num :initarg :num
+               :reader num
+               :type fixnum
+               :documentation "The number of this register, starting from 0.
 This is the index into *REGS-START* and *REGS-END*."))
-    (:documentation "REGISTER objects represent register groups."))
+      (:documentation "REGISTER objects represent register groups."))
 
-  (defclass standalone (regex)
-    ((regex :initarg :regex
-            :accessor regex
-            :documentation "The inner regex."))
-    (:documentation "A standalone regular expression."))
+    (defclass standalone (regex)
+         ((regex :initarg :regex
+                 :accessor regex
+                 :documentation "The inner regex."))
+      (:documentation "A standalone regular expression."))
   
-  (defclass back-reference (regex)
-    ((num :initarg :num
-          :accessor num
-          :type fixnum
-          :documentation "The number of the register this reference refers to.")
-     (case-insensitive-p :initarg :case-insensitive-p
-                         :reader case-insensitive-p
-                         :documentation "Whether we check case-insensitively."))
-    (:documentation "BACK-REFERENCE objects represent backreferences."))
+    (defclass back-reference (regex)
+         ((num :initarg :num
+               :accessor num
+               :type fixnum
+               :documentation "The number of the register this
+reference refers to.")
+          (case-insensitive-p :initarg :case-insensitive-p
+                              :reader case-insensitive-p
+                              :documentation "Whether we check
+case-insensitively."))
+      (:documentation "BACK-REFERENCE objects represent backreferences."))
 
-  (defclass char-class (regex)
-    ((hash :initarg :hash
-           :reader hash
-           :type (or hash-table null)
-           :documentation "A hash table the keys of which are the characters;
-the values are always T.")
-     (case-insensitive-p :initarg :case-insensitive-p
-                         :reader case-insensitive-p
-                         :documentation "If the char class case-insensitive.")
-     (invertedp :initarg :invertedp
-                :reader invertedp
-                :documentation "Whether we mean the inverse of the char class.")
-     (word-char-class-p :initarg :word-char-class-p
-                        :reader word-char-class-p
-                        :documentation "Whether this CHAR CLASS
+    (defclass char-class (regex)
+         ((hash :initarg :hash
+                :reader hash
+                :type (or hash-table null)
+                :documentation "A hash table the keys of which are the
+characters; the values are always T.")
+          (case-insensitive-p :initarg :case-insensitive-p
+                              :reader case-insensitive-p
+                              :documentation "If the char class
+case-insensitive.")
+          (invertedp :initarg :invertedp
+                     :reader invertedp
+                     :documentation "Whether we mean the inverse of
+the char class.")
+          (word-char-class-p :initarg :word-char-class-p
+                             :reader word-char-class-p
+                             :documentation "Whether this CHAR CLASS
 represents the special class WORD-CHAR-CLASS."))
-    (:documentation "CHAR-CLASS objects represent character classes."))
+      (:documentation "CHAR-CLASS objects represent character classes."))
 
-  (defclass str (regex)
-    ((str :initarg :str
-          :accessor str
-          :type string
-          :documentation "The actual string.")
-     (len :initform 0
-          :accessor len
-          :type fixnum
-          :documentation "The length of the string.")
-     (case-insensitive-p :initarg :case-insensitive-p
-                         :reader case-insensitive-p
-                         :documentation "If we match case-insensitively.")
-     (offset :initform nil
-             :accessor offset
-             :documentation "Offset from the left of the whole parse tree.
-The first regex has offset 0.
-NIL if unknown, i.e. behind a variable-length regex.")
-     (skip :initform nil
-           :initarg :skip
-           :accessor skip
-           :documentation "If we can avoid testing for this string
-because the SCAN function has done this already.")
-     (start-of-end-string-p :initform nil
-                            :accessor start-of-end-string-p
-                            :documentation "If this is the unique STR which
-starts END-STRING (a slot of MATCHER)."))
-    (:documentation "STR objects represent string."))
+    (defclass str (regex)
+         ((str :initarg :str
+               :accessor str
+               :type string
+               :documentation "The actual string.")
+          (len :initform 0
+               :accessor len
+               :type fixnum
+               :documentation "The length of the string.")
+          (case-insensitive-p :initarg :case-insensitive-p
+                              :reader case-insensitive-p
+                              :documentation "If we match case-insensitively.")
+          (offset :initform nil
+                  :accessor offset
+                  :documentation "Offset from the left of the whole
+parse tree. The first regex has offset 0. NIL if unknown, i.e. behind
+a variable-length regex.")
+          (skip :initform nil
+                :initarg :skip
+                :accessor skip
+                :documentation "If we can avoid testing for this
+string because the SCAN function has done this already.")
+          (start-of-end-string-p :initform nil
+                                 :accessor start-of-end-string-p
+                                 :documentation "If this is the unique
+STR which starts END-STRING (a slot of MATCHER)."))
+      (:documentation "STR objects represent string."))
 
-  (defclass anchor (regex)
-    ((startp :initarg :startp
-             :reader startp
-             :documentation "Whether this is a \"start anchor\".")
-     (multi-line-p :initarg :multi-line-p
-                   :reader multi-line-p
-                   :documentation "Whether we're in multi-line mode,
+    (defclass anchor (regex)
+         ((startp :initarg :startp
+                  :reader startp
+                  :documentation "Whether this is a \"start anchor\".")
+          (multi-line-p :initarg :multi-line-p
+                        :reader multi-line-p
+                        :documentation "Whether we're in multi-line mode,
 i.e. whether each #\\Newline is surrounded by anchors.")
-     (no-newline-p :initarg :no-newline-p
-                   :reader no-newline-p
-                   :documentation "Whether we ignore #\\Newline at the end."))
-    (:documentation "ANCHOR objects represent anchors like \"^\" or \"$\"."))
+          (no-newline-p :initarg :no-newline-p
+                        :reader no-newline-p
+                        :documentation "Whether we ignore #\\Newline at the end."))
+      (:documentation "ANCHOR objects represent anchors like \"^\" or \"$\"."))
 
-  (defclass everything (regex)
-    ((single-line-p :initarg :single-line-p
-                    :reader single-line-p
-                    :documentation "Whether we're in single-line mode,
+    (defclass everything (regex)
+         ((single-line-p :initarg :single-line-p
+                         :reader single-line-p
+                         :documentation "Whether we're in single-line mode,
 i.e. whether we also match #\\Newline."))
-    (:documentation "EVERYTHING objects represent regexes matching
+      (:documentation "EVERYTHING objects represent regexes matching
 \"everything\", i.e. dots."))
 
-  (defclass word-boundary (regex)
-    ((negatedp :initarg :negatedp
-               :reader negatedp
-               :documentation "Whether we mean the opposite,
+    (defclass word-boundary (regex)
+         ((negatedp :initarg :negatedp
+                    :reader negatedp
+                    :documentation "Whether we mean the opposite,
 i.e. no word-boundary."))
-    (:documentation "WORD-BOUNDARY objects represent word-boundary assertions."))
+      (:documentation "WORD-BOUNDARY objects represent word-boundary assertions."))
 
-  (defclass branch (regex)
-    ((test :initarg :test
-           :accessor test
-           :documentation "The test of this branch, one of LOOKAHEAD,
-LOOKBEHIND, or a number.")
-     (then-regex :initarg :then-regex
-                 :accessor then-regex
-                 :documentation "The regex that's to be matched if the
+    (defclass branch (regex)
+         ((test :initarg :test
+                :accessor test
+                :documentation "The test of this branch, one of
+LOOKAHEAD, LOOKBEHIND, or a number.")
+          (then-regex :initarg :then-regex
+                      :accessor then-regex
+                      :documentation "The regex that's to be matched if the
 test succeeds.")
-     (else-regex :initarg :else-regex
-                 :initform (make-instance 'void)
-                 :accessor else-regex
-                 :documentation "The regex that's to be matched if the
+          (else-regex :initarg :else-regex
+                      :initform (make-instance 'void)
+                      :accessor else-regex
+                      :documentation "The regex that's to be matched if the
 test fails."))
-    (:documentation "BRANCH objects represent Perl's conditional regular
+      (:documentation "BRANCH objects represent Perl's conditional regular
 expressions."))
+    
+    (defclass filter (regex)
+         ((fn :initarg :fn
+              :accessor fn
+              :type (or function symbol)
+              :documentation "The user-defined function.")
+          (len :initarg :len
+               :reader len
+               :documentation "The fixed length of this filter or NIL."))
+      (:documentation "FILTER objects represent arbitrary functions
+defined by the user."))
 
-  (defclass void (regex)
-    ()
-    (:documentation "VOID objects represent empty regular expressions.")))
+    (defclass void (regex)
+         ()
+      (:documentation "VOID objects represent empty regular expressions."))))
 
-(declaim (ftype (function (t) simple-string) str))
+(defmethod initialize-instance :after ((char-class char-class) &rest init-args)
+  (declare #.*standard-optimize-settings*)
+  "Make large hash tables smaller, if possible."
+  (let ((hash (getf init-args :hash)))
+    (when (and hash
+               (> *regex-char-code-limit* 256)
+               (> (hash-table-count hash)
+                  (/ *regex-char-code-limit* 2)))
+      (setf (slot-value char-class 'hash)
+              (merge-inverted-hash (make-hash-table)
+                                   hash)
+            (slot-value char-class 'invertedp)
+              (not (slot-value char-class 'invertedp))))))
 
 ;;; The following four methods allow a VOID object to behave like a
 ;;; zero-length STR object (only readers needed)
 
 (defmethod initialize-instance :after ((str str) &rest init-args)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (ignore init-args))
   "Automatically computes the length of a STR after initialization."
   (let ((str-slot (slot-value str 'str)))
@@ -256,48 +278,23 @@ expressions."))
   (setf (len str) (length (str str))))
 
 (defmethod len ((void void))
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   0)
 
 (defmethod str ((void void))
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "")
 
 (defmethod skip ((void void))
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   nil)
 
 (defmethod start-of-end-string-p ((void void))
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   nil)
 
 (defgeneric case-mode (regex old-case-mode)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (:documentation "Utility function used by the optimizer (see GATHER-STRINGS).
 Returns a keyword denoting the case-(in)sensitivity of a STR or its
 second argument if the STR has length 0. Returns NIL for REGEX objects
@@ -316,12 +313,7 @@ which are not of type STR."))
   nil)
 
 (defgeneric copy-regex (regex)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (:documentation "Implements a deep copy of a REGEX object."))
 
 (defmethod copy-regex ((anchor anchor))
@@ -406,6 +398,11 @@ which are not of type STR."))
                  :str (str str)
                  :case-insensitive-p (case-insensitive-p str)))
 
+(defmethod copy-regex ((filter filter))
+  (make-instance 'filter
+                 :fn (fn filter)
+                 :len (len filter)))
+
 ;;; Note that COPY-REGEX and REMOVE-REGISTERS could have easily been
 ;;; wrapped into one function. Maybe in the next release...
 
@@ -417,12 +414,7 @@ which are not of type STR."))
 ;;; and therefore we stop REGISTER removal once we see an ALTERNATION.
 
 (defgeneric remove-registers (regex)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (:documentation "Returns a deep copy of a REGEX (see COPY-REGEX) and
 optionally removes embedded REGISTER objects if possible and if the
 special variable REMOVE-REGISTERS-P is true."))
@@ -491,12 +483,7 @@ special variable REMOVE-REGISTERS-P is true."))
                  :elements (mapcar #'remove-registers (elements seq))))
 
 (defgeneric everythingp (regex)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (:documentation "Returns an EVERYTHING object if REGEX is equivalent
 to this object, otherwise NIL. So, \"(.){1}\" would return true
 (i.e. the object corresponding to \".\", for example."))
@@ -539,16 +526,11 @@ to this object, otherwise NIL. So, \"(.){1}\" would return true
 
 (defmethod everythingp ((regex regex))
   ;; the general case for ANCHOR, BACK-REFERENCE, BRANCH, CHAR-CLASS,
-  ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, and WORD-BOUNDARY
+  ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY
   nil)
 
 (defgeneric regex-length (regex)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (:documentation "Return the length of REGEX if it is fixed, NIL otherwise."))
 
 (defmethod regex-length ((seq seq))
@@ -586,7 +568,7 @@ to this object, otherwise NIL. So, \"(.){1}\" would return true
                (maximum maximum))
       repetition
     (if (and len
-             (eq minimum maximum))
+             (eql minimum maximum))
       (* minimum len)
       nil)))
 
@@ -610,18 +592,16 @@ to this object, otherwise NIL. So, \"(.){1}\" would return true
 (defmethod regex-length ((str str))
   (len str))
 
+(defmethod regex-length ((filter filter))
+  (len filter))
+
 (defmethod regex-length ((regex regex))
   ;; the general case for ANCHOR, LOOKAHEAD, LOOKBEHIND, VOID, and
   ;; WORD-BOUNDARY (which all have zero-length)
   0)
 
 (defgeneric regex-min-length (regex)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (:documentation "Returns the minimal length of REGEX."))
 
 (defmethod regex-min-length ((seq seq))
@@ -662,18 +642,17 @@ to this object, otherwise NIL. So, \"(.){1}\" would return true
 (defmethod regex-min-length ((str str))
   (len str))
     
+(defmethod regex-min-length ((filter filter))
+  (or (len filter)
+      0))
+
 (defmethod regex-min-length ((regex regex))
   ;; the general case for ANCHOR, BACK-REFERENCE, LOOKAHEAD,
   ;; LOOKBEHIND, VOID, and WORD-BOUNDARY
   0)
 
 (defgeneric compute-offsets (regex start-pos)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (:documentation "Returns the offset the following regex would have
 relative to START-POS or NIL if we can't compute it. Sets the OFFSET
 slot of REGEX to START-POS if REGEX is a STR. May also affect OFFSET
@@ -745,6 +724,12 @@ slots of STR objects further down the tree."))
   ;; currently we just give up and return NIL
   (declare (ignore start-pos))
   nil)
+
+(defmethod compute-offsets ((filter filter) start-pos)
+  (let ((len (len filter)))
+    (if len
+      (+ start-pos len)
+      nil)))
 
 (defmethod compute-offsets ((regex regex) start-pos)
   ;; the general case for ANCHOR, LOOKAHEAD, LOOKBEHIND, VOID, and

@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/repetition-closures.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/repetition-closures.lisp,v 1.24 2005/04/13 15:35:58 edi Exp $
 
 ;;; This is actually a part of closures.lisp which we put into a
 ;;; separate file because it is rather complex. We only deal with
@@ -7,7 +7,7 @@
 ;;; rather crazy micro-optimizations which were introduced to be as
 ;;; competitive with Perl as possible in tight loops.
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -117,12 +117,7 @@ repetition matches at CURR-POS."
             (go backward-loop)))))))
 
 (defun create-greedy-everything-matcher (maximum min-rest next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (type fixnum min-rest)
            (type function next-fn))
   "Creates a closure which just matches as far ahead as possible,
@@ -149,18 +144,16 @@ i.e. a closure for a dot in single-line mode."
         (loop for curr-pos of-type fixnum from target-end-pos downto start-pos
               thereis (funcall next-fn curr-pos))))))
 
-(defmethod create-greedy-constant-length-matcher ((repetition repetition)
-                                                  next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Creates a closure which tries to match REPETITION. It is assumed
+(defgeneric create-greedy-constant-length-matcher (repetition next-fn)
+  (declare #.*standard-optimize-settings*)
+  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
 that REPETITION is greedy and the minimal number of repetitions is
 zero. It is furthermore assumed that the inner regex of REPETITION is
-of fixed length and doesn't contain registers."
+of fixed length and doesn't contain registers."))
+
+(defmethod create-greedy-constant-length-matcher ((repetition repetition)
+                                                  next-fn)
+  (declare #.*standard-optimize-settings*)
   (let ((len (len repetition))
         (maximum (maximum repetition))
         (regex (regex repetition))
@@ -212,19 +205,17 @@ of fixed length and doesn't contain registers."
                   (declare (type function inner-matcher))
                   (greedy-constant-length-closure
                    (funcall inner-matcher curr-pos)))))))))
-  
-(defmethod create-greedy-no-zero-matcher ((repetition repetition) next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Creates a closure which tries to match REPETITION. It is assumed
+
+(defgeneric create-greedy-no-zero-matcher (repetition next-fn)
+  (declare #.*standard-optimize-settings*)
+  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
 that REPETITION is greedy and the minimal number of repetitions is
 zero. It is furthermore assumed that the inner regex of REPETITION can
 never match a zero-length string (or instead the maximal number of
-repetitions is 1)."
+repetitions is 1)."))
+
+(defmethod create-greedy-no-zero-matcher ((repetition repetition) next-fn)
+  (declare #.*standard-optimize-settings*)
   (let ((maximum (maximum repetition))
         ;; REPEAT-MATCHER is part of the closure's environment but it
         ;; can only be defined after GREEDY-AUX is defined
@@ -283,16 +274,14 @@ repetitions is 1)."
                   (create-matcher-aux (regex repetition) #'greedy-aux))
           #'greedy-aux)))))
 
-(defmethod create-greedy-matcher ((repetition repetition) next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Creates a closure which tries to match REPETITION. It is assumed
+(defgeneric create-greedy-matcher (repetition next-fn)
+  (declare #.*standard-optimize-settings*)
+  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
 that REPETITION is greedy and the minimal number of repetitions is
-zero."
+zero."))
+
+(defmethod create-greedy-matcher ((repetition repetition) next-fn)
+  (declare #.*standard-optimize-settings*)
   (let ((maximum (maximum repetition))
         ;; we make a reservation for our slot in *LAST-POS-STORES* because
         ;; we have to watch out for endless loops as the inner regex might
@@ -409,17 +398,15 @@ repetition matches at CURR-POS."
             while ,check-curr-pos
             finally (return (funcall next-fn curr-pos)))))))
 
-(defmethod create-non-greedy-constant-length-matcher ((repetition repetition) next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Creates a closure which tries to match REPETITION. It is assumed
+(defgeneric create-non-greedy-constant-length-matcher (repetition next-fn)
+  (declare #.*standard-optimize-settings*)
+  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
 that REPETITION is non-greedy and the minimal number of repetitions is
 zero. It is furthermore assumed that the inner regex of REPETITION is
-of fixed length and doesn't contain registers."
+of fixed length and doesn't contain registers."))
+
+(defmethod create-non-greedy-constant-length-matcher ((repetition repetition) next-fn)
+  (declare #.*standard-optimize-settings*)
   (let ((len (len repetition))
         (maximum (maximum repetition))
         (regex (regex repetition))
@@ -475,18 +462,16 @@ of fixed length and doesn't contain registers."
                   (non-greedy-constant-length-closure
                    (funcall inner-matcher curr-pos)))))))))
 
-(defmethod create-non-greedy-no-zero-matcher ((repetition repetition) next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Creates a closure which tries to match REPETITION. It is assumed
+(defgeneric create-non-greedy-no-zero-matcher (repetition next-fn)
+  (declare #.*standard-optimize-settings*)
+  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
 that REPETITION is non-greedy and the minimal number of repetitions is
 zero. It is furthermore assumed that the inner regex of REPETITION can
 never match a zero-length string (or instead the maximal number of
-repetitions is 1)."
+repetitions is 1)."))
+
+(defmethod create-non-greedy-no-zero-matcher ((repetition repetition) next-fn)
+  (declare #.*standard-optimize-settings*)
   (let ((maximum (maximum repetition))
         ;; REPEAT-MATCHER is part of the closure's environment but it
         ;; can only be defined after NON-GREEDY-AUX is defined
@@ -543,16 +528,14 @@ repetitions is 1)."
                   (create-matcher-aux (regex repetition) #'non-greedy-aux))
           #'non-greedy-aux)))))
   
-(defmethod create-non-greedy-matcher ((repetition repetition) next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Creates a closure which tries to match REPETITION. It is assumed
+(defgeneric create-non-greedy-matcher (repetition next-fn)
+  (declare #.*standard-optimize-settings*)
+  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
 that REPETITION is non-greedy and the minimal number of repetitions is
-zero."
+zero."))
+
+(defmethod create-non-greedy-matcher ((repetition repetition) next-fn)
+  (declare #.*standard-optimize-settings*)
   ;; we make a reservation for our slot in *LAST-POS-STORES* because
   ;; we have to watch out for endless loops as the inner regex might
   ;; match zero-length strings
@@ -656,18 +639,17 @@ of the repetition matches at CURR-POS."
              ;; finally call NEXT-FN if we made it that far
              (funcall next-fn target-end-pos)))))
 
-(defmethod create-constant-repetition-constant-length-matcher
-       ((repetition repetition) next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Creates a closure which tries to match REPETITION. It is assumed
+(defgeneric create-constant-repetition-constant-length-matcher
+    (repetition next-fn)
+  (declare #.*standard-optimize-settings*)
+  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
 that REPETITION has a constant number of repetitions. It is
 furthermore assumed that the inner regex of REPETITION is of fixed
-length and doesn't contain registers."
+length and doesn't contain registers."))
+
+(defmethod create-constant-repetition-constant-length-matcher
+       ((repetition repetition) next-fn)
+  (declare #.*standard-optimize-settings*)
   (let ((len (len repetition))
         (repetitions (minimum repetition))
         (regex (regex repetition)))
@@ -721,8 +703,8 @@ length and doesn't contain registers."
               (declare (type fixnum start-pos))
               (let ((next-pos (+ start-pos repetitions)))
                 (declare (type fixnum next-pos))
-                (or (<= next-pos *end-pos*)
-                    (funcall next-fn next-pos))))
+                (and (<= next-pos *end-pos*)
+                     (funcall next-fn next-pos))))
             ;; a dot which is not in single-line-mode - make sure we
             ;; don't match #\Newline
             (constant-repetition-constant-length-closure
@@ -736,15 +718,13 @@ length and doesn't contain registers."
             (constant-repetition-constant-length-closure
              (funcall inner-matcher curr-pos))))))))
   
+(defgeneric create-constant-repetition-matcher (repetition next-fn)
+  (declare #.*standard-optimize-settings*)
+  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
+that REPETITION has a constant number of repetitions."))
+
 (defmethod create-constant-repetition-matcher ((repetition repetition) next-fn)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
-  "Creates a closure which tries to match REPETITION. It is assumed
-that REPETITION has a constant number of repetitions."
+  (declare #.*standard-optimize-settings*)
   (let ((repetitions (minimum repetition))
         ;; we make a reservation for our slot in *REPEAT-COUNTERS*
         ;; because we need to keep track of the number of repetitions

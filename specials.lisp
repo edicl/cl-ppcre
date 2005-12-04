@@ -1,9 +1,9 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/specials.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.21 2005/04/01 21:29:10 edi Exp $
 
 ;;; globally declared special variables
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -30,6 +30,22 @@
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (in-package #:cl-ppcre)
+
+;;; special variables used to effect declarations
+
+(defvar *standard-optimize-settings*
+  '(optimize
+    speed
+    (safety 0)
+    (space 0)
+    (debug 1)
+    (compilation-speed 0)
+    #+:lispworks (hcl:fixnum-safety 0))
+  "The standard optimize settings used by most declaration expressions.")
+
+(defvar *special-optimize-settings*
+  '(optimize speed space)
+  "Special optimize settings used only be a few declaration expressions.")
 
 ;;; special variables used by the lexer/parser combo
 
@@ -105,3 +121,22 @@ but large) Boyer-Moore-Horspool matchers.")
   "Whether the parser should support Perl's \\Q and \\E.")
 
 (pushnew :cl-ppcre *features*)
+
+;; stuff for Nikodemus Siivola's HYPERDOC
+;; see <http://common-lisp.net/project/hyperdoc/>
+;; and <http://www.cliki.net/hyperdoc>
+
+(defvar *hyperdoc-base-uri* "http://weitz.de/cl-ppcre/")
+
+(let ((exported-symbols-alist
+       (loop for symbol being the external-symbols of :cl-ppcre
+             collect (cons symbol
+                           (concatenate 'string
+                                        "#"
+                                        (string-downcase symbol))))))
+  (defun hyperdoc-lookup (symbol type)
+    (declare (ignore type))
+    (cdr (assoc symbol
+                exported-symbols-alist
+                :test #'eq))))
+               

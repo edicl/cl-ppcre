@@ -1,11 +1,11 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/convert.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/convert.lisp,v 1.22 2005/04/01 21:29:09 edi Exp $
 
 ;;; Here the parse tree is converted into its internal representation
 ;;; using REGEX objects.  At the same time some optimizations are
 ;;; already applied.
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -50,12 +50,7 @@
   `(third ,flags))
 
 (defun set-flag (token)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (special flags))
   "Reads a flag token and sets or unsets the corresponding entry in
 the special FLAGS list."
@@ -76,12 +71,7 @@ the special FLAGS list."
       (signal-ppcre-syntax-error "Unknown flag token ~A" token))))
 
 (defun add-range-to-hash (hash from to)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (special flags))
   "Adds all characters from character FROM to character TO (inclusive)
 to the char class hash HASH. Does the right thing with respect to
@@ -102,12 +92,7 @@ case-(in)sensitivity as specified by the special variable FLAGS."
     hash))
 
 (defun convert-char-class-to-hash (list)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Combines all items in LIST into one char class hash and returns it.
 Items can be single characters, character ranges like \(:RANGE #\\A
 #\\E), or special character classes like :DIGIT-CLASS. Does the right
@@ -115,7 +100,7 @@ thing with respect to case-\(in)sensitivity as specified by the
 special variable FLAGS."
   (loop with hash = (make-hash-table :size (ceiling (expt *regex-char-code-limit* (/ 1 4)))
                                      :rehash-size (float (expt *regex-char-code-limit* (/ 1 4)))
-                                     :rehash-threshold 1.0)
+                                     :rehash-threshold #-genera 1.0 #+genera 0.99)
         for item in list
         if (characterp item)
           ;; treat a single character C like a range (:RANGE C C)
@@ -157,12 +142,7 @@ special variable FLAGS."
                                min-len
                                length
                                reg-seen)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (type fixnum minimum)
            (type (or fixnum null) maximum))
   "Splits a REPETITION object into a constant and a varying part if
@@ -230,13 +210,8 @@ the same name."
 ;; case if the regex starts with ".*" which implicitely anchors the
 ;; regex at the start (perhaps modulo #\Newline).
 
-(defmethod maybe-accumulate ((str str))
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+(defun maybe-accumulate (str)
+  (declare #.*standard-optimize-settings*)
   (declare (special accumulate-start-p starts-with))
   (declare (ftype (function (t) fixnum) len))
   "Accumulate STR into the special variable STARTS-WITH if
@@ -291,12 +266,7 @@ NIL or a STR object of the same case mode. Always returns NIL."
   nil)
 
 (defun convert-aux (parse-tree)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   (declare (special flags reg-num accumulate-start-p starts-with max-back-ref))
   "Converts the parse tree PARSE-TREE into a REGEX object and returns it.
 
@@ -538,8 +508,17 @@ Will also
                 (make-instance 'register
                                :regex (convert-aux (second parse-tree))
                                :num stored-reg-num)))
+            ;; (:FILTER <function> &optional <length>)
+            ((:filter)
+              ;; stop accumulating into STARTS-WITH
+              (setq accumulate-start-p nil)
+              (make-instance 'filter
+                             :fn (second parse-tree)
+                             :len (third parse-tree)))
             ;; (:STANDALONE <regex>)
             ((:standalone)
+              ;; stop accumulating into STARTS-WITH
+              (setq accumulate-start-p nil)
               ;; keep the effect of modifiers local to the enclosed
               ;; regex
               (let ((flags (copy-list flags)))
@@ -739,16 +718,15 @@ Will also
               (set-flag parse-tree)
               (make-instance 'void))
             (otherwise
-              (signal-ppcre-syntax-error "Unknown token ~A in parse-tree"
-                                         parse-tree))))))
+             (let ((translation (and (symbolp parse-tree)
+                                     (parse-tree-synonym parse-tree))))
+               (if translation
+                 (convert-aux (copy-tree translation))
+                 (signal-ppcre-syntax-error "Unknown token ~A in parse-tree"
+                                            parse-tree))))))))
 
 (defun convert (parse-tree)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Converts the parse tree PARSE-TREE into an equivalent REGEX object
 and returns three values: the REGEX object, the number of registers
 seen and an object the regex starts with which is either a STR object

@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre-test.asd,v 1.8 2005/11/01 09:51:01 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/lispworks-defsystem.lisp,v 1.1 2005/04/30 20:00:50 edi Exp $
 
-;;; This ASDF system definition was kindly provided by Marco Baringer.
+;;; This system definition for LispWorks was kindly provided by Wade Humeniuk
 
 ;;; Copyright (c) 2002-2005, Dr. Edmund Weitz.  All rights reserved.
 
@@ -29,13 +29,29 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(defpackage #:cl-ppcre-test.system
-  (:use #:cl
-        #:asdf))
+(in-package #:cl-user)
 
-(in-package #:cl-ppcre-test.system)
+(defparameter *cl-ppcre-base-directory*
+  (make-pathname :name nil :type nil :version nil
+                 :defaults (parse-namestring *load-truename*)))
 
-(defsystem #:cl-ppcre-test
-  :version "1.2.12"
-  :depends-on (#:cl-ppcre)
-  :components ((:file "ppcre-tests")))
+(defsystem cl-ppcre
+  (:default-pathname *cl-ppcre-base-directory*
+   :default-type :lisp-file)
+  :members ("packages"
+            "specials"
+            "util"
+            "errors"
+            "lexer"
+            "parser"
+            "regex-class"
+            "convert"
+            "optimize"
+            "closures"
+            "repetition-closures"
+            "scanner"
+            "api")
+  :rules ((:in-order-to :compile :all
+                        (:requires (:load :previous)))
+          (:in-order-to :load :all
+                        (:requires (:load :previous)))))

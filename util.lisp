@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/util.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/util.lisp,v 1.32 2005/08/23 10:32:30 edi Exp $
 
 ;;; Utility functions and constants dealing with the hash-tables
 ;;; we use to encode character classes
@@ -7,7 +7,7 @@
 ;;; Hash-tables are treated like sets, i.e. a character C is a member of the
 ;;; hash-table H iff (GETHASH C H) is true.
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -35,6 +35,10 @@
 
 (in-package #:cl-ppcre)
 
+#+:lispworks
+(import 'lw:with-unique-names)
+
+#-:lispworks
 (defmacro with-unique-names ((&rest bindings) &body body)
   "Syntax: WITH-UNIQUE-NAMES ( { var | (var x) }* ) declaration* form*
 
@@ -65,8 +69,14 @@ are discarded \(that is, the body is an implicit PROGN)."
                  bindings)
          ,@body))
 
-(defmacro rebinding (bindings &body body)
-  "REBINDING ( { var | (var prefix) }* ) form*
+#+:lispworks
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (setf (macro-function 'with-rebinding)
+          (macro-function 'lw:rebinding)))
+
+#-:lispworks
+(defmacro with-rebinding (bindings &body body)
+  "WITH-REBINDING ( { var | (var prefix) }* ) form*
 
 Evaluates a series of forms in the lexical environment that is
 formed by adding the binding of each VAR to a fresh, uninterned
@@ -94,14 +104,14 @@ are discarded \(that is, the body is an implicit PROGN)."
 
 (eval-when (:compile-toplevel :execute :load-toplevel)
   (defvar *regex-char-code-limit* char-code-limit
-    "The upper exclusive bound on the char-codes of characters
-which can occur in character classes.
-Change this value BEFORE creating scanners if you don't need
-the full Unicode support of LW, ACL, or CLISP.")
+    "The upper exclusive bound on the char-codes of characters which
+can occur in character classes.  Change this value BEFORE creating
+scanners if you don't need the Unicode support of implementations like
+AllegroCL, CLISP, LispWorks, or SBCL.")
   (declaim (type fixnum *regex-char-code-limit*))
   
   (defun make-char-hash (test)
-    (declare (optimize speed space))
+    (declare #.*special-optimize-settings*)
     "Returns a hash-table of all characters satisfying test."
     (loop with hash = (make-hash-table)
           for c of-type fixnum from 0 below char-code-limit
@@ -113,12 +123,7 @@ the full Unicode support of LW, ACL, or CLISP.")
   (declaim (inline word-char-p))
   
   (defun word-char-p (chr)
-    (declare (optimize speed
-                       (safety 0)
-                       (space 0)
-                       (debug 0)
-                       (compilation-speed 0)
-                       #+:lispworks (hcl:fixnum-safety 0)))
+    (declare #.*standard-optimize-settings*)
     "Tests whether a character is a \"word\" character.
 In the ASCII charset this is equivalent to a-z, A-Z, 0-9, or _,
 i.e. the same as Perl's [\\w]."
@@ -134,7 +139,7 @@ i.e. the same as Perl's [\\w]."
 Same as Perl's [\\s]."))
 
   (defun whitespacep (chr)
-    (declare (optimize speed space))
+    (declare #.*special-optimize-settings*)
     "Tests whether a character is whitespace,
 i.e. whether it would match [\\s] in Perl."
     (find chr +whitespace-char-string+ :test #'char=)))
@@ -158,12 +163,7 @@ i.e. whether it would match [\\s] in Perl."
     "Hash-table containing all whitespace characters."))
 
 (defun merge-hash (hash1 hash2)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Returns the \"sum\" of two hashes. This is a destructive operation
 on HASH1."
   (cond ((> (hash-table-count hash2)
@@ -180,12 +180,7 @@ on HASH1."
   hash1)
 
 (defun merge-inverted-hash (hash1 hash2)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Returns the \"sum\" of HASH1 and the \"inverse\" of HASH2. This is
 a destructive operation on HASH1."
   (loop for c of-type fixnum from 0 below *regex-char-code-limit*
@@ -195,12 +190,7 @@ a destructive operation on HASH1."
   hash1)
 
 (defun create-ranges-from-hash (hash &key downcasep)
-  (declare (optimize speed
-                     (safety 0)
-                     (space 0)
-                     (debug 0)
-                     (compilation-speed 0)
-                     #+:lispworks (hcl:fixnum-safety 0)))
+  (declare #.*standard-optimize-settings*)
   "Tries to identify up to three intervals (with respect to CHAR<)
 which together comprise HASH. Returns NIL if this is not possible.
 If DOWNCASEP is true it will treat the hash-table as if it represents
@@ -276,3 +266,33 @@ will only return the respective lower-case intervals."
               :element-type (array-element-type sequence)
               :displaced-to sequence
               :displaced-index-offset start))
+
+(defun normalize-var-list (var-list)
+  "Utility function for REGISTER-GROUPS-BIND and
+DO-REGISTER-GROUPS. Creates the long form \(a list of \(FUNCTION VAR)
+entries) out of the short form of VAR-LIST."
+  (loop for element in var-list
+        if (consp element)
+          nconc (loop for var in (rest element)
+                      collect (list (first element) var))
+        else
+          collect (list '(function identity) element)))
+
+(defun string-list-to-simple-string (string-list)
+  (declare #.*standard-optimize-settings*)
+  "Concatenates a list of strings to one simple-string."
+  ;; this function provided by JP Massar; note that we can't use APPLY
+  ;; with CONCATENATE here because of CALL-ARGUMENTS-LIMIT
+  (let ((total-size 0))
+    (declare (type fixnum total-size))
+    (dolist (string string-list)
+      #-genera (declare (type string string))
+      (incf total-size (length string)))
+    (let ((result-string (make-sequence 'simple-string total-size))
+          (curr-pos 0))
+      (declare (type fixnum curr-pos))
+      (dolist (string string-list)
+        #-genera (declare (type string string))
+        (replace result-string string :start1 curr-pos)
+        (incf curr-pos (length string)))
+      result-string)))

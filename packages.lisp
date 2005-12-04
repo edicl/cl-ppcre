@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /home/manuel/bknr-cvs/cvs/thirdparty/cl-ppcre/packages.lisp,v 1.1 2004/06/23 08:27:10 hans Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/packages.lisp,v 1.19 2005/04/01 21:29:10 edi Exp $
 
-;;; Copyright (c) 2002-2003, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -27,13 +27,16 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-user)
+(in-package :cl-user)
 
 #-:cormanlisp
 (defpackage #:cl-ppcre
   (:nicknames #:ppcre)
-  (:use #:cl)
+  #+genera (:shadowing-import-from #:common-lisp #:lambda #:simple-string #:string)
+  (:use #-genera #:cl #+genera #:future-common-lisp)
   (:export #:create-scanner
+           #:parse-tree-synonym
+           #:define-parse-tree-synonym
            #:scan
            #:scan-to-strings
            #:do-scans
@@ -56,13 +59,17 @@
            #:ppcre-syntax-error-string
            #:ppcre-syntax-error-pos
            #:register-groups-bind
-           #:do-register-groups))
+           #:do-register-groups
+           #:*standard-optimize-settings*
+           #:*special-optimize-settings*))
 
 #+:cormanlisp
 (defpackage "CL-PPCRE"
   (:nicknames "PPCRE")
   (:use "CL")
   (:export "CREATE-SCANNER"
+           "PARSE-TREE-SYNONYM"
+           "DEFINE-PARSE-TREE-SYNONYM"
            "SCAN"
            "SCAN-TO-STRINGS"
            "DO-SCANS"
@@ -85,4 +92,17 @@
            "PPCRE-SYNTAX-ERROR-STRING"
            "PPCRE-SYNTAX-ERROR-POS"
            "REGISTER-GROUPS-BIND"
-           "DO-REGISTER-GROUPS"))
+           "DO-REGISTER-GROUPS"
+           "*STANDARD-OPTIMIZE-SETTINGS*"
+           "*SPECIAL-OPTIMIZE-SETTINGS*"))
+
+#-:cormanlisp
+(defpackage #:cl-ppcre-test
+  #+genera (:shadowing-import-from #:common-lisp #:lambda)
+  (:use #-genera #:cl #+genera #:future-common-lisp #:cl-ppcre)
+  (:export #:test))
+
+#+:cormanlisp
+(defpackage "CL-PPCRE-TEST"
+  (:use "CL" "CL-PPCRE")
+  (:export "TEST"))
