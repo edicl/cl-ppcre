@@ -2123,7 +2123,7 @@ CL-USER 2 > (scan-to-strings "<|<=" "<=")
   in <code>"[a-ge-kf]"</code>) or to otherwise optimize these tests
   for speed.  However, you can play
   with <a href="#*optimize-char-classes*"><code>*OPTIMIZE-CHAR-CLASSES*</code></a>
-  if you've identified character classes as bottleneck and want to
+  if you've identified character classes as a bottleneck and want to
   make sure that you have <em>O(1)</em> test functions.
 
   <li>If you know that the expression you're looking for is anchored,
@@ -2131,7 +2131,7 @@ CL-USER 2 > (scan-to-strings "<|<=" "<=")
   your scanners more efficient.
 
   <li>In addition to anchors, constant strings at the start or end of a
-  regular expression can help the engine to quickly scan a strang.
+  regular expression can help the engine to quickly scan a string.
   Note that for example <code>"(a-d|aebf)"</code>
   and <code>"ab(cd|ef)"</code> are equivalent, but only the second
   form has a constant start the regex engine can recognize.
@@ -2208,7 +2208,7 @@ me her PowerBook to test early versions of CL-PPCRE with MCL and
 OpenMCL.
 
 <p>
-$Header: /usr/local/cvsrep/cl-ppcre/doc/index.html,v 1.195 2008/07/23 22:24:52 edi Exp $
+$Header: /usr/local/cvsrep/cl-ppcre/doc/index.html,v 1.197 2008/07/23 23:45:18 edi Exp $
 <p><a href="http://weitz.de/index.html">BACK TO MY HOMEPAGE</a>
 
 </body>
