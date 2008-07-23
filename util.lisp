@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/util.lisp,v 1.40 2008/07/03 10:06:16 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/util.lisp,v 1.46 2008/07/06 18:12:05 edi Exp $
 
 ;;; Utility functions and constants dealing with the character sets we
 ;;; use to encode character classes
@@ -30,7 +30,12 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
+
+(defmacro defconstant (name value &optional doc)
+  "Make sure VALUE is evaluated only once \(to appease SBCL)."
+  `(cl:defconstant ,name (if (boundp ',name) (symbol-value ',name) ,value)
+     ,@(when doc (list doc))))
 
 #+:lispworks
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -100,120 +105,36 @@ are discarded \(that is, the body is an implicit PROGN)."
                             `(let (,,@temps)
                               ,,@body))))))
 
-(eval-when (:compile-toplevel :execute :load-toplevel)
-  (defun make-char-set (test)
-    (declare #.*special-optimize-settings*)
-    "Returns a CHARSET for all characters satisfying test."
-    (loop with set = (make-charset)
-          for code of-type fixnum from 0 below char-code-limit
-          for char = (code-char code)
-          if (and char (funcall test char))
-          do (add-to-charset char set)
-          finally (return set)))
-
-  (declaim (inline word-char-p))
-  
-  (defun word-char-p (chr)
-    (declare #.*standard-optimize-settings*)
-    "Tests whether a character is a \"word\" character.
-In the ASCII charset this is equivalent to a-z, A-Z, 0-9, or _,
-i.e. the same as Perl's [\\w]."
-    (or (alphanumericp chr)
-        (char= chr #\_)))
-
-  (unless (boundp '+whitespace-char-string+)
-    (defconstant +whitespace-char-string+
-      (coerce
-       '(#\Space #\Tab #\Linefeed #\Return #\Page)
-       'string)
-      "A string of all characters which are considered to be whitespace.
-Same as Perl's [\\s]."))
-
-  (defun whitespacep (chr)
-    (declare #.*special-optimize-settings*)
-    "Tests whether a character is whitespace,
-i.e. whether it would match [\\s] in Perl."
-    (find chr +whitespace-char-string+ :test #'char=)))
-
-;; the following DEFCONSTANT statements are wrapped with
-;; (UNLESS (BOUNDP ...) ...) to make SBCL happy
-
-(unless (boundp '+digit-set+)
-  (defconstant +digit-set+
-    (make-char-set (lambda (chr) (char<= #\0 chr #\9)))
-    "Character set containing the digits from 0 to 9."))
-
-(unless (boundp '+word-char-set+)
-  (defconstant +word-char-set+
-    (make-char-set #'word-char-p)
-    "Character set containing all \"word\" characters."))
-
-(unless (boundp '+whitespace-char-set+)
-  (defconstant +whitespace-char-set+
-    (make-char-set #'whitespacep)
-    "Character set containing all whitespace characters."))
-
-(defun create-ranges-from-set (set &key downcasep)
+(declaim (inline digit-char-p))  
+(defun digit-char-p (chr)
   (declare #.*standard-optimize-settings*)
-  "Tries to identify up to three intervals \(with respect to CHAR<)
-which together comprise the charset SET.  Returns NIL if this is not
-possible.  If DOWNCASEP is true it will treat the charset as if it
-represents both the lower-case and the upper-case variants of its
-members and will only return the respective lower-case intervals."
-  ;; discard empty charsets
-  (unless (and set (plusp (charset-count set)))
-    (return-from create-ranges-from-set nil))
-  (loop with min1 and min2 and min3
-        and max1 and max2 and max3
-        ;; loop through all characters in SET, sorted by CHAR<
-        ;; (actually by < on their character codes, see 13.1.6 in the
-        ;; ANSI standard)
-        for code of-type fixnum below *regex-char-code-limit*
-        for char = (code-char code)
-        when (and char (in-charset-p (if downcasep (char-downcase char) char) set))
-        ;; MIN1, MAX1, etc. are _exclusive_
-        ;; bounds of the intervals identified so far
-        do (cond
-            ((not min1)
-             ;; this will only happen once, for the first character
-             (setq min1 (1- code)
-                   max1 (1+ code)))
-            ((<= (the fixnum min1) code (the fixnum max1))
-             ;; we're here as long as CHAR fits into the first interval
-             (setq min1 (min (the fixnum min1) (1- code))
-                   max1 (max (the fixnum max1) (1+ code))))
-            ((not min2)
-             ;; we need to open a second interval
-             ;; this'll also happen only once
-             (setq min2 (1- code)
-                   max2 (1+ code)))
-            ((<= (the fixnum min2) code (the fixnum max2))
-             ;; CHAR fits into the second interval
-             (setq min2 (min (the fixnum min2) (1- code))
-                   max2 (max (the fixnum max2) (1+ code))))
-            ((not min3)
-             ;; we need to open the third interval
-             ;; happens only once
-             (setq min3 (1- code)
-                   max3 (1+ code)))
-            ((<= (the fixnum min3) code (the fixnum max3))
-             ;; CHAR fits into the third interval
-             (setq min3 (min (the fixnum min3) (1- code))
-                   max3 (max (the fixnum max3) (1+ code))))
-            (t
-             ;; we're out of luck, CHAR doesn't fit
-             ;; into one of the three intervals
-             (return nil)))
-        ;; on success return all bounds
-        ;; make them inclusive bounds before returning
-        finally (return (values (code-char (1+ min1))
-                                (code-char (1- max1))
-                                (and min2 (code-char (1+ min2)))
-                                (and max2 (code-char (1- max2)))
-                                (and min3 (code-char (1+ min3)))
-                                (and max3 (code-char (1- max3)))))))
+  "Tests whether a character is a decimal digit, i.e. the same as
+Perl's [\\d].  Note that this function shadows the standard Common
+Lisp function CL:DIGIT-CHAR-P."
+  (char<= #\0 chr #\9))
+
+(declaim (inline word-char-p))  
+(defun word-char-p (chr)
+  (declare #.*standard-optimize-settings*)
+  "Tests whether a character is a \"word\" character.  In the ASCII
+charset this is equivalent to a-z, A-Z, 0-9, or _, i.e. the same as
+Perl's [\\w]."
+  (or (alphanumericp chr)
+      (char= chr #\_)))
+
+(defconstant +whitespace-char-string+
+  (coerce '(#\Space #\Tab #\Linefeed #\Return #\Page) 'string)
+  "A string of all characters which are considered to be whitespace.
+Same as Perl's [\\s].")
+
+(defun whitespacep (chr)
+  (declare #.*special-optimize-settings*)
+  "Tests whether a character is whitespace, i.e. whether it would
+match [\\s] in Perl."
+  (find chr +whitespace-char-string+ :test #'char=))
 
 (defmacro maybe-coerce-to-simple-string (string)
+  "Coerces STRING to a simple STRING unless it already is one."
   (with-unique-names (=string=)
     `(let ((,=string= ,string))
       (cond ((simple-string-p ,=string=)
@@ -223,16 +144,16 @@ members and will only return the respective lower-case intervals."
 
 (declaim (inline nsubseq))
 (defun nsubseq (sequence start &optional (end (length sequence)))
-  "Return a subsequence by pointing to location in original sequence."
+  "Returns a subsequence by pointing to location in original sequence."
   (make-array (- end start)
               :element-type (array-element-type sequence)
               :displaced-to sequence
               :displaced-index-offset start))
 
 (defun normalize-var-list (var-list)
-  "Utility function for REGISTER-GROUPS-BIND and
-DO-REGISTER-GROUPS. Creates the long form \(a list of \(FUNCTION VAR)
-entries) out of the short form of VAR-LIST."
+  "Utility function for REGISTER-GROUPS-BIND and DO-REGISTER-GROUPS.
+Creates the long form \(a list of \(FUNCTION VAR) entries) out of the
+short form of VAR-LIST."
   (loop for element in var-list
         if (consp element)
           nconc (loop for var in (rest element)
@@ -241,20 +162,33 @@ entries) out of the short form of VAR-LIST."
           collect (list '(function identity) element)))
 
 (defun string-list-to-simple-string (string-list)
-  (declare #.*standard-optimize-settings*)
   "Concatenates a list of strings to one simple-string."
+  (declare #.*standard-optimize-settings*)
   ;; this function provided by JP Massar; note that we can't use APPLY
   ;; with CONCATENATE here because of CALL-ARGUMENTS-LIMIT
   (let ((total-size 0))
-    (declare (type fixnum total-size))
+    (declare (fixnum total-size))
     (dolist (string string-list)
-      #-genera (declare (type string string))
+      #-:genera (declare (string string))
       (incf total-size (length string)))
     (let ((result-string (make-sequence 'simple-string total-size))
           (curr-pos 0))
-      (declare (type fixnum curr-pos))
+      (declare (fixnum curr-pos))
       (dolist (string string-list)
-        #-genera (declare (type string string))
+        #-:genera (declare (string string))
         (replace result-string string :start1 curr-pos)
         (incf curr-pos (length string)))
       result-string)))
+
+(defun complement* (test-function)
+  "Like COMPLEMENT but optimized for unary functions."
+  (declare #.*standard-optimize-settings*)
+  (typecase test-function
+    (function
+     (lambda (char)
+       (declare (character char))
+       (not (funcall (the function test-function) char))))
+    (otherwise
+     (lambda (char)
+       (declare (character char))
+       (not (funcall test-function char))))))

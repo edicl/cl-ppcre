@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/api.lisp,v 1.79 2008/07/03 08:39:10 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/api.lisp,v 1.84 2008/07/06 18:12:04 edi Exp $
 
 ;;; The external API for creating and using scanners.
 
@@ -29,7 +29,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 (defgeneric create-scanner (regex &key case-insensitive-mode
                                        multi-line-mode
@@ -39,10 +39,10 @@
   (:documentation "Accepts a regular expression - either as a
 parse-tree or as a string - and returns a scan closure which will scan
 strings for this regular expression and a list mapping registers to
-their names \(NIL stands for unnamed ones). The \"mode\" keyboard
-arguments are equivalent to the imsx modifiers in Perl. If DESTRUCTIVE
-is not NIL the function is allowed to destructively modify its first
-argument \(but only if it's a parse tree)."))
+their names \(NIL stands for unnamed ones).  The \"mode\" keyboard
+arguments are equivalent to the imsx modifiers in Perl.  If
+DESTRUCTIVE is not NIL, the function is allowed to destructively
+modify its first argument \(but only if it's a parse tree)."))
 
 #-:use-acl-regexp2-engine
 (defmethod create-scanner ((regex-string string) &key case-insensitive-mode
@@ -76,8 +76,7 @@ argument \(but only if it's a parse tree)."))
   (declare #.*standard-optimize-settings*)
   (declare (ignore destructive))
   (when (or case-insensitive-mode multi-line-mode single-line-mode extended-mode)
-    (signal-ppcre-invocation-error
-     "You can't use the keyword arguments to modify an existing scanner."))
+    (signal-invocation-error "You can't use the keyword arguments to modify an existing scanner."))
   scanner)
 
 #-:use-acl-regexp2-engine
@@ -88,8 +87,7 @@ argument \(but only if it's a parse tree)."))
                                                destructive)
   (declare #.*standard-optimize-settings*)
   (when extended-mode
-    (signal-ppcre-invocation-error
-     "Extended mode doesn't make sense in parse trees."))
+    (signal-invocation-error "Extended mode doesn't make sense in parse trees."))
   ;; convert parse-tree into internal representation REGEX and at the
   ;; same time compute the number of registers and the constant string
   ;; (or anchor) the regex starts with (if any)
@@ -180,7 +178,6 @@ argument \(but only if it's a parse tree)."))
 
 #+:use-acl-regexp2-engine
 (declaim (inline create-scanner))
-
 #+:use-acl-regexp2-engine
 (defmethod create-scanner ((scanner regexp::regular-expression) &key case-insensitive-mode
                                                                      multi-line-mode
@@ -190,8 +187,7 @@ argument \(but only if it's a parse tree)."))
   (declare #.*standard-optimize-settings*)
   (declare (ignore destructive))
   (when (or case-insensitive-mode multi-line-mode single-line-mode extended-mode)
-    (signal-ppcre-invocation-error
-     "You can't use the keyword arguments to modify an existing scanner."))
+    (signal-invocation-error "You can't use the keyword arguments to modify an existing scanner."))
   scanner)
 
 #+:use-acl-regexp2-engine
@@ -254,7 +250,6 @@ internal purposes."))
 
 #+:use-acl-regexp2-engine
 (declaim (inline scan))
-
 #+:use-acl-regexp2-engine
 (defmethod scan ((parse-tree t) target-string
                                 &key (start 0)
@@ -292,12 +287,12 @@ internal purposes."))
 (defun scan-to-strings (regex target-string &key (start 0)
                                                  (end (length target-string))
                                                  sharedp)
-  (declare #.*standard-optimize-settings*)
   "Like SCAN but returns substrings of TARGET-STRING instead of
 positions, i.e. this function returns two values on success: the whole
 match as a string plus an array of substrings (or NILs) corresponding
-to the matched registers. If SHAREDP is true, the substrings may share
-structure with TARGET-STRING."
+to the matched registers.  If SHAREDP is true, the substrings may
+share structure with TARGET-STRING."
+  (declare #.*standard-optimize-settings*)
   (multiple-value-bind (match-start match-end reg-starts reg-ends)
       (scan regex target-string :start start :end end)
     (unless match-start
@@ -329,11 +324,11 @@ structure with TARGET-STRING."
   "Executes BODY with the variables in VAR-LIST bound to the
 corresponding register groups after TARGET-STRING has been matched
 against REGEX, i.e. each variable is either bound to a string or to
-NIL. If there is no match, BODY is _not_ executed. For each element of
-VAR-LIST which is NIL there's no binding to the corresponding register
-group. The number of variables in VAR-LIST must not be greater than
-the number of register groups. If SHAREDP is true, the substrings may
-share structure with TARGET-STRING."
+NIL.  If there is no match, BODY is _not_ executed. For each element
+of VAR-LIST which is NIL there's no binding to the corresponding
+register group.  The number of variables in VAR-LIST must not be
+greater than the number of register groups.  If SHAREDP is true, the
+substrings may share structure with TARGET-STRING."
   (with-rebinding (target-string)
     (with-unique-names (match-start match-end reg-starts reg-ends
                                     start-index substr-fn)
@@ -368,10 +363,10 @@ share structure with TARGET-STRING."
                     &environment env)
   "Iterates over TARGET-STRING and tries to match REGEX as often as
 possible evaluating BODY with MATCH-START, MATCH-END, REG-STARTS, and
-REG-ENDS bound to the four return values of each match in turn. After
+REG-ENDS bound to the four return values of each match in turn.  After
 the last match, returns RESULT-FORM if provided or NIL otherwise. An
 implicit block named NIL surrounds DO-SCANS; RETURN may be used to
-terminate the loop immediately. If REGEX matches an empty string the
+terminate the loop immediately.  If REGEX matches an empty string the
 scan is continued one position behind this match. BODY may start with
 declarations."
   (with-rebinding (target-string)
@@ -427,11 +422,11 @@ declarations."
                       &body body)
   "Iterates over TARGET-STRING and tries to match REGEX as often as
 possible evaluating BODY with MATCH-START and MATCH-END bound to the
-start/end positions of each match in turn. After the last match,
-returns RESULT-FORM if provided or NIL otherwise. An implicit block
+start/end positions of each match in turn.  After the last match,
+returns RESULT-FORM if provided or NIL otherwise.  An implicit block
 named NIL surrounds DO-MATCHES; RETURN may be used to terminate the
-loop immediately. If REGEX matches an empty string the scan is
-continued one position behind this match. BODY may start with
+loop immediately.  If REGEX matches an empty string the scan is
+continued one position behind this match.  BODY may start with
 declarations."
   ;; this is a simplified form of DO-SCANS - we just provide two dummy
   ;; vars and ignore them
@@ -450,12 +445,12 @@ declarations."
                                  &body body)
   "Iterates over TARGET-STRING and tries to match REGEX as often as
 possible evaluating BODY with MATCH-VAR bound to the substring of
-TARGET-STRING corresponding to each match in turn. After the last
-match, returns RESULT-FORM if provided or NIL otherwise. An implicit
+TARGET-STRING corresponding to each match in turn.  After the last
+match, returns RESULT-FORM if provided or NIL otherwise.  An implicit
 block named NIL surrounds DO-MATCHES-AS-STRINGS; RETURN may be used to
-terminate the loop immediately. If REGEX matches an empty string the
-scan is continued one position behind this match. If SHAREDP is true,
-the substrings may share structure with TARGET-STRING. BODY may start
+terminate the loop immediately.  If REGEX matches an empty string the
+scan is continued one position behind this match.  If SHAREDP is true,
+the substrings may share structure with TARGET-STRING.  BODY may start
 with declarations."
   (with-rebinding (target-string)
     (with-unique-names (match-start match-end substr-fn)
@@ -475,15 +470,16 @@ with declarations."
   "Iterates over TARGET-STRING and tries to match REGEX as often as
 possible evaluating BODY with the variables in VAR-LIST bound to the
 corresponding register groups for each match in turn, i.e. each
-variable is either bound to a string or to NIL. For each element of
+variable is either bound to a string or to NIL.  For each element of
 VAR-LIST which is NIL there's no binding to the corresponding register
 group. The number of variables in VAR-LIST must not be greater than
-the number of register groups. After the last match, returns
-RESULT-FORM if provided or NIL otherwise. An implicit block named NIL
+the number of register groups.  After the last match, returns
+RESULT-FORM if provided or NIL otherwise.  An implicit block named NIL
 surrounds DO-REGISTER-GROUPS; RETURN may be used to terminate the loop
 immediately. If REGEX matches an empty string the scan is continued
-one position behind this match. If SHAREDP is true, the substrings may
-share structure with TARGET-STRING. BODY may start with declarations."
+one position behind this match.  If SHAREDP is true, the substrings
+may share structure with TARGET-STRING.  BODY may start with
+declarations."
   (with-rebinding (target-string)
     (with-unique-names (substr-fn match-start match-end
                                   reg-starts reg-ends start-index)
@@ -510,11 +506,11 @@ share structure with TARGET-STRING. BODY may start with declarations."
 (defun all-matches (regex target-string
                           &key (start 0)
                                (end (length target-string)))
-  (declare #.*standard-optimize-settings*)
   "Returns a list containing the start and end positions of all
 matches of REGEX against TARGET-STRING, i.e. if there are N matches
-the list contains (* 2 N) elements. If REGEX matches an empty string
+the list contains (* 2 N) elements.  If REGEX matches an empty string
 the scan is continued one position behind this match."
+  (declare #.*standard-optimize-settings*)
   (let (result-list)
     (do-matches (match-start match-end
                  regex target-string
@@ -536,11 +532,11 @@ compile time."
                                      &key (start 0)
                                           (end (length target-string))
                                           sharedp)
-  (declare #.*standard-optimize-settings*)
   "Returns a list containing all substrings of TARGET-STRING which
 match REGEX. If REGEX matches an empty string the scan is continued
 one position behind this match. If SHAREDP is true, the substrings may
 share structure with TARGET-STRING."
+  (declare #.*standard-optimize-settings*)
   (let (result-list)
     (do-matches-as-strings (match regex target-string (nreverse result-list)
                                   :start start :end end :sharedp sharedp)
@@ -563,18 +559,18 @@ compile time."
                          with-registers-p
                          omit-unmatched-p
                          sharedp)
-  (declare #.*standard-optimize-settings*)
   "Matches REGEX against TARGET-STRING as often as possible and
-returns a list of the substrings between the matches. If
+returns a list of the substrings between the matches.  If
 WITH-REGISTERS-P is true, substrings corresponding to matched
-registers are inserted into the list as well. If OMIT-UNMATCHED-P is
+registers are inserted into the list as well.  If OMIT-UNMATCHED-P is
 true, unmatched registers will simply be left out, otherwise they will
-show up as NIL. LIMIT limits the number of elements returned -
-registers aren't counted. If LIMIT is NIL (or 0 which is equivalent),
-trailing empty strings are removed from the result list.  If REGEX
-matches an empty string the scan is continued one position behind this
-match. If SHAREDP is true, the substrings may share structure with
-TARGET-STRING."
+show up as NIL.  LIMIT limits the number of elements returned -
+registers aren't counted.  If LIMIT is NIL \(or 0 which is
+equivalent), trailing empty strings are removed from the result list.
+If REGEX matches an empty string the scan is continued one position
+behind this match.  If SHAREDP is true, the substrings may share
+structure with TARGET-STRING."
+  (declare #.*standard-optimize-settings*)
   ;; initialize list of positions POS-LIST to extract substrings with
   ;; START so that the start of the next match will mark the end of
   ;; the first substring
@@ -637,13 +633,13 @@ TARGET-STRING."
 
 (defun string-case-modifier (str from to start end)
   (declare #.*standard-optimize-settings*)
-  (declare (type fixnum from to start end))
+  (declare (fixnum from to start end))
   "Checks whether all words in STR between FROM and TO are upcased,
 downcased or capitalized and returns a function which applies a
-corresponding case modification to strings. Returns #'IDENTITY
+corresponding case modification to strings.  Returns #'IDENTITY
 otherwise, especially if words in the target area extend beyond FROM
-or TO. STR is supposed to be bounded by START and END. It is assumed
-that (<= START FROM TO END)."
+or TO.  STR is supposed to be bounded by START and END.  It is assumed
+that \(<= START FROM TO END)."
   (case
       (if (or (<= to from)
               (and (< start from)
@@ -740,9 +736,8 @@ S-expression."))
                           ((#\\) :backslash)))))
           (when (and (numberp token) (< token 0))
             ;; make sure we don't accept something like "\\0"
-            (signal-ppcre-invocation-error
-             "Illegal substring ~S in replacement string"
-             (subseq replacement-string match-start match-end)))
+            (signal-invocation-error "Illegal substring ~S in replacement string."
+                                     (subseq replacement-string match-start match-end)))
           (push token collector))
         ;; remember where the match ended
         (setq from match-end))
@@ -801,9 +796,8 @@ S-expression."))
                               ((#\\) :backslash)))))
               (when (and (numberp token) (< token 0))
                 ;; make sure we don't accept something like "\\0"
-                (signal-ppcre-invocation-error
-                 "Illegal substring ~S in replacement string"
-                 (subseq replacement match-start match-end)))
+                (signal-invocation-error "Illegal substring ~S in replacement string."
+                                         (subseq replacement match-start match-end)))
               (push token collector))
             ;; remember where the match ended
             (setq from match-end))
@@ -843,9 +837,8 @@ corresponding string."
                    (when (>= token reg-bound)
                      ;; but only if the register was referenced in the
                      ;; regular expression
-                     (signal-ppcre-invocation-error
-                      "Reference to non-existent register ~A in replacement string"
-                      (1+ token)))
+                     (signal-invocation-error "Reference to non-existent register ~A in replacement string."
+                                              (1+ token)))
                    (when (svref reg-starts token)
                      ;; and only if it matched, i.e. no match results
                      ;; in an empty string
@@ -909,11 +902,11 @@ corresponding string."
 
 (defun replace-aux (target-string replacement pos-list reg-list start end
                                   preserve-case simple-calls element-type)
+  "Auxiliary function used by REGEX-REPLACE and REGEX-REPLACE-ALL.
+POS-LIST contains a list with the start and end positions of all
+matches while REG-LIST contains a list of arrays representing the
+corresponding register start and end positions."
   (declare #.*standard-optimize-settings*)
-  "Auxiliary function used by REGEX-REPLACE and
-REGEX-REPLACE-ALL. POS-LIST contains a list with the start and end
-positions of all matches while REG-LIST contains a list of arrays
-representing the corresponding register start and end positions."
   ;; build the template once before we start the loop
   (let ((replacement-template (build-replacement-template replacement)))
     (with-output-to-string (s nil :element-type element-type)
@@ -955,7 +948,6 @@ representing the corresponding register start and end positions."
                             preserve-case
                             simple-calls
                             (element-type #+:lispworks 'lw:simple-char #-:lispworks 'character))
-  (declare #.*standard-optimize-settings*)
   "Try to match TARGET-STRING between START and END against REGEX and
 replace the first match with REPLACEMENT.  Two values are returned;
 the modified string, and T if REGEX matched or NIL otherwise.
@@ -985,6 +977,7 @@ match. The result will always be a fresh string, even if REGEX doesn't
 match.
 
   ELEMENT-TYPE is the element type of the resulting string."
+  (declare #.*standard-optimize-settings*)
   (multiple-value-bind (match-start match-end reg-starts reg-ends)
       (scan regex target-string :start start :end end)
     (if match-start
@@ -1012,7 +1005,6 @@ match.
                                 preserve-case
                                 simple-calls
                                 (element-type #+:lispworks 'lw:simple-char #-:lispworks 'character))
-  (declare #.*standard-optimize-settings*)
   "Try to match TARGET-STRING between START and END against REGEX and
 replace all matches with REPLACEMENT.  Two values are returned; the
 modified string, and T if REGEX matched or NIL otherwise.
@@ -1042,6 +1034,7 @@ match. The result will always be a fresh string, even if REGEX doesn't
 match.
 
   ELEMENT-TYPE is the element type of the resulting string."
+  (declare #.*standard-optimize-settings*)
   (let ((pos-list '())
         (reg-list '()))
     (do-scans (match-start match-end reg-starts reg-ends regex target-string
@@ -1102,6 +1095,9 @@ scanner, a case-insensitive scanner is used."
 
 #+:cormanlisp
 (defmacro do-with-all-symbols ((variable package-or-packagelist) &body body)
+  "Executes BODY with VARIABLE bound to each symbol in
+PACKAGE-OR-PACKAGELIST \(a designator for a list of packages) in
+turn."
   (with-unique-names (pack-var)
     `(if (listp ,package-or-packagelist)
       (dolist (,pack-var ,package-or-packagelist)
@@ -1113,11 +1109,11 @@ scanner, a case-insensitive scanner is used."
 #+:cormanlisp
 (defmacro regex-apropos-aux ((regex packages case-insensitive &optional return-form)
                              &body body)
-  "Auxiliary macro used by REGEX-APROPOS and REGEX-APROPOS-LIST. Loops
-through PACKAGES and executes BODY with SYMBOL bound to each symbol
-which matches REGEX. Optionally evaluates and returns RETURN-FORM at
-the end. If CASE-INSENSITIVE is true and REGEX isn't already a
-scanner, a case-insensitive scanner is used."
+  "Auxiliary macro used by REGEX-APROPOS and REGEX-APROPOS-LIST.
+Loops through PACKAGES and executes BODY with SYMBOL bound to each
+symbol which matches REGEX.  Optionally evaluates and returns
+RETURN-FORM at the end.  If CASE-INSENSITIVE is true and REGEX isn't
+already a scanner, a case-insensitive scanner is used."
   (with-rebinding (regex)
     (with-unique-names (scanner %packages hash)
       `(let* ((,scanner (create-scanner ,regex
@@ -1137,7 +1133,7 @@ scanner, a case-insensitive scanner is used."
 (defun regex-apropos-list (regex &optional packages &key (case-insensitive t))
   (declare #.*standard-optimize-settings*)
   "Similar to the standard function APROPOS-LIST but returns a list of
-all symbols which match the regular expression REGEX. If
+all symbols which match the regular expression REGEX.  If
 CASE-INSENSITIVE is true and REGEX isn't already a scanner, a
 case-insensitive scanner is used."
   (let ((collector '()))
@@ -1189,7 +1185,7 @@ meaningful information about a symbol."
 
 (defun regex-apropos (regex &optional packages &key (case-insensitive t))
   "Similar to the standard function APROPOS but returns a list of all
-symbols which match the regular expression REGEX. If CASE-INSENSITIVE
+symbols which match the regular expression REGEX.  If CASE-INSENSITIVE
 is true and REGEX isn't already a scanner, a case-insensitive scanner
 is used."
   (declare #.*standard-optimize-settings*)
@@ -1232,7 +1228,7 @@ sections. These sections may nest."
        (quote-token-replace-scanner "\\\\([QE])"))
   (defun clean-comments (string &optional extended-mode)
     "Clean \(?#...) comments within STRING for quoting, i.e. convert
-\\Q to Q and \\E to E. If EXTENDED-MODE is true, also clean
+\\Q to Q and \\E to E.  If EXTENDED-MODE is true, also clean
 end-of-line comments, i.e. those starting with #\\# and ending with
 #\\Newline."
     (flet ((remove-tokens (target-string start end match-start
@@ -1251,7 +1247,7 @@ end-of-line comments, i.e. those starting with #\\# and ending with
                          #'remove-tokens))))
 
 (defun parse-tree-synonym (symbol)
-  "Returns the parse tree the SYMBOL symbol is a synonym for. Returns
+  "Returns the parse tree the SYMBOL symbol is a synonym for.  Returns
 NIL is SYMBOL wasn't yet defined to be a synonym."
   (get symbol 'parse-tree-synonym))
 
@@ -1261,6 +1257,6 @@ NIL is SYMBOL wasn't yet defined to be a synonym."
 
 (defmacro define-parse-tree-synonym (name parse-tree)
   "Defines the symbol NAME to be a synonym for the parse tree
-PARSE-TREE. Both arguments are quoted."
+PARSE-TREE.  Both arguments are quoted."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf (parse-tree-synonym ',name) ',parse-tree)))

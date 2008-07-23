@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre-test.system,v 1.11 2007/01/01 23:43:10 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/test/packages.lisp,v 1.3 2008/07/22 12:58:52 edi Exp $
 
-;;; Copyright (c) 2002-2007, Dr. Edmund Weitz.  All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -27,14 +27,11 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-user)
+(in-package :cl-user)
 
-(defparameter *cl-ppcre-test-base-directory*
-  (make-pathname :name nil :type nil :version nil
-                 :defaults (parse-namestring *load-truename*)))
-
-(mk:defsystem #:cl-ppcre-test
-    :source-pathname *cl-ppcre-test-base-directory*
-    :source-extension "lisp"
-    :depends-on (#:cl-ppcre)
-    :components ((:file "ppcre-tests")))
+(defpackage :cl-ppcre-test
+  #+genera (:shadowing-import-from :common-lisp :lambda)
+  (:use #-:genera :cl #+:genera :future-common-lisp :cl-ppcre)
+  (:import-from :cl-ppcre :*standard-optimize-settings*
+                          :string-list-to-simple-string)
+  (:export :run-all-tests :unicode-test))

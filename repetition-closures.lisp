@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/repetition-closures.lisp,v 1.29 2008/06/25 14:04:28 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/repetition-closures.lisp,v 1.33 2008/07/06 18:12:05 edi Exp $
 
 ;;; This is actually a part of closures.lisp which we put into a
 ;;; separate file because it is rather complex. We only deal with
@@ -33,7 +33,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 (defmacro incf-after (place &optional (delta 1) &environment env)
   "Utility macro inspired by C's \"place++\", i.e. first return the
@@ -58,7 +58,7 @@ CHECK-CURR-POS is a form which checks whether the inner regex of the
 repetition matches at CURR-POS."
   `(if maximum
     (lambda (start-pos)
-      (declare (type fixnum start-pos maximum))
+      (declare (fixnum start-pos maximum))
       ;; because we know LEN we know in advance where to stop at the
       ;; latest; we also take into consideration MIN-REST, i.e. the
       ;; minimal length of the part behind the repetition
@@ -68,7 +68,7 @@ repetition matches at CURR-POS."
                                  (+ start-pos
                                     (the fixnum (* len maximum)))))
             (curr-pos start-pos))
-        (declare (type fixnum target-end-pos curr-pos))
+        (declare (fixnum target-end-pos curr-pos))
         (block greedy-constant-length-matcher
           ;; we use an ugly TAGBODY construct because this might be a
           ;; tight loop and this version is a bit faster than our LOOP
@@ -95,10 +95,10 @@ repetition matches at CURR-POS."
     ;; basically the same code; it's just a bit easier because we're
     ;; not bounded by MAXIMUM
     (lambda (start-pos)
-      (declare (type fixnum start-pos))
+      (declare (fixnum start-pos))
       (let ((target-end-pos (1+ (- *end-pos* len min-rest)))
             (curr-pos start-pos))
-        (declare (type fixnum target-end-pos curr-pos))
+        (declare (fixnum target-end-pos curr-pos))
         (block greedy-constant-length-matcher
           (tagbody
             forward-loop
@@ -117,20 +117,19 @@ repetition matches at CURR-POS."
             (go backward-loop)))))))
 
 (defun create-greedy-everything-matcher (maximum min-rest next-fn)
-  (declare #.*standard-optimize-settings*)
-  (declare (type fixnum min-rest)
-           (type function next-fn))
   "Creates a closure which just matches as far ahead as possible,
 i.e. a closure for a dot in single-line mode."
+  (declare #.*standard-optimize-settings*)
+  (declare (fixnum min-rest) (function next-fn))
   (if maximum
     (lambda (start-pos)
-      (declare (type fixnum start-pos maximum))
+      (declare (fixnum start-pos maximum))
       ;; because we know LEN we know in advance where to stop at the
       ;; latest; we also take into consideration MIN-REST, i.e. the
       ;; minimal length of the part behind the repetition
       (let ((target-end-pos (min (+ start-pos maximum)
                                  (- *end-pos* min-rest))))
-        (declare (type fixnum target-end-pos))
+        (declare (fixnum target-end-pos))
         ;; start from the highest possible position and go backward
         ;; until we're able to match the rest of the regex
         (loop for curr-pos of-type fixnum from target-end-pos downto start-pos
@@ -138,18 +137,18 @@ i.e. a closure for a dot in single-line mode."
     ;; basically the same code; it's just a bit easier because we're
     ;; not bounded by MAXIMUM
     (lambda (start-pos)
-      (declare (type fixnum start-pos))
+      (declare (fixnum start-pos))
       (let ((target-end-pos (- *end-pos* min-rest)))
-        (declare (type fixnum target-end-pos))
+        (declare (fixnum target-end-pos))
         (loop for curr-pos of-type fixnum from target-end-pos downto start-pos
               thereis (funcall next-fn curr-pos))))))
 
 (defgeneric create-greedy-constant-length-matcher (repetition next-fn)
   (declare #.*standard-optimize-settings*)
-  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
-that REPETITION is greedy and the minimal number of repetitions is
-zero. It is furthermore assumed that the inner regex of REPETITION is
-of fixed length and doesn't contain registers."))
+  (:documentation "Creates a closure which tries to match REPETITION.
+It is assumed that REPETITION is greedy and the minimal number of
+repetitions is zero.  It is furthermore assumed that the inner regex
+of REPETITION is of fixed length and doesn't contain registers."))
 
 (defmethod create-greedy-constant-length-matcher ((repetition repetition)
                                                   next-fn)
@@ -158,8 +157,8 @@ of fixed length and doesn't contain registers."))
         (maximum (maximum repetition))
         (regex (regex repetition))
         (min-rest (min-rest repetition)))
-    (declare (type fixnum len min-rest)
-             (type function next-fn))
+    (declare (fixnum len min-rest)
+             (function next-fn))
     (cond ((zerop len)
             ;; inner regex has zero-length, so we can discard it
             ;; completely
@@ -186,11 +185,8 @@ of fixed length and doesn't contain registers."))
               (char-class
                 ;; a character class
                 (insert-char-class-tester (regex (schar *string* curr-pos))
-                  (if (invertedp regex)
-                    (greedy-constant-length-closure
-                     (not (char-class-test)))
-                    (greedy-constant-length-closure
-                     (char-class-test)))))
+                  (greedy-constant-length-closure
+                   (char-class-test))))
               (everything
                 ;; an EVERYTHING object, i.e. a dot
                 (if (single-line-p regex)
@@ -202,17 +198,17 @@ of fixed length and doesn't contain registers."))
                 ;; just checks for immediate success, i.e. NEXT-FN is
                 ;; #'IDENTITY
                 (let ((inner-matcher (create-matcher-aux regex #'identity)))
-                  (declare (type function inner-matcher))
+                  (declare (function inner-matcher))
                   (greedy-constant-length-closure
                    (funcall inner-matcher curr-pos)))))))))
 
 (defgeneric create-greedy-no-zero-matcher (repetition next-fn)
   (declare #.*standard-optimize-settings*)
-  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
-that REPETITION is greedy and the minimal number of repetitions is
-zero. It is furthermore assumed that the inner regex of REPETITION can
-never match a zero-length string (or instead the maximal number of
-repetitions is 1)."))
+  (:documentation "Creates a closure which tries to match REPETITION.
+It is assumed that REPETITION is greedy and the minimal number of
+repetitions is zero.  It is furthermore assumed that the inner regex
+of REPETITION can never match a zero-length string \(or instead the
+maximal number of repetitions is 1)."))
 
 (defmethod create-greedy-no-zero-matcher ((repetition repetition) next-fn)
   (declare #.*standard-optimize-settings*)
@@ -220,7 +216,7 @@ repetitions is 1)."))
         ;; REPEAT-MATCHER is part of the closure's environment but it
         ;; can only be defined after GREEDY-AUX is defined
         repeat-matcher)
-    (declare (type function next-fn))
+    (declare (function next-fn))
     (cond
       ((eql maximum 1)
         ;; this is essentially like the next case but with a known
@@ -230,7 +226,7 @@ repetitions is 1)."))
         (setq repeat-matcher
                 (create-matcher-aux (regex repetition) next-fn))
         (lambda (start-pos)
-          (declare (type function repeat-matcher))
+          (declare (function repeat-matcher))
           (or (funcall repeat-matcher start-pos)
               (funcall next-fn start-pos))))
       (maximum
@@ -239,8 +235,8 @@ repetitions is 1)."))
         ;; repetitions
         (let ((rep-num (incf-after *rep-num*)))
           (flet ((greedy-aux (start-pos)
-                   (declare (type fixnum start-pos maximum rep-num)
-                            (type function repeat-matcher))
+                   (declare (fixnum start-pos maximum rep-num)
+                            (function repeat-matcher))
                    ;; the actual matcher which first tries to match the
                    ;; inner regex of REPETITION (if we haven't done so
                    ;; too often) and on failure calls NEXT-FN
@@ -259,15 +255,15 @@ repetitions is 1)."))
             ;; the closure we return is just a thin wrapper around
             ;; GREEDY-AUX to initialize the repetition counter
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (setf (aref *repeat-counters* rep-num) 0)
               (greedy-aux start-pos)))))
       (t
         ;; easier code because we're not bounded by MAXIMUM, but
         ;; basically the same
         (flet ((greedy-aux (start-pos)
-                 (declare (type fixnum start-pos)
-                          (type function repeat-matcher))
+                 (declare (fixnum start-pos)
+                          (function repeat-matcher))
                  (or (funcall repeat-matcher start-pos)
                      (funcall next-fn start-pos))))
           (setq repeat-matcher
@@ -276,9 +272,9 @@ repetitions is 1)."))
 
 (defgeneric create-greedy-matcher (repetition next-fn)
   (declare #.*standard-optimize-settings*)
-  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
-that REPETITION is greedy and the minimal number of repetitions is
-zero."))
+  (:documentation "Creates a closure which tries to match REPETITION.
+It is assumed that REPETITION is greedy and the minimal number of
+repetitions is zero."))
 
 (defmethod create-greedy-matcher ((repetition repetition) next-fn)
   (declare #.*standard-optimize-settings*)
@@ -290,8 +286,8 @@ zero."))
         ;; REPEAT-MATCHER is part of the closure's environment but it
         ;; can only be defined after GREEDY-AUX is defined
         repeat-matcher)
-    (declare (type fixnum zero-length-num)
-             (type function next-fn))
+    (declare (fixnum zero-length-num)
+             (function next-fn))
     (cond
       (maximum
         ;; we make a reservation for our slot in *REPEAT-COUNTERS*
@@ -302,8 +298,8 @@ zero."))
                    ;; the actual matcher which first tries to match the
                    ;; inner regex of REPETITION (if we haven't done so
                    ;; too often) and on failure calls NEXT-FN
-                   (declare (type fixnum start-pos maximum rep-num)
-                            (type function repeat-matcher))
+                   (declare (fixnum start-pos maximum rep-num)
+                            (function repeat-matcher))
                    (let ((old-last-pos
                            (svref *last-pos-stores* zero-length-num)))
                      (when (and old-last-pos
@@ -333,7 +329,7 @@ zero."))
             ;; GREEDY-AUX to initialize the repetition counter and our
             ;; slot in *LAST-POS-STORES*
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (setf (aref *repeat-counters* rep-num) 0
                     (svref *last-pos-stores* zero-length-num) nil)
               (greedy-aux start-pos)))))
@@ -341,8 +337,8 @@ zero."))
         ;; easier code because we're not bounded by MAXIMUM, but
         ;; basically the same
         (flet ((greedy-aux (start-pos)
-                 (declare (type fixnum start-pos)
-                          (type function repeat-matcher))
+                 (declare (fixnum start-pos)
+                          (function repeat-matcher))
                  (let ((old-last-pos
                          (svref *last-pos-stores* zero-length-num)))
                    (when (and old-last-pos
@@ -356,14 +352,14 @@ zero."))
           (setq repeat-matcher
                   (create-matcher-aux (regex repetition) #'greedy-aux))
           (lambda (start-pos)
-            (declare (type fixnum start-pos))
+            (declare (fixnum start-pos))
             (setf (svref *last-pos-stores* zero-length-num) nil)
             (greedy-aux start-pos)))))))
   
 ;; code for non-greedy repetitions with minimum zero
 
 (defmacro non-greedy-constant-length-closure (check-curr-pos)
-  "This is the template for simple non-greedy repetitions (where
+  "This is the template for simple non-greedy repetitions \(where
 simple means that the minimum number of repetitions is zero, that the
 inner regex to be checked is of fixed length LEN, and that it doesn't
 contain registers, i.e. there's no need for backtracking).
@@ -371,7 +367,7 @@ CHECK-CURR-POS is a form which checks whether the inner regex of the
 repetition matches at CURR-POS."
   `(if maximum
     (lambda (start-pos)
-      (declare (type fixnum start-pos maximum))
+      (declare (fixnum start-pos maximum))
       ;; because we know LEN we know in advance where to stop at the
       ;; latest; we also take into consideration MIN-REST, i.e. the
       ;; minimal length of the part behind the repetition
@@ -389,7 +385,7 @@ repetition matches at CURR-POS."
   ;; basically the same code; it's just a bit easier because we're
   ;; not bounded by MAXIMUM
   (lambda (start-pos)
-    (declare (type fixnum start-pos))
+    (declare (fixnum start-pos))
     (let ((target-end-pos (1+ (- *end-pos* len min-rest))))
       (loop for curr-pos of-type fixnum from start-pos
                                         below target-end-pos
@@ -400,10 +396,10 @@ repetition matches at CURR-POS."
 
 (defgeneric create-non-greedy-constant-length-matcher (repetition next-fn)
   (declare #.*standard-optimize-settings*)
-  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
-that REPETITION is non-greedy and the minimal number of repetitions is
-zero. It is furthermore assumed that the inner regex of REPETITION is
-of fixed length and doesn't contain registers."))
+  (:documentation "Creates a closure which tries to match REPETITION.
+It is assumed that REPETITION is non-greedy and the minimal number of
+repetitions is zero.  It is furthermore assumed that the inner regex
+of REPETITION is of fixed length and doesn't contain registers."))
 
 (defmethod create-non-greedy-constant-length-matcher ((repetition repetition) next-fn)
   (declare #.*standard-optimize-settings*)
@@ -411,8 +407,8 @@ of fixed length and doesn't contain registers."))
         (maximum (maximum repetition))
         (regex (regex repetition))
         (min-rest (min-rest repetition)))
-    (declare (type fixnum len min-rest)
-             (type function next-fn))
+    (declare (fixnum len min-rest)
+             (function next-fn))
     (cond ((zerop len)
             ;; inner regex has zero-length, so we can discard it
             ;; completely
@@ -439,11 +435,8 @@ of fixed length and doesn't contain registers."))
               (char-class
                 ;; a character class
                 (insert-char-class-tester (regex (schar *string* curr-pos))
-                  (if (invertedp regex)
-                    (non-greedy-constant-length-closure
-                     (not (char-class-test)))
-                    (non-greedy-constant-length-closure
-                     (char-class-test)))))
+                  (non-greedy-constant-length-closure
+                   (char-class-test))))
               (everything
                 (if (single-line-p regex)
                   ;; a dot which really can match everything; we rely
@@ -458,17 +451,17 @@ of fixed length and doesn't contain registers."))
                 ;; just checks for immediate success, i.e. NEXT-FN is
                 ;; #'IDENTITY
                 (let ((inner-matcher (create-matcher-aux regex #'identity)))
-                  (declare (type function inner-matcher))
+                  (declare (function inner-matcher))
                   (non-greedy-constant-length-closure
                    (funcall inner-matcher curr-pos)))))))))
 
 (defgeneric create-non-greedy-no-zero-matcher (repetition next-fn)
   (declare #.*standard-optimize-settings*)
-  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
-that REPETITION is non-greedy and the minimal number of repetitions is
-zero. It is furthermore assumed that the inner regex of REPETITION can
-never match a zero-length string (or instead the maximal number of
-repetitions is 1)."))
+  (:documentation "Creates a closure which tries to match REPETITION.
+It is assumed that REPETITION is non-greedy and the minimal number of
+repetitions is zero.  It is furthermore assumed that the inner regex
+of REPETITION can never match a zero-length string \(or instead the
+maximal number of repetitions is 1)."))
 
 (defmethod create-non-greedy-no-zero-matcher ((repetition repetition) next-fn)
   (declare #.*standard-optimize-settings*)
@@ -476,7 +469,7 @@ repetitions is 1)."))
         ;; REPEAT-MATCHER is part of the closure's environment but it
         ;; can only be defined after NON-GREEDY-AUX is defined
         repeat-matcher)
-    (declare (type function next-fn))
+    (declare (function next-fn))
     (cond
       ((eql maximum 1)
         ;; this is essentially like the next case but with a known
@@ -484,7 +477,7 @@ repetitions is 1)."))
         (setq repeat-matcher
                 (create-matcher-aux (regex repetition) next-fn))
         (lambda (start-pos)
-          (declare (type function repeat-matcher))
+          (declare (function repeat-matcher))
           (or (funcall next-fn start-pos)
               (funcall repeat-matcher start-pos))))
       (maximum
@@ -496,8 +489,8 @@ repetitions is 1)."))
                    ;; the actual matcher which first calls NEXT-FN and
                    ;; on failure tries to match the inner regex of
                    ;; REPETITION (if we haven't done so too often)
-                   (declare (type fixnum start-pos maximum rep-num)
-                            (type function repeat-matcher))
+                   (declare (fixnum start-pos maximum rep-num)
+                            (function repeat-matcher))
                    (or (funcall next-fn start-pos)
                        (and (< (aref *repeat-counters* rep-num) maximum)
                             (incf (aref *repeat-counters* rep-num))
@@ -513,15 +506,15 @@ repetitions is 1)."))
             ;; the closure we return is just a thin wrapper around
             ;; NON-GREEDY-AUX to initialize the repetition counter
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (setf (aref *repeat-counters* rep-num) 0)
               (non-greedy-aux start-pos)))))
       (t
         ;; easier code because we're not bounded by MAXIMUM, but
         ;; basically the same
         (flet ((non-greedy-aux (start-pos)
-                 (declare (type fixnum start-pos)
-                          (type function repeat-matcher))
+                 (declare (fixnum start-pos)
+                          (function repeat-matcher))
                  (or (funcall next-fn start-pos)
                      (funcall repeat-matcher start-pos))))
           (setq repeat-matcher
@@ -530,9 +523,9 @@ repetitions is 1)."))
   
 (defgeneric create-non-greedy-matcher (repetition next-fn)
   (declare #.*standard-optimize-settings*)
-  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
-that REPETITION is non-greedy and the minimal number of repetitions is
-zero."))
+  (:documentation "Creates a closure which tries to match REPETITION.
+It is assumed that REPETITION is non-greedy and the minimal number of
+repetitions is zero."))
 
 (defmethod create-non-greedy-matcher ((repetition repetition) next-fn)
   (declare #.*standard-optimize-settings*)
@@ -544,8 +537,8 @@ zero."))
         ;; REPEAT-MATCHER is part of the closure's environment but it
         ;; can only be defined after NON-GREEDY-AUX is defined
         repeat-matcher)
-    (declare (type fixnum zero-length-num)
-             (type function next-fn))
+    (declare (fixnum zero-length-num)
+             (function next-fn))
     (cond
       (maximum
         ;; we make a reservation for our slot in *REPEAT-COUNTERS*
@@ -556,8 +549,8 @@ zero."))
                    ;; the actual matcher which first calls NEXT-FN and
                    ;; on failure tries to match the inner regex of
                    ;; REPETITION (if we haven't done so too often)
-                   (declare (type fixnum start-pos maximum rep-num)
-                            (type function repeat-matcher))
+                   (declare (fixnum start-pos maximum rep-num)
+                            (function repeat-matcher))
                    (let ((old-last-pos
                            (svref *last-pos-stores* zero-length-num)))
                      (when (and old-last-pos
@@ -587,7 +580,7 @@ zero."))
             ;; NON-GREEDY-AUX to initialize the repetition counter and our
             ;; slot in *LAST-POS-STORES*
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (setf (aref *repeat-counters* rep-num) 0
                     (svref *last-pos-stores* zero-length-num) nil)
               (non-greedy-aux start-pos)))))
@@ -595,8 +588,8 @@ zero."))
         ;; easier code because we're not bounded by MAXIMUM, but
         ;; basically the same
         (flet ((non-greedy-aux (start-pos)
-                 (declare (type fixnum start-pos)
-                          (type function repeat-matcher))
+                 (declare (fixnum start-pos)
+                          (function repeat-matcher))
                  (let ((old-last-pos
                          (svref *last-pos-stores* zero-length-num)))
                    (when (and old-last-pos
@@ -611,7 +604,7 @@ zero."))
           (setq repeat-matcher
                   (create-matcher-aux (regex repetition) #'non-greedy-aux))
           (lambda (start-pos)
-            (declare (type fixnum start-pos))
+            (declare (fixnum start-pos))
             (setf (svref *last-pos-stores* zero-length-num) nil)
             (non-greedy-aux start-pos)))))))
   
@@ -622,13 +615,13 @@ zero."))
 means that the inner regex to be checked is of fixed length LEN, and
 that it doesn't contain registers, i.e. there's no need for
 backtracking) and where constant means that MINIMUM is equal to
-MAXIMUM. CHECK-CURR-POS is a form which checks whether the inner regex
-of the repetition matches at CURR-POS."
+MAXIMUM.  CHECK-CURR-POS is a form which checks whether the inner
+regex of the repetition matches at CURR-POS."
   `(lambda (start-pos)
-    (declare (type fixnum start-pos))
+    (declare (fixnum start-pos))
       (let ((target-end-pos (+ start-pos
                                (the fixnum (* len repetitions)))))
-        (declare (type fixnum target-end-pos))
+        (declare (fixnum target-end-pos))
         ;; first check if we won't go beyond the end of the string
         (and (>= *end-pos* target-end-pos)
              ;; then loop through all repetitions step by step
@@ -642,10 +635,10 @@ of the repetition matches at CURR-POS."
 (defgeneric create-constant-repetition-constant-length-matcher
     (repetition next-fn)
   (declare #.*standard-optimize-settings*)
-  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
-that REPETITION has a constant number of repetitions. It is
-furthermore assumed that the inner regex of REPETITION is of fixed
-length and doesn't contain registers."))
+  (:documentation "Creates a closure which tries to match REPETITION.
+It is assumed that REPETITION has a constant number of repetitions.
+It is furthermore assumed that the inner regex of REPETITION is of
+fixed length and doesn't contain registers."))
 
 (defmethod create-constant-repetition-constant-length-matcher
        ((repetition repetition) next-fn)
@@ -653,8 +646,8 @@ length and doesn't contain registers."))
   (let ((len (len repetition))
         (repetitions (minimum repetition))
         (regex (regex repetition)))
-    (declare (type fixnum len repetitions)
-             (type function next-fn))
+    (declare (fixnum len repetitions)
+             (function next-fn))
     (if (zerop len)
       ;; if the length is zero it suffices to try once
       (create-matcher-aux regex next-fn)
@@ -676,33 +669,29 @@ length and doesn't contain registers."))
               (if (case-insensitive-p regex)
                 (constant-repetition-constant-length-closure
                  (let ((next-pos (+ curr-pos len)))
-                   (declare (type fixnum next-pos))
+                   (declare (fixnum next-pos))
                    (and (*string*-equal str curr-pos next-pos 0 len)
                         next-pos)))
                 (constant-repetition-constant-length-closure
                  (let ((next-pos (+ curr-pos len)))
-                   (declare (type fixnum next-pos))
+                   (declare (fixnum next-pos))
                    (and (*string*= str curr-pos next-pos 0 len)
                         next-pos)))))))
         (char-class
           ;; a character class
           (insert-char-class-tester (regex (schar *string* curr-pos))
-            (if (invertedp regex)
-              (constant-repetition-constant-length-closure
-               (and (not (char-class-test))
-                    (1+ curr-pos)))
-              (constant-repetition-constant-length-closure
-               (and (char-class-test)
-                    (1+ curr-pos))))))
+            (constant-repetition-constant-length-closure
+             (and (char-class-test)
+                  (1+ curr-pos)))))
         (everything
           (if (single-line-p regex)
             ;; a dot which really matches everything - we just have to
             ;; advance the index into *STRING* accordingly and check
             ;; if we didn't go past the end
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (let ((next-pos (+ start-pos repetitions)))
-                (declare (type fixnum next-pos))
+                (declare (fixnum next-pos))
                 (and (<= next-pos *end-pos*)
                      (funcall next-fn next-pos))))
             ;; a dot which is not in single-line-mode - make sure we
@@ -714,14 +703,14 @@ length and doesn't contain registers."))
           ;; the general case - we build an inner matcher which just
           ;; checks for immediate success, i.e. NEXT-FN is #'IDENTITY
           (let ((inner-matcher (create-matcher-aux regex #'identity)))
-            (declare (type function inner-matcher))
+            (declare (function inner-matcher))
             (constant-repetition-constant-length-closure
              (funcall inner-matcher curr-pos))))))))
   
 (defgeneric create-constant-repetition-matcher (repetition next-fn)
   (declare #.*standard-optimize-settings*)
-  (:documentation "Creates a closure which tries to match REPETITION. It is assumed
-that REPETITION has a constant number of repetitions."))
+  (:documentation "Creates a closure which tries to match REPETITION.
+It is assumed that REPETITION has a constant number of repetitions."))
 
 (defmethod create-constant-repetition-matcher ((repetition repetition) next-fn)
   (declare #.*standard-optimize-settings*)
@@ -732,20 +721,20 @@ that REPETITION has a constant number of repetitions."))
         ;; REPEAT-MATCHER is part of the closure's environment but it
         ;; can only be defined after NON-GREEDY-AUX is defined
         repeat-matcher)
-    (declare (type fixnum repetitions rep-num)
-             (type function next-fn))
+    (declare (fixnum repetitions rep-num)
+             (function next-fn))
     (if (zerop (min-len repetition))
       ;; we make a reservation for our slot in *LAST-POS-STORES*
       ;; because we have to watch out for needless loops as the inner
       ;; regex might match zero-length strings
       (let ((zero-length-num (incf-after *zero-length-num*)))
-        (declare (type fixnum zero-length-num))
+        (declare (fixnum zero-length-num))
         (flet ((constant-aux (start-pos)
                  ;; the actual matcher which first calls NEXT-FN and
                  ;; on failure tries to match the inner regex of
                  ;; REPETITION (if we haven't done so too often)
-                 (declare (type fixnum start-pos)
-                          (type function repeat-matcher))
+                 (declare (fixnum start-pos)
+                          (function repeat-matcher))
                  (let ((old-last-pos
                          (svref *last-pos-stores* zero-length-num)))
                    (when (and old-last-pos
@@ -778,15 +767,15 @@ that REPETITION has a constant number of repetitions."))
           ;; the closure we return is just a thin wrapper around
           ;; CONSTANT-AUX to initialize the repetition counter
           (lambda (start-pos)
-            (declare (type fixnum start-pos))
+            (declare (fixnum start-pos))
             (setf (aref *repeat-counters* rep-num) 0
                   (aref *last-pos-stores* zero-length-num) nil)
             (constant-aux start-pos))))
       ;; easier code because we don't have to care about zero-length
       ;; matches but basically the same
       (flet ((constant-aux (start-pos)
-               (declare (type fixnum start-pos)
-                        (type function repeat-matcher))
+               (declare (fixnum start-pos)
+                        (function repeat-matcher))
                (cond ((< (aref *repeat-counters* rep-num) repetitions)
                        (incf (aref *repeat-counters* rep-num))
                        (prog1
@@ -796,7 +785,7 @@ that REPETITION has a constant number of repetitions."))
         (setq repeat-matcher
                 (create-matcher-aux (regex repetition) #'constant-aux))
         (lambda (start-pos)
-          (declare (type fixnum start-pos))
+          (declare (fixnum start-pos))
           (setf (aref *repeat-counters* rep-num) 0)
           (constant-aux start-pos))))))
   

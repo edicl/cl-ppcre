@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/packages.lisp,v 1.24 2008/06/25 14:04:27 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/packages.lisp,v 1.38 2008/07/22 23:54:59 edi Exp $
 
 ;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
@@ -29,78 +29,40 @@
 
 (in-package :cl-user)
 
-#-:cormanlisp
-(defpackage #:cl-ppcre
-  (:nicknames #:ppcre)
-  #+genera (:shadowing-import-from #:common-lisp #:lambda #:simple-string #:string)
-  (:use #-genera #:cl #+genera #:future-common-lisp)
-  (:export #:create-scanner
-           #:parse-tree-synonym
-           #:define-parse-tree-synonym
-           #:scan
-           #:scan-to-strings
-           #:do-scans
-           #:do-matches
-           #:do-matches-as-strings
-           #:all-matches
-           #:all-matches-as-strings
-           #:split
-           #:regex-replace
-           #:regex-replace-all
-           #:regex-apropos
-           #:regex-apropos-list
-           #:quote-meta-chars
-           #:*regex-char-code-limit*
-           #:*use-bmh-matchers*
-           #:*allow-quoting*
-           #:*allow-named-registers*
-           #:ppcre-error
-           #:ppcre-invocation-error
-           #:ppcre-syntax-error
-           #:ppcre-syntax-error-string
-           #:ppcre-syntax-error-pos
-           #:register-groups-bind
-           #:do-register-groups))
-
-#+:cormanlisp
-(defpackage "CL-PPCRE"
-  (:nicknames "PPCRE")
-  (:use "CL")
-  (:export "CREATE-SCANNER"
-           "PARSE-TREE-SYNONYM"
-           "DEFINE-PARSE-TREE-SYNONYM"
-           "SCAN"
-           "SCAN-TO-STRINGS"
-           "DO-SCANS"
-           "DO-MATCHES"
-           "DO-MATCHES-AS-STRINGS"
-           "ALL-MATCHES"
-           "ALL-MATCHES-AS-STRINGS"
-           "SPLIT"
-           "REGEX-REPLACE"
-           "REGEX-REPLACE-ALL"
-           "REGEX-APROPOS"
-           "REGEX-APROPOS-LIST"
-           "QUOTE-META-CHARS"
-           "*REGEX-CHAR-CODE-LIMIT*"
-           "*USE-BMH-MATCHERS*"
-           "*ALLOW-QUOTING*"
-           "*ALLOW-NAMED-REGISTERS*"
-           "PPCRE-ERROR"
-           "PPCRE-INVOCATION-ERROR"
-           "PPCRE-SYNTAX-ERROR"
-           "PPCRE-SYNTAX-ERROR-STRING"
-           "PPCRE-SYNTAX-ERROR-POS"
-           "REGISTER-GROUPS-BIND"
-           "DO-REGISTER-GROUPS"))
-
-#-:cormanlisp
-(defpackage #:cl-ppcre-test
-  #+genera (:shadowing-import-from #:common-lisp #:lambda)
-  (:use #-genera #:cl #+genera #:future-common-lisp #:cl-ppcre)
-  (:export #:test))
-
-#+:cormanlisp
-(defpackage "CL-PPCRE-TEST"
-  (:use "CL" "CL-PPCRE")
-  (:export "TEST"))
+(defpackage :cl-ppcre
+  (:nicknames :ppcre)
+  #+:genera
+  (:shadowing-import-from :common-lisp :lambda :simple-string :string)
+  (:use #-:genera :cl #+:genera :future-common-lisp)
+  (:shadow :digit-char-p :defconstant)
+  (:export :parse-string
+           :create-scanner
+           :create-optimized-test-function
+           :parse-tree-synonym
+           :define-parse-tree-synonym
+           :scan
+           :scan-to-strings
+           :do-scans
+           :do-matches
+           :do-matches-as-strings
+           :all-matches
+           :all-matches-as-strings
+           :split
+           :regex-replace
+           :regex-replace-all
+           :regex-apropos
+           :regex-apropos-list
+           :quote-meta-chars
+           :*regex-char-code-limit*
+           :*use-bmh-matchers*
+           :*allow-quoting*
+           :*allow-named-registers*
+           :*optimize-char-classes*
+           :*property-resolver*
+           :ppcre-error
+           :ppcre-invocation-error
+           :ppcre-syntax-error
+           :ppcre-syntax-error-string
+           :ppcre-syntax-error-pos
+           :register-groups-bind
+           :do-register-groups))

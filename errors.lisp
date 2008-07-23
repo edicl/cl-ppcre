@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/errors.lisp,v 1.18 2008/06/25 14:04:27 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/errors.lisp,v 1.21 2008/07/06 18:12:04 edi Exp $
 
 ;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
@@ -27,7 +27,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 (defvar *syntax-error-string* nil
   "The string which caused the syntax error.")
@@ -69,16 +69,16 @@ parse tree).")
   (:documentation "Signaled when CL-PPCRE functions are
 invoked with wrong arguments."))
 
-(defmacro signal-ppcre-syntax-error* (pos format-control &rest format-arguments)
+(defmacro signal-syntax-error* (pos format-control &rest format-arguments)
   `(error 'ppcre-syntax-error
           :pos ,pos
           :format-control ,format-control
           :format-arguments (list ,@format-arguments)))
 
-(defmacro signal-ppcre-syntax-error (format-control &rest format-arguments)
-  `(signal-ppcre-syntax-error* nil ,format-control ,@format-arguments))
+(defmacro signal-syntax-error (format-control &rest format-arguments)
+  `(signal-syntax-error* nil ,format-control ,@format-arguments))
 
-(defmacro signal-ppcre-invocation-error (format-control &rest format-arguments)
+(defmacro signal-invocation-error (format-control &rest format-arguments)
   `(error 'ppcre-invocation-error
           :format-control ,format-control
           :format-arguments (list ,@format-arguments)))

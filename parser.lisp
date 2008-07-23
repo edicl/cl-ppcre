@@ -1,11 +1,11 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/parser.lisp,v 1.25 2008/06/25 14:04:28 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/parser.lisp,v 1.30 2008/07/06 18:12:05 edi Exp $
 
 ;;; The parser will - with the help of the lexer - parse a regex
 ;;; string and convert it into a "parse tree" (see docs for details
-;;; about the syntax of these trees). Note that the lexer might return
-;;; illegal parse trees. It is assumed that the conversion process
-;;; later on will track them down.
+;;; about the syntax of these trees).  Note that the lexer might
+;;; return illegal parse trees.  It is assumed that the conversion
+;;; process later on will track them down.
 
 ;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
@@ -33,10 +33,9 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 (defun group (lexer)
-  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <group>.
 The productions are: <group> -> \"\(\"<regex>\")\"
                                 \"\(?:\"<regex>\")\"
@@ -53,6 +52,7 @@ The productions are: <group> -> \"\(\"<regex>\")\"
 where <flags> is parsed by the lexer function MAYBE-PARSE-FLAGS.
 Will return <parse-tree> or \(<grouping-type> <parse-tree>) where
 <grouping-type> is one of six keywords - see source for details."
+  (declare #.*standard-optimize-settings*)
   (multiple-value-bind (open-token flags)
       (get-token lexer)
     (cond ((eq open-token :open-paren-paren)
@@ -65,7 +65,7 @@ Will return <parse-tree> or \(<grouping-type> <parse-tree>) where
                    (number (try-number lexer :no-whitespace-p t))
                    ;; make changes to extended-mode-p local
                    (*extended-mode-p* *extended-mode-p*))
-              (declare (type fixnum open-paren-pos))
+              (declare (fixnum open-paren-pos))
               (cond (number
                       ;; condition is a number (i.e. refers to a
                       ;; back-reference)
@@ -73,13 +73,11 @@ Will return <parse-tree> or \(<grouping-type> <parse-tree>) where
                              (reg-expr (reg-expr lexer))
                              (close-token (get-token lexer)))
                         (unless (eq inner-close-token :close-paren)
-                          (signal-ppcre-syntax-error*
-                           (+ open-paren-pos 2)
-                           "Opening paren has no matching closing paren"))
+                          (signal-syntax-error* (+ open-paren-pos 2)
+                                                "Opening paren has no matching closing paren."))
                         (unless (eq close-token :close-paren)
-                          (signal-ppcre-syntax-error*
-                           open-paren-pos
-                           "Opening paren has no matching closing paren"))
+                          (signal-syntax-error* open-paren-pos
+                                                "Opening paren has no matching closing paren."))
                         (list :branch number reg-expr)))
                     (t
                       ;; condition must be a full regex (actually a
@@ -94,9 +92,8 @@ Will return <parse-tree> or \(<grouping-type> <parse-tree>) where
                              (reg-expr (reg-expr lexer))
                              (close-token (get-token lexer)))
                         (unless (eq close-token :close-paren)
-                          (signal-ppcre-syntax-error*
-                           open-paren-pos
-                           "Opening paren has no matching closing paren"))
+                          (signal-syntax-error* open-paren-pos
+                                                "Opening paren has no matching closing paren."))
                         (list :branch inner-reg-expr reg-expr))))))
           ((member open-token '(:open-paren
                                 :open-paren-colon
@@ -124,9 +121,8 @@ Will return <parse-tree> or \(<grouping-type> <parse-tree>) where
                 (unless (eq close-token :close-paren)
                   ;; the token following <regex> must be the closing
                   ;; parenthesis or this is a syntax error
-                  (signal-ppcre-syntax-error*
-                   open-paren-pos
-                   "Opening paren has no matching closing paren"))
+                  (signal-syntax-error* open-paren-pos
+                                        "Opening paren has no matching closing paren."))
                 (if flags
                   ;; if the lexer has returned a list of flags this must
                   ;; have been the "(?:"<regex>")" production
@@ -160,11 +156,11 @@ Will return <parse-tree> or \(<grouping-type> <parse-tree>) where
            open-token))))
 
 (defun greedy-quant (lexer)
-  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <greedy-quant>.
 The productions are: <greedy-quant> -> <group> | <group><quantifier>
 where <quantifier> is parsed by the lexer function GET-QUANTIFIER.
 Will return <parse-tree> or (:GREEDY-REPETITION <min> <max> <parse-tree>)."
+  (declare #.*standard-optimize-settings*)
   (let* ((group (group lexer))
          (token (get-quantifier lexer)))
     (if token
@@ -174,11 +170,11 @@ Will return <parse-tree> or (:GREEDY-REPETITION <min> <max> <parse-tree>)."
       group)))
 
 (defun quant (lexer)
-  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <quant>.
 The productions are: <quant> -> <greedy-quant> | <greedy-quant>\"?\".
 Will return the <parse-tree> returned by GREEDY-QUANT and optionally
 change :GREEDY-REPETITION to :NON-GREEDY-REPETITION."
+  (declare #.*standard-optimize-settings*)
   (let* ((greedy-quant (greedy-quant lexer))
          (pos (lexer-pos lexer))
          (next-char (next-char lexer)))
@@ -189,10 +185,10 @@ change :GREEDY-REPETITION to :NON-GREEDY-REPETITION."
     greedy-quant))
 
 (defun seq (lexer)
-  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <seq>.
 The productions are: <seq> -> <quant> | <quant><seq>.
 Will return <parse-tree> or (:SEQUENCE <parse-tree> <parse-tree>)."
+  (declare #.*standard-optimize-settings*)
   (flet ((make-array-from-two-chars (char1 char2)
            (let ((string (make-array 2
                                      :element-type 'character
@@ -254,10 +250,10 @@ Will return <parse-tree> or (:SEQUENCE <parse-tree> <parse-tree>)."
       :void)))
   
 (defun reg-expr (lexer)
-  (declare #.*standard-optimize-settings*)
   "Parses and consumes a <regex>, a complete regular expression.
 The productions are: <regex> -> <seq> | <seq>\"|\"<regex>.
 Will return <parse-tree> or (:ALTERNATION <parse-tree> <parse-tree>)."
+  (declare #.*standard-optimize-settings*)
   (let ((pos (lexer-pos lexer)))
     (case (next-char lexer)
       ((nil)
@@ -299,6 +295,8 @@ Will return <parse-tree> or (:ALTERNATION <parse-tree> <parse-tree>)."
               seq)))))))
 
 (defun reverse-strings (parse-tree)
+  "Recursively walks through PARSE-TREE and destructively reverses all
+strings in it."
   (declare #.*standard-optimize-settings*)
   (cond ((stringp parse-tree)
           (nreverse parse-tree))
@@ -311,13 +309,11 @@ Will return <parse-tree> or (:ALTERNATION <parse-tree> <parse-tree>)."
         (t parse-tree)))
 
 (defun parse-string (string)
-  (declare #.*standard-optimize-settings*)
   "Translate the regex string STRING into a parse tree."
+  (declare #.*standard-optimize-settings*)
   (let* ((lexer (make-lexer string))
          (parse-tree (reverse-strings (reg-expr lexer))))
     ;; check whether we've consumed the whole regex string
     (if (end-of-string-p lexer)
       parse-tree
-      (signal-ppcre-syntax-error*
-       (lexer-pos lexer)
-       "Expected end of string"))))
+      (signal-syntax-error* (lexer-pos lexer) "Expected end of string."))))

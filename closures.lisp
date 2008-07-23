@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/closures.lisp,v 1.36 2008/07/03 07:44:06 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/closures.lisp,v 1.44 2008/07/22 22:38:05 edi Exp $
 
 ;;; Here we create the closures which together build the final
 ;;; scanner.
@@ -30,16 +30,15 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 (declaim (inline *string*= *string*-equal))
-
 (defun *string*= (string2 start1 end1 start2 end2)
   "Like STRING=, i.e. compares the special string *STRING* from START1
 to END1 with STRING2 from START2 to END2. Note that there's no
 boundary check - this has to be implemented by the caller."
   (declare #.*standard-optimize-settings*)
-  (declare (type fixnum start1 end1 start2 end2))
+  (declare (fixnum start1 end1 start2 end2))
   (loop for string1-idx of-type fixnum from start1 below end1
         for string2-idx of-type fixnum from start2 below end2
         always (char= (schar *string* string1-idx)
@@ -50,7 +49,7 @@ boundary check - this has to be implemented by the caller."
 START1 to END1 with STRING2 from START2 to END2. Note that there's no
 boundary check - this has to be implemented by the caller."
   (declare #.*standard-optimize-settings*)
-  (declare (type fixnum start1 end1 start2 end2))
+  (declare (fixnum start1 end1 start2 end2))
   (loop for string1-idx of-type fixnum from start1 below end1
         for string2-idx of-type fixnum from start2 below end2
         always (char-equal (schar *string* string1-idx)
@@ -81,7 +80,7 @@ such that the call to NEXT-FN after the match would succeed."))
     ;; now create a closure which checks if one of the closures
     ;; created above can succeed
     (lambda (start-pos)
-      (declare (type fixnum start-pos))
+      (declare (fixnum start-pos))
       (loop for matcher in all-matchers
             thereis (funcall (the function matcher) start-pos)))))
 
@@ -90,13 +89,13 @@ such that the call to NEXT-FN after the match would succeed."))
   ;; the position of this REGISTER within the whole regex; we start to
   ;; count at 0
   (let ((num (num register)))
-    (declare (type fixnum num))
+    (declare (fixnum num))
     ;; STORE-END-OF-REG is a thin wrapper around NEXT-FN which will
     ;; update the corresponding values of *REGS-START* and *REGS-END*
     ;; after the inner matcher has succeeded
     (flet ((store-end-of-reg (start-pos)
-               (declare (type fixnum start-pos)
-                        (type function next-fn))
+               (declare (fixnum start-pos)
+                        (function next-fn))
                (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
                      (svref *reg-ends* num) start-pos)
            (funcall next-fn start-pos)))
@@ -104,10 +103,10 @@ such that the call to NEXT-FN after the match would succeed."))
       ;; wrapped by this REGISTER
       (let ((inner-matcher (create-matcher-aux (regex register)
                                                #'store-end-of-reg)))
-        (declare (type function inner-matcher))
+        (declare (function inner-matcher))
         ;; here comes the actual closure for REGISTER
         (lambda (start-pos)
-          (declare (type fixnum start-pos))
+          (declare (fixnum start-pos))
           ;; remember the old values of *REGS-START* and friends in
           ;; case we cannot match
           (let ((old-*reg-starts* (svref *reg-starts* num))
@@ -129,7 +128,7 @@ such that the call to NEXT-FN after the match would succeed."))
   ;; create a closure which just checks for the inner regex and
   ;; doesn't care about NEXT-FN
   (let ((test-matcher (create-matcher-aux (regex lookahead) #'identity)))
-    (declare (type function next-fn test-matcher))
+    (declare (function next-fn test-matcher))
     (if (positivep lookahead)
       ;; positive look-ahead: check success of inner regex, then call
       ;; NEXT-FN
@@ -148,152 +147,52 @@ such that the call to NEXT-FN after the match would succeed."))
         ;; create a closure which just checks for the inner regex and
         ;; doesn't care about NEXT-FN
         (test-matcher (create-matcher-aux (regex lookbehind) #'identity)))
-    (declare (type function next-fn test-matcher)
-             (type fixnum len))
+    (declare (function next-fn test-matcher)
+             (fixnum len))
     (if (positivep lookbehind)
       ;; positive look-behind: check success of inner regex (if we're
       ;; far enough from the start of *STRING*), then call NEXT-FN
       (lambda (start-pos)
-        (declare (type fixnum start-pos))
+        (declare (fixnum start-pos))
         (and (>= (- start-pos (or *real-start-pos* *start-pos*)) len)
              (funcall test-matcher (- start-pos len))
              (funcall next-fn start-pos)))
       ;; negative look-behind: check failure of inner regex (if we're
       ;; far enough from the start of *STRING*), then call NEXT-FN
       (lambda (start-pos)
-        (declare (type fixnum start-pos))
+        (declare (fixnum start-pos))
         (and (or (< (- start-pos (or *real-start-pos* *start-pos*)) len)
                  (not (funcall test-matcher (- start-pos len))))
              (funcall next-fn start-pos))))))
 
 (defmacro insert-char-class-tester ((char-class chr-expr) &body body)
-  "Utility macro to replace each occurence of '(CHAR-CLASS-TEST)
+  "Utility macro to replace each occurence of '\(CHAR-CLASS-TEST)
 within BODY with the correct test (corresponding to CHAR-CLASS)
 against CHR-EXPR."
-  (with-unique-names (%char-class)
-    ;; the actual substitution is done here: replace
-    ;; '(CHAR-CLASS-TEST) with NEW
-    (flet ((substitute-char-class-tester (new)
+  (with-rebinding (char-class)
+    (with-unique-names (test-function)
+      (flet ((substitute-char-class-tester (new)
                (subst new '(char-class-test) body
                       :test #'equalp)))
-      `(let* ((,%char-class ,char-class)
-              (set (charset ,%char-class))
-              (count (if set
-                       (charset-count set)
-                       most-positive-fixnum))
-              ;; collect a list of "all" characters in the set if
-              ;; there aren't more than two
-              (all-chars (if (<= count 2)
-                           (all-characters set)
-                           nil))
-              downcasedp)
-        (declare (type fixnum count))
-        ;; check if we can partition the charset into three ranges (or
-        ;; less)
-        (multiple-value-bind (min1 max1 min2 max2 min3 max3)
-            (create-ranges-from-set set)
-          ;; if that didn't work and CHAR-CLASS is case-insensitive we
-          ;; try it again with every character downcased
-          (when (and (not min1)
-                     (case-insensitive-p ,%char-class))
-            (multiple-value-setq (min1 max1 min2 max2 min3 max3)
-              (create-ranges-from-set set :downcasep t))
-            (setq downcasedp t))
-          (cond ((= count 1)
-                  ;; charset contains exactly one character so we just
-                  ;; check for this single character; (note that this
-                  ;; actually can't happen because this case is
-                  ;; optimized away in CONVERT already...)
-                  (let ((chr1 (first all-chars)))
-                    ,@(substitute-char-class-tester
-                       `(char= ,chr-expr chr1))))
-                ((= count 2)
-                  ;; set contains exactly two characters
-                  (let ((chr1 (first all-chars))
-                        (chr2 (second all-chars)))
-                    ,@(substitute-char-class-tester
-                       `(let ((chr ,chr-expr))
-                         (or (char= chr chr1)
-                             (char= chr chr2))))))
-                ((word-char-class-p ,%char-class)
-                  ;; special-case: set is \w, \W, [\w], [\W] or
-                  ;; something equivalent
-                  ,@(substitute-char-class-tester
-                     `(word-char-p ,chr-expr)))
-                ((= count *regex-char-code-limit*)
-                  ;; according to the ANSI standard we might have all
-                  ;; possible characters in the set even if it doesn't
-                  ;; contain CHAR-CODE-LIMIT characters but this
-                  ;; doesn't seem to be the case for current
-                  ;; implementations (also note that this optimization
-                  ;; implies that you must not have characters with
-                  ;; character codes beyond *REGEX-CHAR-CODE-LIMIT* in
-                  ;; your regexes if you've changed this limit); we
-                  ;; expect the compiler to optimize this T "test"
-                  ;; away
-                  ,@(substitute-char-class-tester t))
-                ((and downcasedp min1 min2 min3)
-                  ;; three different ranges, downcased
-                  ,@(substitute-char-class-tester
-                     `(let ((chr ,chr-expr))
-                       (or (char-not-greaterp min1 chr max1)
-                           (char-not-greaterp min2 chr max2)
-                           (char-not-greaterp min3 chr max3)))))
-                ((and downcasedp min1 min2)
-                  ;; two ranges, downcased
-                  ,@(substitute-char-class-tester
-                     `(let ((chr ,chr-expr))
-                       (or (char-not-greaterp min1 chr max1)
-                           (char-not-greaterp min2 chr max2)))))
-                ((and downcasedp min1)
-                  ;; one downcased range
-                  ,@(substitute-char-class-tester
-                     `(char-not-greaterp min1 ,chr-expr max1)))
-                ((and min1 min2 min3)
-                  ;; three ranges
-                  ,@(substitute-char-class-tester
-                     `(let ((chr ,chr-expr))
-                       (or (char<= min1 chr max1)
-                           (char<= min2 chr max2)
-                           (char<= min3 chr max3)))))
-                ((and min1 min2)
-                  ;; two ranges
-                  ,@(substitute-char-class-tester
-                     `(let ((chr ,chr-expr))
-                       (or (char<= min1 chr max1)
-                           (char<= min2 chr max2)))))
-                (min1
-                  ;; one range
-                  ,@(substitute-char-class-tester
-                     `(char<= min1 ,chr-expr max1)))
-                (t
-                  ;; the general case; note that most of the above
-                  ;; "optimizations" are based on early (2002)
-                  ;; experiences and benchmarks with CMUCL
-                  ,@(substitute-char-class-tester
-                     `(in-charset-p ,chr-expr set)))))))))
+        `(let ((,test-function (test-function ,char-class)))
+           ,@(substitute-char-class-tester
+              `(funcall ,test-function ,chr-expr)))))))
 
 (defmethod create-matcher-aux ((char-class char-class) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (type function next-fn))
+  (declare (function next-fn))
   ;; insert a test against the current character within *STRING*
   (insert-char-class-tester (char-class (schar *string* start-pos))
-    (if (invertedp char-class)
-      (lambda (start-pos)
-        (declare (type fixnum start-pos))
-        (and (< start-pos *end-pos*)
-             (not (char-class-test))
-             (funcall next-fn (1+ start-pos))))
-      (lambda (start-pos)
-        (declare (type fixnum start-pos))
-        (and (< start-pos *end-pos*)
-             (char-class-test)
-             (funcall next-fn (1+ start-pos)))))))
+    (lambda (start-pos)
+      (declare (fixnum start-pos))
+      (and (< start-pos *end-pos*)
+           (char-class-test)
+           (funcall next-fn (1+ start-pos))))))
 
 (defmethod create-matcher-aux ((str str) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (type fixnum *end-string-pos*)
-           (type function next-fn)
+  (declare (fixnum *end-string-pos*)
+           (function next-fn)
            ;; this special value is set by CREATE-SCANNER when the
            ;; closures are built
            (special end-string))
@@ -307,15 +206,15 @@ against CHR-EXPR."
          (end-string-len (if end-string
                            (length end-string)
                            nil)))
-    (declare (type fixnum len))
+    (declare (fixnum len))
     (cond ((and start-of-end-string-p case-insensitive-p)
             ;; closure for the first STR which belongs to the constant
             ;; string at the end of the regular expression;
             ;; case-insensitive version
             (lambda (start-pos)
-              (declare (type fixnum start-pos end-string-len))
+              (declare (fixnum start-pos end-string-len))
               (let ((test-end-pos (+ start-pos end-string-len)))
-                (declare (type fixnum test-end-pos))
+                (declare (fixnum test-end-pos))
                 ;; either we're at *END-STRING-POS* (which means that
                 ;; it has already been confirmed that end-string
                 ;; starts here) or we really have to test
@@ -329,9 +228,9 @@ against CHR-EXPR."
             ;; string at the end of the regular expression;
             ;; case-sensitive version
             (lambda (start-pos)
-              (declare (type fixnum start-pos end-string-len))
+              (declare (fixnum start-pos end-string-len))
               (let ((test-end-pos (+ start-pos end-string-len)))
-                (declare (type fixnum test-end-pos))
+                (declare (fixnum test-end-pos))
                 ;; either we're at *END-STRING-POS* (which means that
                 ;; it has already been confirmed that end-string
                 ;; starts here) or we really have to test
@@ -344,13 +243,13 @@ against CHR-EXPR."
             ;; a STR which can be skipped because some other function
             ;; has already confirmed that it matches
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (funcall next-fn (+ start-pos len))))
           ((and (= len 1) case-insensitive-p)
             ;; STR represent exactly one character; case-insensitive
             ;; version
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (and (< start-pos *end-pos*)
                    (char-equal (schar *string* start-pos) chr)
                    (funcall next-fn (1+ start-pos)))))
@@ -358,35 +257,34 @@ against CHR-EXPR."
             ;; STR represent exactly one character; case-sensitive
             ;; version
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (and (< start-pos *end-pos*)
                    (char= (schar *string* start-pos) chr)
                    (funcall next-fn (1+ start-pos)))))
           (case-insensitive-p
             ;; general case, case-insensitive version
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (let ((next-pos (+ start-pos len)))
-                (declare (type fixnum next-pos))
+                (declare (fixnum next-pos))
                 (and (<= next-pos *end-pos*)
                      (*string*-equal str start-pos next-pos 0 len)
                      (funcall next-fn next-pos)))))
           (t
             ;; general case, case-sensitive version
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (let ((next-pos (+ start-pos len)))
-                (declare (type fixnum next-pos))
+                (declare (fixnum next-pos))
                 (and (<= next-pos *end-pos*)
                      (*string*= str start-pos next-pos 0 len)
                      (funcall next-fn next-pos))))))))
 
 (declaim (inline word-boundary-p))
-
 (defun word-boundary-p (start-pos)
   "Check whether START-POS is a word-boundary within *STRING*."
   (declare #.*standard-optimize-settings*)
-  (declare (type fixnum start-pos))
+  (declare (fixnum start-pos))
   (let ((1-start-pos (1- start-pos))
         (*start-pos* (or *real-start-pos* *start-pos*)))
     ;; either the character before START-POS is a word-constituent and
@@ -407,7 +305,7 @@ against CHR-EXPR."
 
 (defmethod create-matcher-aux ((word-boundary word-boundary) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (type function next-fn))
+  (declare (function next-fn))
   (if (negatedp word-boundary)
     (lambda (start-pos)
       (and (not (word-boundary-p start-pos))
@@ -418,25 +316,25 @@ against CHR-EXPR."
 
 (defmethod create-matcher-aux ((everything everything) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (type function next-fn))
+  (declare (function next-fn))
   (if (single-line-p everything)
     ;; closure for single-line-mode: we really match everything, so we
     ;; just advance the index into *STRING* by one and carry on
     (lambda (start-pos)
-      (declare (type fixnum start-pos))
+      (declare (fixnum start-pos))
       (and (< start-pos *end-pos*)
            (funcall next-fn (1+ start-pos))))
     ;; not single-line-mode, so we have to make sure we don't match
     ;; #\Newline
     (lambda (start-pos)
-      (declare (type fixnum start-pos))
+      (declare (fixnum start-pos))
       (and (< start-pos *end-pos*)
            (char/= (schar *string* start-pos) #\Newline)
            (funcall next-fn (1+ start-pos))))))
 
 (defmethod create-matcher-aux ((anchor anchor) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (type function next-fn))
+  (declare (function next-fn))
   (let ((startp (startp anchor))
         (multi-line-p (multi-line-p anchor)))
     (cond ((no-newline-p anchor)
@@ -444,14 +342,14 @@ against CHR-EXPR."
             ;; we just have to check whether START-POS equals
             ;; *END-POS*
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (and (= start-pos *end-pos*)
                    (funcall next-fn start-pos))))
           ((and startp multi-line-p)
             ;; a start-anchor in multi-line-mode: check if we're at
             ;; *START-POS* or if the last character was #\Newline
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (let ((*start-pos* (or *real-start-pos* *start-pos*)))
                 (and (or (= start-pos *start-pos*)
                          (and (<= start-pos *end-pos*)
@@ -463,7 +361,7 @@ against CHR-EXPR."
             ;; a start-anchor which is not in multi-line-mode, so just
             ;; check whether we're at *START-POS*
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (and (= start-pos (or *real-start-pos* *start-pos*))
                    (funcall next-fn start-pos))))
           (multi-line-p
@@ -471,7 +369,7 @@ against CHR-EXPR."
             ;; *END-POS* or if the character we're looking at is
             ;; #\Newline
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (and (or (= start-pos *end-pos*)
                        (and (< start-pos *end-pos*)
                             (char= #\Newline
@@ -482,7 +380,7 @@ against CHR-EXPR."
             ;; check if we're at *END-POS* or if we're looking at
             ;; #\Newline and there's nothing behind it
             (lambda (start-pos)
-              (declare (type fixnum start-pos))
+              (declare (fixnum start-pos))
               (and (or (= start-pos *end-pos*)
                        (and (= start-pos (1- *end-pos*))
                             (char= #\Newline
@@ -491,14 +389,14 @@ against CHR-EXPR."
 
 (defmethod create-matcher-aux ((back-reference back-reference) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (type function next-fn))
+  (declare (function next-fn))
   ;; the position of the corresponding REGISTER within the whole
   ;; regex; we start to count at 0
   (let ((num (num back-reference)))
     (if (case-insensitive-p back-reference)
       ;; the case-insensitive version
       (lambda (start-pos)
-        (declare (type fixnum start-pos))
+        (declare (fixnum start-pos))
         (let ((reg-start (svref *reg-starts* num))
               (reg-end (svref *reg-ends* num)))
           ;; only bother to check if the corresponding REGISTER as
@@ -506,7 +404,7 @@ against CHR-EXPR."
           (and reg-start
                (let ((next-pos (+ start-pos (- (the fixnum reg-end)
                                                (the fixnum reg-start)))))
-                 (declare (type fixnum next-pos))
+                 (declare (fixnum next-pos))
                  (and
                    (<= next-pos *end-pos*)
                    (*string*-equal *string* start-pos next-pos
@@ -514,7 +412,7 @@ against CHR-EXPR."
                    (funcall next-fn next-pos))))))
       ;; the case-sensitive version
       (lambda (start-pos)
-        (declare (type fixnum start-pos))
+        (declare (fixnum start-pos))
         (let ((reg-start (svref *reg-starts* num))
               (reg-end (svref *reg-ends* num)))
           ;; only bother to check if the corresponding REGISTER as
@@ -522,7 +420,7 @@ against CHR-EXPR."
           (and reg-start
                (let ((next-pos (+ start-pos (- (the fixnum reg-end)
                                                (the fixnum reg-start)))))
-                 (declare (type fixnum next-pos))
+                 (declare (fixnum next-pos))
                  (and
                    (<= next-pos *end-pos*)
                    (*string*= *string* start-pos next-pos
@@ -534,17 +432,17 @@ against CHR-EXPR."
   (let* ((test (test branch))
          (then-matcher (create-matcher-aux (then-regex branch) next-fn))
          (else-matcher (create-matcher-aux (else-regex branch) next-fn)))
-    (declare (type function then-matcher else-matcher))
+    (declare (function then-matcher else-matcher))
     (cond ((numberp test)
             (lambda (start-pos)
-              (declare (type fixnum test))
+              (declare (fixnum test))
               (if (and (< test (length *reg-starts*))
                        (svref *reg-starts* test))
                 (funcall then-matcher start-pos)
                 (funcall else-matcher start-pos))))
           (t
             (let ((test-matcher (create-matcher-aux test #'identity)))
-              (declare (type function test-matcher))
+              (declare (function test-matcher))
               (lambda (start-pos)
                 (if (funcall test-matcher start-pos)
                   (funcall then-matcher start-pos)
@@ -553,7 +451,7 @@ against CHR-EXPR."
 (defmethod create-matcher-aux ((standalone standalone) next-fn)
   (declare #.*standard-optimize-settings*)
   (let ((inner-matcher (create-matcher-aux (regex standalone) #'identity)))
-    (declare (type function next-fn inner-matcher))
+    (declare (function next-fn inner-matcher))
     (lambda (start-pos)
       (let ((next-pos (funcall inner-matcher start-pos)))
         (and next-pos

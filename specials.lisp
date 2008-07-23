@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.27 2008/07/03 08:13:28 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.40 2008/07/23 02:14:06 edi Exp $
 
 ;;; globally declared special variables
 
@@ -29,7 +29,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 ;;; special variables used to effect declarations
 
@@ -51,7 +51,7 @@
 
 (defvar *extended-mode-p* nil
   "Whether the parser will start in extended mode.")
-(declaim (type boolean *extended-mode-p*))
+(declaim (boolean *extended-mode-p*))
 
 ;;; special variables used by the SCAN function and the matchers
 
@@ -60,16 +60,16 @@
 occur in character classes.  Change this value BEFORE creating
 scanners if you don't need the \(full) Unicode support of
 implementations like AllegroCL, CLISP, LispWorks, or SBCL.")
-(declaim (type fixnum *regex-char-code-limit*))
+(declaim (fixnum *regex-char-code-limit*))
   
 (defvar *string* ""
   "The string which is currently scanned by SCAN.
 Will always be coerced to a SIMPLE-STRING.")
-(declaim (type simple-string *string*))
+(declaim (simple-string *string*))
 
 (defvar *start-pos* 0
   "Where to start scanning within *STRING*.")
-(declaim (type fixnum *start-pos*))
+(declaim (fixnum *start-pos*))
 
 (defvar *real-start-pos* nil
   "The real start of *STRING*. This is for repeated scans and is only used internally.")
@@ -77,22 +77,22 @@ Will always be coerced to a SIMPLE-STRING.")
 
 (defvar *end-pos* 0
   "Where to stop scanning within *STRING*.")
-(declaim (type fixnum *end-pos*))
+(declaim (fixnum *end-pos*))
 
 (defvar *reg-starts* (make-array 0)
   "An array which holds the start positions
 of the current register candidates.")
-(declaim (type simple-vector *reg-starts*))
+(declaim (simple-vector *reg-starts*))
   
 (defvar *regs-maybe-start* (make-array 0)
   "An array which holds the next start positions
 of the current register candidates.")
-(declaim (type simple-vector *regs-maybe-start*))
+(declaim (simple-vector *regs-maybe-start*))
 
 (defvar *reg-ends* (make-array 0)
   "An array which holds the end positions
 of the current register candidates.")
-(declaim (type simple-vector *reg-ends*))
+(declaim (simple-vector *reg-ends*))
 
 (defvar *end-string-pos* nil
   "Start of the next possible end-string candidate.")
@@ -100,12 +100,12 @@ of the current register candidates.")
 (defvar *rep-num* 0
   "Counts the number of \"complicated\" repetitions while the matchers
 are built.")
-(declaim (type fixnum *rep-num*))
+(declaim (fixnum *rep-num*))
 
 (defvar *zero-length-num* 0
   "Counts the number of repetitions the inner regexes of which may
 have zero-length while the matchers are built.")
-(declaim (type fixnum *zero-length-num*))
+(declaim (fixnum *zero-length-num*))
 
 (defvar *repeat-counters* (make-array 0
                                       :initial-element 0
@@ -118,11 +118,26 @@ repetitive patterns have been tested already.")
   "An array to keep track of the last positions
 where we saw repetitive patterns.
 Only used for patterns which might have zero length.")
-(declaim (type simple-vector *last-pos-stores*))
+(declaim (simple-vector *last-pos-stores*))
 
 (defvar *use-bmh-matchers* t
   "Whether the scanners created by CREATE-SCANNER should use the \(fast
 but large) Boyer-Moore-Horspool matchers.")
+
+(defvar *optimize-char-classes* nil
+  "Whether character classes should be compiled into look-ups into
+O\(1) data structures.  This is usually fast but will be costly in
+terms of scanner creation time and might be costly in terms of size if
+*REGEX-CHAR-CODE-LIMIT* is high.  This value will be used as the :KIND
+keyword argument to CREATE-OPTIMIZED-TEST-FUNCTION - see there for the
+possible non-NIL values.")
+
+(defvar *property-resolver* nil
+  "Should be NIL or a designator for a function which accepts strings
+and returns unary character test functions or NIL.  This 'resolver' is
+intended to handle `character properties' like \\p{IsAlpha}.  If
+*PROPERTY-RESOLVER* is NIL, then the parser will simply treat \\p and
+\\P as #\\p and #\\P as in older versions of CL-PPCRE.")
 
 (defvar *allow-quoting* nil
   "Whether the parser should support Perl's \\Q and \\E.")

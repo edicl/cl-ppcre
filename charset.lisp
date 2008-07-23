@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/charset.lisp,v 1.4 2008/07/03 08:39:10 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/charset.lisp,v 1.9 2008/07/23 00:47:58 edi Exp $
 
 ;;; A specialized set implementation for characters by Nikodemus Siivola.
 
@@ -30,7 +30,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 (defconstant +probe-depth+ 3
   "Maximum number of collisions \(for any element) we accept before we
@@ -45,7 +45,7 @@ initialized to #\Null except for the first one which is initialized to
 #\?."
   (declare #.*standard-optimize-settings*)
   (declare (type (integer 2 #.(1- array-total-size-limit)) size))
-  ;; Since #\Null always hashes to 0, store something else there
+  ;; since #\Null always hashes to 0, store something else there
   ;; initially, and #\Null everywhere else
   (let ((result (make-array size
                             :element-type #-:lispworks 'character #+:lispworks 'lw:simple-char
@@ -53,7 +53,7 @@ initialized to #\Null except for the first one which is initialized to
     (setf (char result 0) #\?)
     result))
 
-(defstruct (charset (:constructor make-charset))
+(defstruct (charset (:constructor make-charset ()))
   ;; this is set to 0 when we stop hashing and just use a CHAR-CODE
   ;; indexed vector
   (depth +probe-depth+ :type fixnum)
@@ -92,7 +92,7 @@ to the hash code HASH."
         (depth (charset-depth set))
         (code (char-code char)))
     (declare (fixnum depth))
-    ;; As long as the set remains reasonably small, we use non-linear
+    ;; as long as the set remains reasonably small, we use non-linear
     ;; hashing - the first hash of any character is its CHAR-CODE, and
     ;; subsequent hashes are computed by MIX above
     (cond ((or
@@ -129,14 +129,15 @@ to the hash code HASH."
   "Adds the character CHAR to the charset SET, extending SET if
 necessary.  Returns CHAR."
   (declare #.*standard-optimize-settings*)
-  (or (%add-to-charset char set)
+  (or (%add-to-charset char set t)
       (%add-to-charset/expand char set)
       (error "Oops, this should not happen..."))
   char)
 
-(defun %add-to-charset (char set)
+(defun %add-to-charset (char set count)
   "Tries to add the character CHAR to the charset SET without
-extending it.  Returns NIL if this fails."
+extending it.  Returns NIL if this fails.  Counts CHAR as new
+if COUNT is true and it is added to SET."
   (declare #.*standard-optimize-settings*)
   (declare (character char) (charset set))
   (let ((vector (charset-vector set))
@@ -144,8 +145,12 @@ extending it.  Returns NIL if this fails."
         (code (char-code char)))
     (declare (fixnum depth))
     ;; see comments in IN-CHARSET-P for algorithm
-    (cond ((or (zerop depth) (zerop code))      
-           (setf (char vector code) char))
+    (cond ((or (zerop depth) (zerop code))
+           (unless (eq char (char vector code))
+             (setf (char vector code) char)
+             (when count
+               (incf (charset-count set))))
+           char)
           (t
            (let ((hash code))
              (tagbody
@@ -154,7 +159,8 @@ extending it.  Returns NIL if this fails."
                      (x (char vector index)))
                 (cond ((eq x (code-char 0))
                        (setf (char vector index) char)
-                       (incf (charset-count set))
+                       (when count
+                         (incf (charset-count set)))
                        (return-from %add-to-charset char))
                       ((eq x char)
                        (return-from %add-to-charset char))
@@ -184,7 +190,10 @@ extending it.  Returns NIL if this fails."
        (setf (charset-depth set) new-depth
              (charset-vector set) new-vector)
        (flet ((try-add (x)
-                (unless (%add-to-charset x set)
+                ;; don't count - old characters are already accounted
+                ;; for, and might count the new one multiple times as
+                ;; well
+                (unless (%add-to-charset x set nil)
                   (assert (not (zerop new-depth)))
                   (setf new-size (* 2 new-size))
                   (go :retry))))
@@ -196,32 +205,38 @@ extending it.  Returns NIL if this fails."
                  (try-add x))
                (unless (zerop i)
                  (try-add x))))))))
+    ;; added and expanded, /now/ count the new character.
+    (incf (charset-count set))
     t))
 
-(defun all-characters (set)
-  "Returns a list of all characters in the charset SET."
+(defun map-charset (function charset)
+  "Calls FUNCTION with all characters in SET.  Returns NIL."
   (declare #.*standard-optimize-settings*)
-  (loop with count = (charset-count set)
-        with counter = 0
-        for code below char-code-limit
-        for char = (code-char code)
-        while (< counter count)
-        when (and char (in-charset-p char set))
-        do (incf counter)
-        and collect char))
+  (declare (function function))
+  (let* ((n (charset-count charset))
+         (vector (charset-vector charset))
+         (size (length vector)))
+    ;; see comments in IN-CHARSET-P for algorithm
+    (when (eq (code-char 0) (char vector 0))
+      (funcall function (code-char 0))
+      (decf n))
+    (loop for i from 1 below size
+          for char = (char vector i)
+          unless (eq (code-char 0) char) do
+          (funcall function char)
+          ;; this early termination test should be worth it when
+          ;; mapping across depth 0 charsets.
+          (when (zerop (decf n))
+            (return-from map-charset nil))))
+  nil)
 
-(defun merge-set (set1 set2 &optional invertedp)
-  "Returns the \"sum\" of two charsets.  This is a destructive
-operation on SET1.  If INVERTEDP is true, merges the \"inverse\" of
-SET2 into SET1 instead."
+(defun create-charset-from-test-function (test-function start end)
+  "Creates and returns a charset representing all characters with
+character codes between START and END which satisfy TEST-FUNCTION."
   (declare #.*standard-optimize-settings*)
-  ;; we only consider values with character codes below
-  ;; *REGEX-CHAR-CODE-LIMIT*
-  (loop for code of-type fixnum from 0 below *regex-char-code-limit*
+  (loop with charset = (make-charset)
+        for code from start below end
         for char = (code-char code)
-        when (and char (if invertedp
-                         (not (in-charset-p char set2))
-                         (in-charset-p char set2)))
-        do (add-to-charset char set1))
-  set1)
-
+        when (and char (funcall test-function char))
+        do (add-to-charset char charset)
+        finally (return charset)))

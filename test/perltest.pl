@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# $Header: /usr/local/cvsrep/cl-ppcre/test/perltest.pl,v 1.1 2008/07/06 21:24:39 edi Exp $
 
 # This is a heavily modified version of the file 'perltest' which
 # comes with the PCRE library package, which is open source software,
@@ -7,8 +8,6 @@
 
 # The PCRE library package is available from
 # <ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/>
-
-use Time::HiRes qw(time);
 
 sub string_for_lisp {
   my(@a, $t, $in_string, $switch);
@@ -47,8 +46,6 @@ sub string_for_lisp {
     "\"$t\"";
   }
 }
-
-$min_time = shift;
 
 NEXT_RE: while (1) {
   last
@@ -132,8 +129,6 @@ if (\$x =~ ${pattern}) {
 };
 END
 
-    $times = 1;
-    $used = 0;
     $counter++;
     print STDERR "$counter\n";
 
@@ -141,18 +136,9 @@ END
       $error = 't';
     } else {
       $error = 'nil';
-      if ($min_time) {
-        $times = 10;
-        while (1) {
-          $used = &$test($times);
-          last
-            if $used > $min_time;
-          $times *= 10;
-        }
-      }
     }
 
-    print "($counter $info_string \"$pattern_for_lisp\" $case_insensitive_mode $multi_line_mode $single_line_mode $extended_mode " . string_for_lisp($x) . " $error $times $used ";
+    print "($counter $info_string \"$pattern_for_lisp\" $case_insensitive_mode $multi_line_mode $single_line_mode $extended_mode " . string_for_lisp($x) . " $error ";
     if (!@subs) {
       print 'nil nil';
     } else {

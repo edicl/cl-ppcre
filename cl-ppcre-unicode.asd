@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre.asd,v 1.45 2008/07/23 02:14:06 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre-unicode.asd,v 1.14 2008/07/22 14:19:44 edi Exp $
 
 ;;; This ASDF system definition was kindly provided by Marco Baringer.
 
@@ -31,49 +31,28 @@
 
 (in-package :cl-user)
 
-(defpackage :cl-ppcre-asd
+(defpackage :cl-ppcre-unicode-asd
   (:use :cl :asdf))
 
-(in-package :cl-ppcre-asd)
+(in-package :cl-ppcre-unicode-asd)
 
-(defsystem :cl-ppcre
-  :version "2.0.0"
-  :serial t
-  :components ((:file "packages")
-               (:file "specials")
-               (:file "util")
-               (:file "errors")
-               (:file "charset")
-               (:file "charmap")
-               (:file "chartest")
-               #-:use-acl-regexp2-engine
-               (:file "lexer")
-               #-:use-acl-regexp2-engine
-               (:file "parser")
-               #-:use-acl-regexp2-engine
-               (:file "regex-class")
-               #-:use-acl-regexp2-engine
-               (:file "regex-class-util")
-               #-:use-acl-regexp2-engine
-               (:file "convert")
-               #-:use-acl-regexp2-engine
-               (:file "optimize")
-               #-:use-acl-regexp2-engine
-               (:file "closures")
-               #-:use-acl-regexp2-engine
-               (:file "repetition-closures")
-               #-:use-acl-regexp2-engine
-               (:file "scanner")
-               (:file "api")))
-
-(defsystem :cl-ppcre-test
-  :depends-on (:cl-ppcre :flexi-streams)
-  :components ((:module "test"
+(defsystem :cl-ppcre-unicode
+  :components ((:module "cl-ppcre-unicode"
                         :serial t
                         :components ((:file "packages")
-                                     (:file "tests")
-                                     (:file "perl-tests")))))
+                                     (:file "resolver"))))
+  :depends-on (:cl-ppcre :cl-unicode))
 
-(defmethod perform ((o test-op) (c (eql (find-system :cl-ppcre))))
-  (operate 'load-op :cl-ppcre-test)
-  (funcall (intern (symbol-name :run-all-tests) (find-package :cl-ppcre-test))))
+(defsystem :cl-ppcre-unicode-test
+  :depends-on (:cl-ppcre-unicode :cl-ppcre-test)
+  :components ((:module "test"
+                        :serial t
+                        :components ((:file "unicode-tests")))))
+
+(defmethod perform ((o test-op) (c (eql (find-system :cl-ppcre-unicode))))
+  ;; we must load CL-PPCRE explicitly so that the CL-PPCRE-TEST system
+  ;; will be found
+  (operate 'load-op :cl-ppcre)
+  (operate 'load-op :cl-ppcre-unicode-test)
+  (funcall (intern (symbol-name :run-all-tests) (find-package :cl-ppcre-test))
+           :more-tests (intern (symbol-name :unicode-test) (find-package :cl-ppcre-test))))

@@ -1,9 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/lispworks-defsystem.lisp,v 1.4 2008/06/25 14:04:27 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre-unicode/packages.lisp,v 1.2 2008/07/22 13:58:13 edi Exp $
 
-;;; This system definition for LispWorks was kindly provided by Wade Humeniuk
-
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz.  All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -29,29 +27,12 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-user)
+(in-package :cl-user)
 
-(defparameter *cl-ppcre-base-directory*
-  (make-pathname :name nil :type nil :version nil
-                 :defaults (parse-namestring *load-truename*)))
-
-(defsystem cl-ppcre
-  (:default-pathname *cl-ppcre-base-directory*
-   :default-type :lisp-file)
-  :members ("packages"
-            "specials"
-            "util"
-            "errors"
-            "lexer"
-            "parser"
-            "regex-class"
-            "convert"
-            "optimize"
-            "closures"
-            "repetition-closures"
-            "scanner"
-            "api")
-  :rules ((:in-order-to :compile :all
-                        (:requires (:load :previous)))
-          (:in-order-to :load :all
-                        (:requires (:load :previous)))))
+(defpackage :cl-ppcre-unicode
+  #+:genera
+  (:shadowing-import-from :common-lisp :lambda :string)
+  (:use #-:genera :cl #+:genera :future-common-lisp
+        :cl-ppcre :cl-unicode)
+  (:import-from :cl-ppcre :signal-syntax-error)
+  (:export :unicode-property-resolver))

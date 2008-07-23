@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/optimize.lisp,v 1.31 2008/06/25 14:04:27 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/optimize.lisp,v 1.35 2008/07/06 18:12:04 edi Exp $
 
 ;;; This file contains optimizations which can be applied to converted
 ;;; parse trees.
@@ -30,7 +30,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 (defgeneric flatten (regex)
   (declare #.*standard-optimize-settings*)
@@ -96,8 +96,7 @@ operation on REGEX."))
             alternation)
           ((cdr choices)
             (first choices))
-          (t (signal-ppcre-syntax-error
-              "Encountered alternation without choices.")))))
+          (t (signal-syntax-error "Encountered alternation without choices.")))))
 
 (defmethod flatten ((branch branch))
   (declare #.*standard-optimize-settings*)
@@ -143,7 +142,7 @@ operation on REGEX."))
          collector-start
          (collector-length 0)
          skip)
-    (declare (type fixnum collector-length))
+    (declare (fixnum collector-length))
     (loop
       (let ((elements-rest (cdr curr-point)))
         (unless elements-rest
@@ -394,7 +393,7 @@ function called by END-STRIN.)"))
         concatenated-string
         concatenated-start
         (concatenated-length 0))
-    (declare (type fixnum concatenated-length))
+    (declare (fixnum concatenated-length))
     (loop for element in (reverse (elements seq))
           ;; remember the case-(in)sensitivity of the last relevant
           ;; STR object
@@ -429,7 +428,7 @@ function called by END-STRIN.)"))
                                concatenated-start nil))
                        (let ((len (len element-end))
                              (str (str element-end)))
-                         (declare (type fixnum len))
+                         (declare (fixnum len))
                          (incf concatenated-length len)
                          (loop for i of-type fixnum downfrom (1- len) to 0
                                do (vector-push-extend (char str i)

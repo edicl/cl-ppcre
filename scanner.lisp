@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/scanner.lisp,v 1.29 2008/06/25 14:04:28 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/scanner.lisp,v 1.34 2008/07/06 18:12:05 edi Exp $
 
 ;;; Here the scanner for the actual regex as well as utility scanners
 ;;; for the constant start and end strings are created.
@@ -30,13 +30,13 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 (defmacro bmh-matcher-aux (&key case-insensitive-p)
   "Auxiliary macro used by CREATE-BMH-MATCHER."
   (let ((char-compare (if case-insensitive-p 'char-equal 'char=)))
     `(lambda (start-pos)
-      (declare (type fixnum start-pos))
+      (declare (fixnum start-pos))
       (if (or (minusp start-pos)
               (> (the fixnum (+ start-pos m)) *end-pos*))
         nil
@@ -53,21 +53,21 @@
                                  (return-from bmh-matcher (1+ i)))))))))
 
 (defun create-bmh-matcher (pattern case-insensitive-p)
-  (declare #.*standard-optimize-settings*)
   "Returns a Boyer-Moore-Horspool matcher which searches the (special)
 simple-string *STRING* for the first occurence of the substring
-PATTERN. The search starts at the position START-POS within *STRING*
-and stops before *END-POS* is reached. Depending on the second
-argument the search is case-insensitive or not. If the special
+PATTERN.  The search starts at the position START-POS within *STRING*
+and stops before *END-POS* is reached.  Depending on the second
+argument the search is case-insensitive or not.  If the special
 variable *USE-BMH-MATCHERS* is NIL, use the standard SEARCH function
-instead. (BMH matchers are faster but need much more space.)"
+instead.  \(BMH matchers are faster but need much more space.)"
+  (declare #.*standard-optimize-settings*)
   ;; see <http://www-igm.univ-mlv.fr/~lecroq/string/node18.html> for
   ;; details
   (unless *use-bmh-matchers*
     (let ((test (if case-insensitive-p #'char-equal #'char=)))
       (return-from create-bmh-matcher
         (lambda (start-pos)
-          (declare (type fixnum start-pos))
+          (declare (fixnum start-pos))
           (and (not (minusp start-pos))
                (search pattern
                        *string*
@@ -78,7 +78,7 @@ instead. (BMH matchers are faster but need much more space.)"
 	 (skip (make-array *regex-char-code-limit*
 			  :element-type 'fixnum
 			  :initial-element m)))
-    (declare (type fixnum m))
+    (declare (fixnum m))
     (loop for k of-type fixnum below m
           if case-insensitive-p
             do (setf (aref skip (char-code (char-upcase (schar pattern k)))) (- m k 1)
@@ -93,29 +93,28 @@ instead. (BMH matchers are faster but need much more space.)"
   "Auxiliary macro used by CREATE-CHAR-SEARCHER."
   (let ((char-compare (if case-insensitive-p 'char-equal 'char=)))
     `(lambda (start-pos)
-      (declare (type fixnum start-pos))
+      (declare (fixnum start-pos))
       (and (not (minusp start-pos))
            (loop for i of-type fixnum from start-pos below *end-pos*
                  thereis (and (,char-compare (schar *string* i) chr) i))))))
 
 (defun create-char-searcher (chr case-insensitive-p)
-  (declare #.*standard-optimize-settings*)
   "Returns a function which searches the (special) simple-string
 *STRING* for the first occurence of the character CHR. The search
 starts at the position START-POS within *STRING* and stops before
-*END-POS* is reached. Depending on the second argument the search is
+*END-POS* is reached.  Depending on the second argument the search is
 case-insensitive or not."
+  (declare #.*standard-optimize-settings*)
   (if case-insensitive-p
     (char-searcher-aux :case-insensitive-p t)
     (char-searcher-aux)))
 
 (declaim (inline newline-skipper))
-
 (defun newline-skipper (start-pos)
-  (declare #.*standard-optimize-settings*)
-  (declare (type fixnum start-pos))
-  "Find the next occurence of a character in *STRING* which is behind
+  "Finds the next occurence of a character in *STRING* which is behind
 a #\Newline."
+  (declare #.*standard-optimize-settings*)
+  (declare (fixnum start-pos))
   ;; we can start with (1- START-POS) without testing for (PLUSP
   ;; START-POS) because we know we'll never call NEWLINE-SKIPPER on
   ;; the first iteration
@@ -127,7 +126,7 @@ a #\Newline."
 (defmacro insert-advance-fn (advance-fn)
   "Creates the actual closure returned by CREATE-SCANNER-AUX by
 replacing '(ADVANCE-FN-DEFINITION) with a suitable definition for
-ADVANCE-FN. This is a utility macro used by CREATE-SCANNER-AUX."
+ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
   (subst
    advance-fn '(advance-fn-definition)
    '(lambda (string start end)
@@ -159,8 +158,8 @@ ADVANCE-FN. This is a utility macro used by CREATE-SCANNER-AUX."
                                  nil))
               ;; we don't need to try further than MAX-END-POS
               (max-end-pos (- *end-pos* min-len)))
-         (declare (type fixnum scan-start-pos)
-                  (type function match-fn))
+         (declare (fixnum scan-start-pos)
+                  (function match-fn))
          ;; definition of ADVANCE-FN will be inserted here by macrology
          (labels ((advance-fn-definition))
            (declare (inline advance-fn))
@@ -185,8 +184,8 @@ ADVANCE-FN. This is a utility macro used by CREATE-SCANNER-AUX."
              ;; is anchored at the very end of the target string
              ;; (perhaps modulo a #\Newline)
              (let ((end-test-pos (- *end-pos* (the fixnum end-string-len))))
-               (declare (type fixnum end-test-pos)
-                        (type function end-string-test))
+               (declare (fixnum end-test-pos)
+                        (function end-string-test))
                (unless (setq *end-string-pos* (funcall end-string-test
                                                        end-test-pos))
                  (when (and (= 1 (the fixnum end-anchored-p))
@@ -223,7 +222,7 @@ ADVANCE-FN. This is a utility macro used by CREATE-SCANNER-AUX."
                    (return-from scan nil))
                  (when starts-with-str
                    (locally
-                     (declare (type fixnum starts-with-len))
+                     (declare (fixnum starts-with-len))
                      (cond ((and (case-insensitive-p starts-with)
                                  (not (*string*-equal starts-with-str
                                                       *start-pos*
@@ -321,10 +320,10 @@ ADVANCE-FN. This is a utility macro used by CREATE-SCANNER-AUX."
                            rep-num
                            zero-length-num
                            reg-num)
-  (declare #.*standard-optimize-settings*)
-  (declare (type fixnum min-len zero-length-num rep-num reg-num))
   "Auxiliary function to create and return a scanner \(which is
-actually a closure). Used by CREATE-SCANNER."
+actually a closure).  Used by CREATE-SCANNER."
+  (declare #.*standard-optimize-settings*)
+  (declare (fixnum min-len zero-length-num rep-num reg-num))
   (let ((starts-with-len (if (typep starts-with 'str)
                            (len starts-with)))
         (starts-with-everything (typep starts-with 'everything)))
@@ -341,8 +340,8 @@ actually a closure). Used by CREATE-SCANNER."
         ;; left)
         (insert-advance-fn
           (advance-fn (pos)
-            (declare (type fixnum end-string-offset starts-with-len)
-                     (type function start-string-test end-string-test))
+            (declare (fixnum end-string-offset starts-with-len)
+                     (function start-string-test end-string-test))
             (loop
               (unless (setq pos (funcall start-string-test pos))
                 ;; give up completely if we can't find a start string
@@ -350,7 +349,7 @@ actually a closure). Used by CREATE-SCANNER."
                 (return-from scan nil))
               (locally
                 ;; from here we know that POS is a FIXNUM
-                (declare (type fixnum pos))
+                (declare (fixnum pos))
                 (when (= pos (- (the fixnum *end-string-pos*) end-string-offset))
                   ;; if we already found an end string candidate the
                   ;; position of which matches the start string
@@ -369,7 +368,7 @@ actually a closure). Used by CREATE-SCANNER."
                     ;; according to the end string candidate
                     (let ((new-pos (- (the fixnum *end-string-pos*)
                                       end-string-offset)))
-                      (declare (type fixnum new-pos *end-string-pos*))
+                      (declare (fixnum new-pos *end-string-pos*))
                       (cond ((= new-pos pos)
                               ;; if POS and NEW-POS are equal then the
                               ;; two candidates agree so we're fine
@@ -394,15 +393,15 @@ actually a closure). Used by CREATE-SCANNER."
         ;; offset (from the left)
         (insert-advance-fn
           (advance-fn (pos)
-            (declare (type fixnum end-string-offset)
-                     (type function end-string-test))
+            (declare (fixnum end-string-offset)
+                     (function end-string-test))
             (loop
               (unless (setq pos (newline-skipper pos))
                 ;; if we can't find a #\Newline we give up immediately
                 (return-from scan nil))
               (locally
                 ;; from here we know that POS is a FIXNUM
-                (declare (type fixnum pos))
+                (declare (fixnum pos))
                 (when (= pos (- (the fixnum *end-string-pos*) end-string-offset))
                   ;; if we already found an end string candidate the
                   ;; position of which matches the place behind the
@@ -420,7 +419,7 @@ actually a closure). Used by CREATE-SCANNER."
                     ;; according to the end string candidate
                     (let ((new-pos (- (the fixnum *end-string-pos*)
                                       end-string-offset)))
-                      (declare (type fixnum new-pos *end-string-pos*))
+                      (declare (fixnum new-pos *end-string-pos*))
                       (cond ((= new-pos pos)
                               ;; if POS and NEW-POS are equal then the
                               ;; the end string candidate agrees with
@@ -446,7 +445,7 @@ actually a closure). Used by CREATE-SCANNER."
         ;; information to advance POS
         (insert-advance-fn
           (advance-fn (pos)
-            (declare (type function start-string-test end-string-test))
+            (declare (function start-string-test end-string-test))
             (unless (setq pos (funcall start-string-test pos))
               (return-from scan nil))
             (if (<= (the fixnum pos)
@@ -463,7 +462,7 @@ actually a closure). Used by CREATE-SCANNER."
         ;; enough information to advance POS
         (insert-advance-fn
           (advance-fn (pos)
-            (declare (type function end-string-test))
+            (declare (function end-string-test))
             (unless (setq pos (newline-skipper pos))
               (return-from scan nil))
             (if (<= (the fixnum pos)
@@ -476,7 +475,7 @@ actually a closure). Used by CREATE-SCANNER."
         ;; just check for constant start string candidate
         (insert-advance-fn
           (advance-fn (pos)
-            (declare (type function start-string-test))
+            (declare (function start-string-test))
             (unless (setq pos (funcall start-string-test pos))
               (return-from scan nil))
             pos)))
@@ -492,7 +491,7 @@ actually a closure). Used by CREATE-SCANNER."
         ;; advanced beyond the last one
         (insert-advance-fn
           (advance-fn (pos)
-            (declare (type function end-string-test))
+            (declare (function end-string-test))
             (if (<= (the fixnum pos)
                     (the fixnum *end-string-pos*))
               (return-from advance-fn pos))

@@ -1,12 +1,12 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/lexer.lisp,v 1.28 2008/06/25 14:04:27 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/lexer.lisp,v 1.34 2008/07/06 22:36:30 edi Exp $
 
 ;;; The lexer's responsibility is to convert the regex string into a
 ;;; sequence of tokens which are in turn consumed by the parser.
 ;;;
 ;;; The lexer is aware of Perl's 'extended mode' and it also 'knows'
 ;;; (with a little help from the parser) how many register groups it
-;;; has opened so far. (The latter is necessary for interpreting
+;;; has opened so far.  (The latter is necessary for interpreting
 ;;; strings like "\\10" correctly.)
 
 ;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
@@ -35,7 +35,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-ppcre)
+(in-package :cl-ppcre)
 
 (declaim (inline map-char-to-special-class))
 (defun map-char-to-special-char-class (chr)
@@ -56,27 +56,18 @@ their associated character classes."
     ((#\S)
       :non-whitespace-char-class)))
 
-(locally
-  (declare #.*standard-optimize-settings*)
-  (defstruct (lexer (:constructor make-lexer-internal))
-    "LEXER structures are used to hold the regex string which is
+(defstruct (lexer (:constructor make-lexer-internal))
+  "LEXER structures are used to hold the regex string which is
 currently lexed and to keep track of the lexer's state."
-    (str ""
-         :type string
-         :read-only t)
-    (len 0
-         :type fixnum
-         :read-only t)
-    (reg 0
-         :type fixnum)
-    (pos 0
-         :type fixnum)
-    (last-pos nil
-              :type list)))
+  (str "" :type string :read-only t)
+  (len 0 :type fixnum :read-only t)
+  (reg 0 :type fixnum)
+  (pos 0 :type fixnum)
+  (last-pos nil :type list))
 
 (defun make-lexer (string)
   (declare (inline make-lexer-internal)
-           #-genera (type string string))
+           #-:genera (string string))
   (make-lexer-internal :str (maybe-coerce-to-simple-string string)
                        :len (length string)))
 
@@ -101,12 +92,10 @@ Does not respect extended mode."
   (declare #.*standard-optimize-settings*)
   "Returns the next character which is to be examined and updates the
 POS slot. Does not respect extended mode."
-  (cond ((end-of-string-p lexer)
-          nil)
-        (t
-          (prog1
-            (schar (lexer-str lexer) (lexer-pos lexer))
-            (incf (lexer-pos lexer))))))
+  (cond ((end-of-string-p lexer) nil)
+        (t (prog1
+               (schar (lexer-str lexer) (lexer-pos lexer))
+             (incf (lexer-pos lexer))))))
 
 (defun next-char (lexer)
   (declare #.*standard-optimize-settings*)
@@ -135,9 +124,7 @@ nested comments are skipped if applicable."
                             while (and skip-char
                                        (char/= skip-char #\)))
                             finally (return skip-char))
-                    (signal-ppcre-syntax-error*
-                     error-pos
-                     "Comment group not closed")))
+                    (signal-syntax-error* error-pos "Comment group not closed.")))
                 (setq next-char (next-char-non-extended lexer)))
               (t
                 ;; undo effect of previous INCF if we didn't see a #
@@ -177,7 +164,7 @@ nested comments are skipped if applicable."
   "Moves (LEXER-POS LEXER) back to the last position stored in
 \(LEXER-LAST-POS LEXER) and pops the LAST-POS stack."
   (unless (lexer-last-pos lexer)
-    (signal-ppcre-syntax-error "LAST-POS stack of LEXER ~A is empty" lexer))
+    (signal-syntax-error "LAST-POS stack of LEXER ~A is empty." lexer))
   (setf (lexer-pos lexer) (pop (lexer-last-pos lexer)))
   nil)
 
@@ -232,19 +219,16 @@ the corresponding number started within the regex string."
   (let ((code (logand #o377 (the fixnum (or number 0)))))
     (or (and (< code char-code-limit)
              (code-char code))
-        (signal-ppcre-syntax-error*
-         error-pos
-         "No character for hex-code ~X"
-         number))))
+        (signal-syntax-error* error-pos "No character for hex-code ~X." number))))
 
 (defun unescape-char (lexer)
   (declare #.*standard-optimize-settings*)
-  "Convert the characters(s) following a backslash into a token
+  "Convert the characters\(s) following a backslash into a token
 which is returned. This function is to be called when the backslash
 has already been consumed. Special character classes like \\W are
 handled elsewhere."
   (when (end-of-string-p lexer)
-    (signal-ppcre-syntax-error "String ends with backslash"))
+    (signal-syntax-error "String ends with backslash."))
   (let ((chr (next-char-non-extended lexer)))
     (case chr
       ((#\E)
@@ -257,9 +241,7 @@ handled elsewhere."
         ;; \cx means control-x in Perl
         (let ((next-char (next-char-non-extended lexer)))
           (unless next-char
-            (signal-ppcre-syntax-error*
-             (lexer-pos lexer)
-             "Character missing after '\\c' at position ~A"))
+            (signal-syntax-error* (lexer-pos lexer) "Character missing after '\\c' at position ~A."))
           (code-char (logxor #x40 (char-code (char-upcase next-char))))))
       ((#\x)
         ;; \x should be followed by a hexadecimal char code,
@@ -295,12 +277,28 @@ handled elsewhere."
         ;; all other characters aren't affected by a backslash
         chr))))
 
-(defun collect-char-class (lexer)
+(defun read-char-property (lexer first-char)
   (declare #.*standard-optimize-settings*)
+  (unless (eql (next-char-non-extended lexer) #\{)
+    (signal-syntax-error* (lexer-pos lexer) "Expected left brace after \\~A." first-char))
+  (let ((name (with-output-to-string (out nil :element-type
+                                          #+:lispworks 'lw:simple-char #-:lispworks 'character)
+                  (loop
+                   (let ((char (or (next-char-non-extended lexer)
+                                   (signal-syntax-error "Unexpected EOF after \\~A{." first-char))))
+                     (when (char= char #\})
+                       (return))
+                     (write-char char out))))))
+    (list (if (char= first-char #\p) :property :inverted-property)
+          ;; we must reverse here because of what PARSE-STRING does
+          (nreverse name))))
+
+(defun collect-char-class (lexer)
   "Reads and consumes characters from regex string until a right
-bracket is seen. Assembles them into a list \(which is returned) of
+bracket is seen.  Assembles them into a list \(which is returned) of
 characters, character ranges, like \(:RANGE #\\A #\\E) for a-e, and
 tokens representing special character classes."
+  (declare #.*standard-optimize-settings*)
   (let ((start-pos (lexer-pos lexer))         ; remember start for error message
         hyphen-seen
         last-char
@@ -309,72 +307,85 @@ tokens representing special character classes."
              "Do the right thing with character C depending on whether
 we're inside a range or not."
              (cond ((and hyphen-seen last-char)
-                     (setf (car list) (list :range last-char c)
-                           last-char nil))
+                    (setf (car list) (list :range last-char c)
+                          last-char nil))
                    (t
-                     (push c list)
-                     (setq last-char c)))
+                    (push c list)
+                    (setq last-char c)))
              (setq hyphen-seen nil)))
       (loop for first = t then nil
             for c = (next-char-non-extended lexer)
             ;; leave loop if at end of string
             while c
             do (cond
-                 ((char= c #\\)
-                   ;; we've seen a backslash
-                   (let ((next-char (next-char-non-extended lexer)))
-                     (case next-char
-                       ((#\d #\D #\w #\W #\s #\S)
-                         ;; a special character class
-                         (push (map-char-to-special-char-class next-char) list)
-                         ;; if the last character was a hyphen
-                         ;; just collect it literally
-                         (when hyphen-seen
-                           (push #\- list))
-                         ;; if the next character is a hyphen do the same
-                         (when (looking-at-p lexer #\-)
-                           (push #\- list)
-                           (incf (lexer-pos lexer)))
-                         (setq hyphen-seen nil))
-                       ((#\E)
-                         ;; if \Q quoting is on we ignore \E,
-                         ;; otherwise it's just a plain #\E
-                         (unless *allow-quoting*
-                           (handle-char #\E)))
-                       (otherwise
-                         ;; otherwise unescape the following character(s)
-                         (decf (lexer-pos lexer))
-                         (handle-char (unescape-char lexer))))))
-                 (first
-                   ;; the first character must not be a right bracket
-                   ;; and isn't treated specially if it's a hyphen
-                   (handle-char c))
-                 ((char= c #\])
-                   ;; end of character class
-                   ;; make sure we collect a pending hyphen
-                   (when hyphen-seen
-                     (setq hyphen-seen nil)
-                     (handle-char #\-))
-                   ;; reverse the list to preserve the order intended
-                   ;; by the author of the regex string
-                   (return-from collect-char-class (nreverse list)))
-                 ((and (char= c #\-)
-                       last-char
-                       (not hyphen-seen))
-                   ;; if the last character was 'just a character'
-                   ;; we expect to be in the middle of a range
-                   (setq hyphen-seen t))
-                 ((char= c #\-)
-                   ;; otherwise this is just an ordinary hyphen
+                ((char= c #\\)
+                 ;; we've seen a backslash
+                 (let ((next-char (next-char-non-extended lexer)))
+                   (case next-char
+                     ((#\d #\D #\w #\W #\s #\S)
+                      ;; a special character class
+                      (push (map-char-to-special-char-class next-char) list)
+                      ;; if the last character was a hyphen
+                      ;; just collect it literally
+                      (when hyphen-seen
+                        (push #\- list))
+                      ;; if the next character is a hyphen do the same
+                      (when (looking-at-p lexer #\-)
+                        (push #\- list)
+                        (incf (lexer-pos lexer)))
+                      (setq hyphen-seen nil))
+                     ((#\P #\p)
+                      ;; maybe a character property
+                      (cond ((null *property-resolver*)
+                             (handle-char next-char))
+                            (t
+                             (push (read-char-property lexer next-char) list)
+                             ;; if the last character was a hyphen
+                             ;; just collect it literally
+                             (when hyphen-seen
+                               (push #\- list))
+                             ;; if the next character is a hyphen do the same
+                             (when (looking-at-p lexer #\-)
+                               (push #\- list)
+                               (incf (lexer-pos lexer)))
+                             (setq hyphen-seen nil))))                        
+                     ((#\E)
+                      ;; if \Q quoting is on we ignore \E,
+                      ;; otherwise it's just a plain #\E
+                      (unless *allow-quoting*
+                        (handle-char #\E)))
+                     (otherwise
+                      ;; otherwise unescape the following character(s)
+                      (decf (lexer-pos lexer))
+                      (handle-char (unescape-char lexer))))))
+                (first
+                 ;; the first character must not be a right bracket
+                 ;; and isn't treated specially if it's a hyphen
+                 (handle-char c))
+                ((char= c #\])
+                 ;; end of character class
+                 ;; make sure we collect a pending hyphen
+                 (when hyphen-seen
+                   (setq hyphen-seen nil)
                    (handle-char #\-))
-                 (t
-                   ;; default case - just collect the character
-                   (handle-char c))))
+                 ;; reverse the list to preserve the order intended
+                 ;; by the author of the regex string
+                 (return-from collect-char-class (nreverse list)))
+                ((and (char= c #\-)
+                      last-char
+                      (not hyphen-seen))
+                 ;; if the last character was 'just a character'
+                 ;; we expect to be in the middle of a range
+                 (setq hyphen-seen t))
+                ((char= c #\-)
+                 ;; otherwise this is just an ordinary hyphen
+                 (handle-char #\-))
+                (t
+                 ;; default case - just collect the character
+                 (handle-char c))))
       ;; we can only exit the loop normally if we've reached the end
       ;; of the regex string without seeing a right bracket
-      (signal-ppcre-syntax-error*
-       start-pos
-       "Missing right bracket to close character class"))))
+      (signal-syntax-error* start-pos "Missing right bracket to close character class."))))
 
 (defun maybe-parse-flags (lexer)
   (declare #.*standard-optimize-settings*)
@@ -387,7 +398,7 @@ the behaviour of the lexer itself via the special variable
     (loop with set = t
           for chr = (next-char-non-extended lexer)
           unless chr
-            do (signal-ppcre-syntax-error "Unexpected end of string")
+            do (signal-syntax-error "Unexpected end of string.")
           while (find chr "-imsx" :test #'char=)
           ;; the first #\- will invert the meaning of all modifiers
           ;; following it
@@ -473,9 +484,7 @@ closing #\> will also be consumed."
                             :test #'char=)))
     (unless end-name
       ;; there has to be > somewhere, syntax error otherwise
-      (signal-ppcre-syntax-error*
-       (1- (lexer-pos lexer))
-       "Opening #\< in named group has no closing #\>"))
+      (signal-syntax-error* (1- (lexer-pos lexer)) "Opening #\< in named group has no closing #\>."))
     (let ((name (subseq (lexer-str lexer)
                         (lexer-pos lexer)
                         end-name)))
@@ -484,9 +493,7 @@ closing #\> will also be consumed."
                              (char= #\- char)))
                      name)
         ;; register name can contain only alphanumeric characters or #\-
-        (signal-ppcre-syntax-error*
-         (lexer-pos lexer)
-         "Invalid character in named register group"))
+        (signal-syntax-error* (lexer-pos lexer) "Invalid character in named register group."))
       ;; advance lexer beyond "<name>" part
       (setf (lexer-pos lexer) (1+ end-name))
       name)))
@@ -518,10 +525,7 @@ closing #\> will also be consumed."
              ((#\+ #\*)
               ;; quantifiers will always be consumend by
               ;; GET-QUANTIFIER, they must not appear here
-              (signal-ppcre-syntax-error*
-               (1- (lexer-pos lexer))
-               "Quantifier '~A' not allowed"
-               next-char))
+              (signal-syntax-error* (1- (lexer-pos lexer)) "Quantifier '~A' not allowed." next-char))
              ((#\{)
               ;; left brace isn't a special character in it's own
               ;; right but we must check if what follows might
@@ -530,12 +534,11 @@ closing #\> will also be consumed."
                     (this-last-pos (lexer-last-pos lexer)))
                 (unget-token lexer)
                 (when (get-quantifier lexer)
-                  (signal-ppcre-syntax-error*
-                   (car this-last-pos)
-                   "Quantifier '~A' not allowed"
-                   (subseq (lexer-str lexer)
-                           (car this-last-pos)
-                           (lexer-pos lexer))))
+                  (signal-syntax-error* (car this-last-pos)
+                                        "Quantifier '~A' not allowed."
+                                        (subseq (lexer-str lexer)
+                                                (car this-last-pos)
+                                                (lexer-pos lexer))))
                 (setf (lexer-pos lexer) this-pos
                       (lexer-last-pos lexer) this-last-pos)
                 next-char))
@@ -580,7 +583,7 @@ closing #\> will also be consumed."
                    (let* ((old-pos (decf (lexer-pos lexer)))
                           ;; ...so let's get the whole number first
                           (backref-number (get-number lexer)))
-                     (declare (type fixnum backref-number))
+                     (declare (fixnum backref-number))
                      (cond ((and (> backref-number (lexer-reg lexer))
                                  (<= 10 backref-number))
                             ;; \10 and higher are treated as octal
@@ -603,6 +606,10 @@ closing #\> will also be consumed."
                    (let ((old-pos (decf (lexer-pos lexer))))
                      (make-char-from-code (get-number lexer :radix 8 :max-length 3)
                                           old-pos)))
+                  ((#\P #\p)
+                   ;; might be a named property
+                   (cond (*property-resolver* (read-char-property lexer next-char))
+                         (t next-char)))
                   (otherwise
                    ;; in all other cases just unescape the
                    ;; character
@@ -622,17 +629,15 @@ closing #\> will also be consumed."
                        ;; or a closing parenthesis are following
                        (when (and flags
                                   (not (find next-char ":)" :test #'char=)))
-                         (signal-ppcre-syntax-error*
-                          (car (lexer-last-pos lexer))
-                          "Sequence '~A' not recognized"
-                          (subseq (lexer-str lexer)
-                                  (car (lexer-last-pos lexer))
-                                  (lexer-pos lexer))))
+                         (signal-syntax-error* (car (lexer-last-pos lexer))
+                                               "Sequence '~A' not recognized."
+                                               (subseq (lexer-str lexer)
+                                                       (car (lexer-last-pos lexer))
+                                                       (lexer-pos lexer))))
                        (case next-char
                          ((nil)
                           ;; syntax error
-                          (signal-ppcre-syntax-error
-                           "End of string following '(?'"))
+                          (signal-syntax-error "End of string following '(?'."))
                          ((#\))
                           ;; an empty group except for the flags
                           ;; (if there are any)
@@ -664,10 +669,9 @@ closing #\> will also be consumed."
                                   ;; we have encountered a named group
                                   ;; are we supporting register naming?
                                   (unless *allow-named-registers*
-                                    (signal-ppcre-syntax-error*
-                                     (1- (lexer-pos lexer))
-                                     "Character '~A' may not follow '(?<'"
-                                     next-char))
+                                    (signal-syntax-error* (1- (lexer-pos lexer))
+                                                          "Character '~A' may not follow '(?<'."
+                                                          next-char))
                                   ;; put the letter back
                                   (decf (lexer-pos lexer))
                                   ;; named group
@@ -685,19 +689,16 @@ closing #\> will also be consumed."
                                    :void)
                                   ((nil)
                                    ;; syntax error
-                                   (signal-ppcre-syntax-error
-                                    "End of string following '(?<'"))
+                                   (signal-syntax-error "End of string following '(?<'."))
                                   (t
                                    ;; also syntax error
-                                   (signal-ppcre-syntax-error*
-                                    (1- (lexer-pos lexer))
-                                    "Character '~A' may not follow '(?<'"
-                                    next-char ))))))
+                                   (signal-syntax-error* (1- (lexer-pos lexer))
+                                                         "Character '~A' may not follow '(?<'."
+                                                         next-char ))))))
                          (otherwise
-                          (signal-ppcre-syntax-error*
-                           (1- (lexer-pos lexer))
-                           "Character '~A' may not follow '(?'"
-                           next-char)))))
+                          (signal-syntax-error* (1- (lexer-pos lexer))
+                                                "Character '~A' may not follow '(?'."
+                                                next-char)))))
                     (t
                      ;; if next-char was not #\? (this is within
                      ;; the first COND), we've just seen an opening
