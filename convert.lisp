@@ -1,11 +1,11 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/convert.lisp,v 1.22 2005/04/01 21:29:09 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/convert.lisp,v 1.29 2008/07/03 07:44:06 edi Exp $
 
 ;;; Here the parse tree is converted into its internal representation
 ;;; using REGEX objects.  At the same time some optimizations are
 ;;; already applied.
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -70,12 +70,12 @@ the special FLAGS list."
     (otherwise
       (signal-ppcre-syntax-error "Unknown flag token ~A" token))))
 
-(defun add-range-to-hash (hash from to)
+(defun add-range-to-set (set from to)
   (declare #.*standard-optimize-settings*)
   (declare (special flags))
-  "Adds all characters from character FROM to character TO (inclusive)
-to the char class hash HASH. Does the right thing with respect to
-case-(in)sensitivity as specified by the special variable FLAGS."
+  "Adds all characters from character FROM to character TO
+\(inclusive) to the charset SET.  Does the right thing with respect to
+case-\(in)sensitivity as specified by the special variable FLAGS."
   (let ((from-code (char-code from))
         (to-code (char-code to)))
     (when (> from-code to-code)
@@ -83,57 +83,55 @@ case-(in)sensitivity as specified by the special variable FLAGS."
                                  from to))
     (cond ((case-insensitive-mode-p flags)
             (loop for code from from-code to to-code
-                  for chr = (code-char code)
-                  do (setf (gethash (char-upcase chr) hash) t
-                           (gethash (char-downcase chr) hash) t)))
+                  for char = (code-char code)
+                  do (add-to-charset (char-upcase char) set)
+                     (add-to-charset (char-downcase char) set)))
           (t
             (loop for code from from-code to to-code
-                  do (setf (gethash (code-char code) hash) t))))
-    hash))
+                  do (add-to-charset (code-char code) set))))
+    set))
 
-(defun convert-char-class-to-hash (list)
+(defun convert-char-class-to-charset (list)
   (declare #.*standard-optimize-settings*)
-  "Combines all items in LIST into one char class hash and returns it.
-Items can be single characters, character ranges like \(:RANGE #\\A
-#\\E), or special character classes like :DIGIT-CLASS. Does the right
-thing with respect to case-\(in)sensitivity as specified by the
-special variable FLAGS."
-  (loop with hash = (make-hash-table :size (ceiling (expt *regex-char-code-limit* (/ 1 4)))
-                                     :rehash-size (float (expt *regex-char-code-limit* (/ 1 4)))
-                                     :rehash-threshold #-genera 1.0 #+genera 0.99)
+  "Combines all items in LIST into one charset and returns it.  Items
+can be single characters, character ranges like \(:RANGE #\\A #\\E),
+or special character classes like :DIGIT-CLASS.  Does the right thing
+with respect to case-\(in)sensitivity as specified by the special
+variable FLAGS."
+  (loop with set = (make-charset)
         for item in list
         if (characterp item)
-          ;; treat a single character C like a range (:RANGE C C)
-          do (add-range-to-hash hash item item)
+        ;; treat a single character C like a range (:RANGE C C)
+        do (add-range-to-set set item item)
         else if (symbolp item)
-          ;; special character classes
-          do (setq hash
-                     (case item
-                       ((:digit-class)
-                         (merge-hash hash +digit-hash+))
-                       ((:non-digit-class)
-                         (merge-inverted-hash hash +digit-hash+))
-                       ((:whitespace-char-class)
-                         (merge-hash hash +whitespace-char-hash+))
-                       ((:non-whitespace-char-class)
-                         (merge-inverted-hash hash +whitespace-char-hash+))
-                       ((:word-char-class)
-                         (merge-hash hash +word-char-hash+))
-                       ((:non-word-char-class)
-                         (merge-inverted-hash hash +word-char-hash+))
-                       (otherwise
-                         (signal-ppcre-syntax-error
-                          "Unknown symbol ~A in character class"
-                          item))))
+        ;; special character classes
+        do (setq set
+                 (case item
+                   ((:digit-class)
+                    (merge-set set +digit-set+))
+                   ((:non-digit-class)
+                    (merge-set set +digit-set+ t))
+                   ((:whitespace-char-class)
+                    (merge-set set +whitespace-char-set+))
+                   ((:non-whitespace-char-class)
+                    (merge-set set +whitespace-char-set+ t))
+                   ((:word-char-class)
+                    (merge-set set +word-char-set+))
+                   ((:non-word-char-class)
+                    (merge-set set +word-char-set+ t))
+                   (otherwise
+                    (signal-ppcre-syntax-error
+                     "Unknown symbol ~A in character class"
+                     item))))
         else if (and (consp item)
                      (eq (car item) :range))
-          ;; proper ranges
-          do (add-range-to-hash hash
-                                (second item)
-                                (third item))
+        ;; proper ranges
+        do (add-range-to-set set
+                             (second item)
+                             (third item))
         else do (signal-ppcre-syntax-error "Unknown item ~A in char-class list"
                                            item)
-        finally (return hash)))
+        finally (return set)))
 
 (defun maybe-split-repetition (regex
                                greedyp
@@ -207,7 +205,7 @@ the same name."
 ;; During the conversion of the parse tree we keep track of the start
 ;; of the parse tree in the special variable STARTS-WITH which'll
 ;; either hold a STR object or an EVERYTHING object. The latter is the
-;; case if the regex starts with ".*" which implicitely anchors the
+;; case if the regex starts with ".*" which implicitly anchors the
 ;; regex at the start (perhaps modulo #\Newline).
 
 (defun maybe-accumulate (str)
@@ -267,7 +265,7 @@ NIL or a STR object of the same case mode. Always returns NIL."
 
 (defun convert-aux (parse-tree)
   (declare #.*standard-optimize-settings*)
-  (declare (special flags reg-num accumulate-start-p starts-with max-back-ref))
+  (declare (special flags reg-num reg-names accumulate-start-p starts-with max-back-ref))
   "Converts the parse tree PARSE-TREE into a REGEX object and returns it.
 
 Will also
@@ -275,260 +273,292 @@ Will also
   - accumulate strings or EVERYTHING objects into the special variable
     STARTS-WITH,
   - keep track of all registers seen in the special variable REG-NUM,
+  - keep track of all named registers seen in the special variable REG-NAMES
   - keep track of the highest backreference seen in the special
     variable MAX-BACK-REF,
   - maintain and adher to the currently applicable modifiers in the special
     variable FLAGS, and
   - maybe even wash your car..."
   (cond ((consp parse-tree)
-          (case (first parse-tree)
-            ;; (:SEQUENCE {<regex>}*)
-            ((:sequence)
+         (case (first parse-tree)
+           ;; (:SEQUENCE {<regex>}*)
+           ((:sequence)
+            (cond ((cddr parse-tree)
+                   ;; this is essentially like
+                   ;; (MAPCAR 'CONVERT-AUX (REST PARSE-TREE))
+                   ;; but we don't cons a new list
+                   (loop for parse-tree-rest on (rest parse-tree)
+                         while parse-tree-rest
+                         do (setf (car parse-tree-rest)
+                                  (convert-aux (car parse-tree-rest))))
+                   (make-instance 'seq
+                                  :elements (rest parse-tree)))
+                  (t (convert-aux (second parse-tree)))))
+           ;; (:GROUP {<regex>}*)
+           ;; this is a syntactical construct equivalent to :SEQUENCE
+           ;; intended to keep the effect of modifiers local
+           ((:group)
+            ;; make a local copy of FLAGS and shadow the global
+            ;; value while we descend into the enclosed regexes
+            (let ((flags (copy-list flags)))
+              (declare (special flags))
               (cond ((cddr parse-tree)
-                      ;; this is essentially like
-                      ;; (MAPCAR 'CONVERT-AUX (REST PARSE-TREE))
-                      ;; but we don't cons a new list
-                      (loop for parse-tree-rest on (rest parse-tree)
-                            while parse-tree-rest
-                            do (setf (car parse-tree-rest)
-                                       (convert-aux (car parse-tree-rest))))
-                      (make-instance 'seq
-                                     :elements (rest parse-tree)))
-                    (t (convert-aux (second parse-tree)))))
-            ;; (:GROUP {<regex>}*)
-            ;; this is a syntactical construct equivalent to :SEQUENCE
-            ;; intended to keep the effect of modifiers local
-            ((:group)
-              ;; make a local copy of FLAGS and shadow the global
-              ;; value while we descend into the enclosed regexes
-              (let ((flags (copy-list flags)))
-                (declare (special flags))
-                (cond ((cddr parse-tree)
-                        (loop for parse-tree-rest on (rest parse-tree)
-                              while parse-tree-rest
-                              do (setf (car parse-tree-rest)
-                                         (convert-aux (car parse-tree-rest))))
-                        (make-instance 'seq
-                                       :elements (rest parse-tree)))
-                      (t (convert-aux (second parse-tree))))))
-            ;; (:ALTERNATION {<regex>}*)
-            ((:alternation)
-              ;; we must stop accumulating objects into STARTS-WITH
-              ;; once we reach an alternation
-              (setq accumulate-start-p nil)
-              (loop for parse-tree-rest on (rest parse-tree)
-                    while parse-tree-rest
-                    do (setf (car parse-tree-rest)
-                               (convert-aux (car parse-tree-rest))))
-              (make-instance 'alternation
-                             :choices (rest parse-tree)))
-            ;; (:BRANCH <test> <regex>)
-            ;; <test> must be look-ahead, look-behind or number;
-            ;; if <regex> is an alternation it must have one or two
-            ;; choices
-            ((:branch)
-              (setq accumulate-start-p nil)
-              (let* ((test-candidate (second parse-tree))
-                     (test (cond ((numberp test-candidate)
-                                   (when (zerop (the fixnum test-candidate))
-                                     (signal-ppcre-syntax-error
-                                      "Register 0 doesn't exist: ~S"
-                                      parse-tree))
-                                   (1- (the fixnum test-candidate)))
-                                 (t (convert-aux test-candidate))))
-                     (alternations (convert-aux (third parse-tree))))
-                (when (and (not (numberp test))
-                           (not (typep test 'lookahead))
-                           (not (typep test 'lookbehind)))
-                  (signal-ppcre-syntax-error
-                   "Branch test must be look-ahead, look-behind or number: ~S"
-                   parse-tree))
-                (typecase alternations
-                  (alternation
-                    (case (length (choices alternations))
-                      ((0)
-                        (signal-ppcre-syntax-error "No choices in branch: ~S"
-                                                   parse-tree))
-                      ((1)
-                        (make-instance 'branch
-                                       :test test
-                                       :then-regex (first
-                                                    (choices alternations))))
-                      ((2)
-                        (make-instance 'branch
-                                       :test test
-                                       :then-regex (first
-                                                    (choices alternations))
-                                       :else-regex (second
-                                                    (choices alternations))))
-                      (otherwise
-                        (signal-ppcre-syntax-error
-                         "Too much choices in branch: ~S"
-                         parse-tree))))
-                  (t
+                     (loop for parse-tree-rest on (rest parse-tree)
+                           while parse-tree-rest
+                           do (setf (car parse-tree-rest)
+                                    (convert-aux (car parse-tree-rest))))
+                     (make-instance 'seq
+                                    :elements (rest parse-tree)))
+                    (t (convert-aux (second parse-tree))))))
+           ;; (:ALTERNATION {<regex>}*)
+           ((:alternation)
+            ;; we must stop accumulating objects into STARTS-WITH
+            ;; once we reach an alternation
+            (setq accumulate-start-p nil)
+            (loop for parse-tree-rest on (rest parse-tree)
+                  while parse-tree-rest
+                  do (setf (car parse-tree-rest)
+                           (convert-aux (car parse-tree-rest))))
+            (make-instance 'alternation
+                           :choices (rest parse-tree)))
+           ;; (:BRANCH <test> <regex>)
+           ;; <test> must be look-ahead, look-behind or number;
+           ;; if <regex> is an alternation it must have one or two
+           ;; choices
+           ((:branch)
+            (setq accumulate-start-p nil)
+            (let* ((test-candidate (second parse-tree))
+                   (test (cond ((numberp test-candidate)
+                                (when (zerop (the fixnum test-candidate))
+                                  (signal-ppcre-syntax-error
+                                   "Register 0 doesn't exist: ~S"
+                                   parse-tree))
+                                (1- (the fixnum test-candidate)))
+                               (t (convert-aux test-candidate))))
+                   (alternations (convert-aux (third parse-tree))))
+              (when (and (not (numberp test))
+                         (not (typep test 'lookahead))
+                         (not (typep test 'lookbehind)))
+                (signal-ppcre-syntax-error
+                 "Branch test must be look-ahead, look-behind or number: ~S"
+                 parse-tree))
+              (typecase alternations
+                (alternation
+                 (case (length (choices alternations))
+                   ((0)
+                    (signal-ppcre-syntax-error "No choices in branch: ~S"
+                                               parse-tree))
+                   ((1)
                     (make-instance 'branch
                                    :test test
-                                   :then-regex alternations)))))
-            ;; (:POSITIVE-LOOKAHEAD|:NEGATIVE-LOOKAHEAD <regex>)
-            ((:positive-lookahead :negative-lookahead)
-              ;; keep the effect of modifiers local to the enclosed
-              ;; regex and stop accumulating into STARTS-WITH
-              (setq accumulate-start-p nil)
-              (let ((flags (copy-list flags)))
-                (declare (special flags))
-                (make-instance 'lookahead
-                               :regex (convert-aux (second parse-tree))
-                               :positivep (eq (first parse-tree)
-                                              :positive-lookahead))))
-            ;; (:POSITIVE-LOOKBEHIND|:NEGATIVE-LOOKBEHIND <regex>)
-            ((:positive-lookbehind :negative-lookbehind)
-              ;; keep the effect of modifiers local to the enclosed
-              ;; regex and stop accumulating into STARTS-WITH
-              (setq accumulate-start-p nil)
-              (let* ((flags (copy-list flags))
-                     (regex (convert-aux (second parse-tree)))
-                     (len (regex-length regex)))
-                (declare (special flags))
-                ;; lookbehind assertions must be of fixed length
-                (unless len
-                  (signal-ppcre-syntax-error
-                   "Variable length look-behind not implemented (yet): ~S"
-                   parse-tree))
-                (make-instance 'lookbehind
-                               :regex regex
-                               :positivep (eq (first parse-tree)
-                                              :positive-lookbehind)
-                               :len len)))
-            ;; (:GREEDY-REPETITION|:NON-GREEDY-REPETITION <min> <max> <regex>)
-            ((:greedy-repetition :non-greedy-repetition)
-              ;; remember the value of ACCUMULATE-START-P upon entering
-              (let ((local-accumulate-start-p accumulate-start-p))
-                (let ((minimum (second parse-tree))
-                      (maximum (third parse-tree)))
-                  (declare (type fixnum minimum))
-                  (declare (type (or null fixnum) maximum))
-                  (unless (and maximum
-                               (= 1 minimum maximum))
-                    ;; set ACCUMULATE-START-P to NIL for the rest of
-                    ;; the conversion because we can't continue to
-                    ;; accumulate inside as well as after a proper
-                    ;; repetition
-                    (setq accumulate-start-p nil))
-                  (let* (reg-seen
-                         (regex (convert-aux (fourth parse-tree)))
-                         (min-len (regex-min-length regex))
-                         (greedyp (eq (first parse-tree) :greedy-repetition))
-                         (length (regex-length regex)))
-                    ;; note that this declaration already applies to
-                    ;; the call to CONVERT-AUX above
-                    (declare (special reg-seen))
-                    (when (and local-accumulate-start-p
-                               (not starts-with)
-                               (zerop minimum)
-                               (not maximum))
-                      ;; if this repetition is (equivalent to) ".*"
-                      ;; and if we're at the start of the regex we
-                      ;; remember it for ADVANCE-FN (see the SCAN
-                      ;; function)
-                      (setq starts-with (everythingp regex)))
-                    (if (or (not reg-seen)
-                            (not greedyp)
-                            (not length)
-                            (zerop length)
-                            (and maximum (= minimum maximum)))
-                      ;; the repetition doesn't enclose a register, or
-                      ;; it's not greedy, or we can't determine it's
-                      ;; (inner) length, or the length is zero, or the
-                      ;; number of repetitions is fixed; in all of
-                      ;; these cases we don't bother to optimize
-                      (maybe-split-repetition regex
-                                              greedyp
-                                              minimum
-                                              maximum
-                                              min-len
-                                              length
-                                              reg-seen)
-                      ;; otherwise we make a transformation that looks
-                      ;; roughly like one of
-                      ;;   <regex>* -> (?:<regex'>*<regex>)?
-                      ;;   <regex>+ -> <regex'>*<regex>
-                      ;; where the trick is that as much as possible
-                      ;; registers from <regex> are removed in
-                      ;; <regex'>
-                      (let* (reg-seen   ; new instance for REMOVE-REGISTERS
-                             (remove-registers-p t)
-                             (inner-regex (remove-registers regex))
-                             (inner-repetition
-                               ;; this is the "<regex'>" part
-                               (maybe-split-repetition inner-regex
-                                                       ;; always greedy
-                                                       t
-                                                       ;; reduce minimum by 1
-                                                       ;; unless it's already 0
-                                                       (if (zerop minimum)
-                                                         0
-                                                         (1- minimum))
-                                                       ;; reduce maximum by 1
-                                                       ;; unless it's NIL
-                                                       (and maximum
-                                                            (1- maximum))
-                                                       min-len
-                                                       length
-                                                       reg-seen))
-                             (inner-seq
-                               ;; this is the "<regex'>*<regex>" part
-                               (make-instance 'seq
-                                              :elements (list inner-repetition
-                                                              regex))))
-                        ;; note that this declaration already applies
-                        ;; to the call to REMOVE-REGISTERS above
-                        (declare (special remove-registers-p reg-seen))
-                        ;; wrap INNER-SEQ with a greedy
-                        ;; {0,1}-repetition (i.e. "?") if necessary
-                        (if (plusp minimum)
-                          inner-seq
-                          (maybe-split-repetition inner-seq
-                                                  t
-                                                  0
-                                                  1
-                                                  min-len
-                                                  nil
-                                                  t))))))))
-            ;; (:REGISTER <regex>)
-            ((:register)
-              ;; keep the effect of modifiers local to the enclosed
-              ;; regex; also, assign the current value of REG-NUM to
-              ;; the corresponding slot of the REGISTER object and
-              ;; increase this counter afterwards
-              (let ((flags (copy-list flags))
-                    (stored-reg-num reg-num))
-                (declare (special flags reg-seen))
-                (setq reg-seen t)
-                (incf (the fixnum reg-num))
-                (make-instance 'register
-                               :regex (convert-aux (second parse-tree))
-                               :num stored-reg-num)))
-            ;; (:FILTER <function> &optional <length>)
-            ((:filter)
-              ;; stop accumulating into STARTS-WITH
-              (setq accumulate-start-p nil)
-              (make-instance 'filter
-                             :fn (second parse-tree)
-                             :len (third parse-tree)))
-            ;; (:STANDALONE <regex>)
-            ((:standalone)
-              ;; stop accumulating into STARTS-WITH
-              (setq accumulate-start-p nil)
-              ;; keep the effect of modifiers local to the enclosed
-              ;; regex
-              (let ((flags (copy-list flags)))
-                (declare (special flags))
-                (make-instance 'standalone
-                               :regex (convert-aux (second parse-tree)))))
-            ;; (:BACK-REFERENCE <number>)
-            ((:back-reference)
-              (let ((backref-number (second parse-tree)))
-                (declare (type fixnum backref-number))
+                                   :then-regex (first
+                                                (choices alternations))))
+                   ((2)
+                    (make-instance 'branch
+                                   :test test
+                                   :then-regex (first
+                                                (choices alternations))
+                                   :else-regex (second
+                                                (choices alternations))))
+                   (otherwise
+                    (signal-ppcre-syntax-error
+                     "Too much choices in branch: ~S"
+                     parse-tree))))
+                (t
+                 (make-instance 'branch
+                                :test test
+                                :then-regex alternations)))))
+           ;; (:POSITIVE-LOOKAHEAD|:NEGATIVE-LOOKAHEAD <regex>)
+           ((:positive-lookahead :negative-lookahead)
+            ;; keep the effect of modifiers local to the enclosed
+            ;; regex and stop accumulating into STARTS-WITH
+            (setq accumulate-start-p nil)
+            (let ((flags (copy-list flags)))
+              (declare (special flags))
+              (make-instance 'lookahead
+                             :regex (convert-aux (second parse-tree))
+                             :positivep (eq (first parse-tree)
+                                            :positive-lookahead))))
+           ;; (:POSITIVE-LOOKBEHIND|:NEGATIVE-LOOKBEHIND <regex>)
+           ((:positive-lookbehind :negative-lookbehind)
+            ;; keep the effect of modifiers local to the enclosed
+            ;; regex and stop accumulating into STARTS-WITH
+            (setq accumulate-start-p nil)
+            (let* ((flags (copy-list flags))
+                   (regex (convert-aux (second parse-tree)))
+                   (len (regex-length regex)))
+              (declare (special flags))
+              ;; lookbehind assertions must be of fixed length
+              (unless len
+                (signal-ppcre-syntax-error
+                 "Variable length look-behind not implemented (yet): ~S"
+                 parse-tree))
+              (make-instance 'lookbehind
+                             :regex regex
+                             :positivep (eq (first parse-tree)
+                                            :positive-lookbehind)
+                             :len len)))
+           ;; (:GREEDY-REPETITION|:NON-GREEDY-REPETITION <min> <max> <regex>)
+           ((:greedy-repetition :non-greedy-repetition)
+            ;; remember the value of ACCUMULATE-START-P upon entering
+            (let ((local-accumulate-start-p accumulate-start-p))
+              (let ((minimum (second parse-tree))
+                    (maximum (third parse-tree)))
+                (declare (type fixnum minimum))
+                (declare (type (or null fixnum) maximum))
+                (unless (and maximum
+                             (= 1 minimum maximum))
+                  ;; set ACCUMULATE-START-P to NIL for the rest of
+                  ;; the conversion because we can't continue to
+                  ;; accumulate inside as well as after a proper
+                  ;; repetition
+                  (setq accumulate-start-p nil))
+                (let* (reg-seen
+                       (regex (convert-aux (fourth parse-tree)))
+                       (min-len (regex-min-length regex))
+                       (greedyp (eq (first parse-tree) :greedy-repetition))
+                       (length (regex-length regex)))
+                  ;; note that this declaration already applies to
+                  ;; the call to CONVERT-AUX above
+                  (declare (special reg-seen))
+                  (when (and local-accumulate-start-p
+                             (not starts-with)
+                             (zerop minimum)
+                             (not maximum))
+                    ;; if this repetition is (equivalent to) ".*"
+                    ;; and if we're at the start of the regex we
+                    ;; remember it for ADVANCE-FN (see the SCAN
+                    ;; function)
+                    (setq starts-with (everythingp regex)))
+                  (if (or (not reg-seen)
+                          (not greedyp)
+                          (not length)
+                          (zerop length)
+                          (and maximum (= minimum maximum)))
+                    ;; the repetition doesn't enclose a register, or
+                    ;; it's not greedy, or we can't determine it's
+                    ;; (inner) length, or the length is zero, or the
+                    ;; number of repetitions is fixed; in all of
+                    ;; these cases we don't bother to optimize
+                    (maybe-split-repetition regex
+                                            greedyp
+                                            minimum
+                                            maximum
+                                            min-len
+                                            length
+                                            reg-seen)
+                    ;; otherwise we make a transformation that looks
+                    ;; roughly like one of
+                    ;;   <regex>* -> (?:<regex'>*<regex>)?
+                    ;;   <regex>+ -> <regex'>*<regex>
+                    ;; where the trick is that as much as possible
+                    ;; registers from <regex> are removed in
+                    ;; <regex'>
+                    (let* (reg-seen ; new instance for REMOVE-REGISTERS
+                           (remove-registers-p t)
+                           (inner-regex (remove-registers regex))
+                           (inner-repetition
+                            ;; this is the "<regex'>" part
+                            (maybe-split-repetition inner-regex
+                                                    ;; always greedy
+                                                    t
+                                                    ;; reduce minimum by 1
+                                                    ;; unless it's already 0
+                                                    (if (zerop minimum)
+                                                      0
+                                                      (1- minimum))
+                                                    ;; reduce maximum by 1
+                                                    ;; unless it's NIL
+                                                    (and maximum
+                                                         (1- maximum))
+                                                    min-len
+                                                    length
+                                                    reg-seen))
+                           (inner-seq
+                            ;; this is the "<regex'>*<regex>" part
+                            (make-instance 'seq
+                                           :elements (list inner-repetition
+                                                           regex))))
+                      ;; note that this declaration already applies
+                      ;; to the call to REMOVE-REGISTERS above
+                      (declare (special remove-registers-p reg-seen))
+                      ;; wrap INNER-SEQ with a greedy
+                      ;; {0,1}-repetition (i.e. "?") if necessary
+                      (if (plusp minimum)
+                        inner-seq
+                        (maybe-split-repetition inner-seq
+                                                t
+                                                0
+                                                1
+                                                min-len
+                                                nil
+                                                t))))))))
+           ;; (:REGISTER <regex>)
+           ;; (:NAMED-REGISTER <name> <regex>)
+           ((:register :named-register)
+            ;; keep the effect of modifiers local to the enclosed
+            ;; regex; also, assign the current value of REG-NUM to
+            ;; the corresponding slot of the REGISTER object and
+            ;; increase this counter afterwards; for named register
+            ;; update REG-NAMES and set the corresponding name slot
+            ;; of the REGISTER object too
+            (let ((flags (copy-list flags))
+                  (stored-reg-num reg-num)
+                  (reg-name (when (eq (first parse-tree) :named-register)
+                              (copy-seq (second parse-tree)))))
+              (declare (special flags reg-seen named-reg-seen))
+              (setq reg-seen t)
+              (when reg-name
+                (setq named-reg-seen t))
+              (incf (the fixnum reg-num))
+              (push reg-name
+                    reg-names)
+              (make-instance 'register
+                             :regex (convert-aux (if (eq (first parse-tree) :named-register)
+                                                   (third parse-tree)
+                                                   (second parse-tree)))
+                             :num stored-reg-num
+                             :name reg-name)))
+           ;; (:FILTER <function> &optional <length>)
+           ((:filter)
+            ;; stop accumulating into STARTS-WITH
+            (setq accumulate-start-p nil)
+            (make-instance 'filter
+                           :fn (second parse-tree)
+                           :len (third parse-tree)))
+           ;; (:STANDALONE <regex>)
+           ((:standalone)
+            ;; stop accumulating into STARTS-WITH
+            (setq accumulate-start-p nil)
+            ;; keep the effect of modifiers local to the enclosed
+            ;; regex
+            (let ((flags (copy-list flags)))
+              (declare (special flags))
+              (make-instance 'standalone
+                             :regex (convert-aux (second parse-tree)))))
+           ;; (:BACK-REFERENCE <number>)
+           ;; (:BACK-REFERENCE <name>)
+           ((:back-reference)
+            (locally (declare (special reg-names reg-num))
+              (let* ((backref-name (and (stringp (second parse-tree))
+                                        (second parse-tree)))
+                     (referred-regs
+                      (when backref-name
+                        ;; find which register corresponds to the given name
+                        ;; we have to deal with case where several registers share
+                        ;; the same name and collect their respective numbers
+                        (loop
+                         for name in reg-names
+                         for reg-index from 0
+                         when (string= name backref-name)
+                         ;; NOTE: REG-NAMES stores register names in reversed order
+                         ;; REG-NUM contains number of (any) registers seen so far
+                         ;; 1- will be done later
+                         collect (- reg-num reg-index))))
+                     ;; store the register number for the simple case
+                     (backref-number (or (first referred-regs)
+                                         (second parse-tree))))
+                (declare (type (or fixnum null) backref-number))
                 (when (or (not (typep backref-number 'fixnum))
                           (<= backref-number 0))
                   (signal-ppcre-syntax-error
@@ -539,191 +569,204 @@ Will also
                 (setq accumulate-start-p nil
                       max-back-ref (max (the fixnum max-back-ref)
                                         backref-number))
-                (make-instance 'back-reference
-                               ;; we start counting from 0 internally
-                               :num (1- backref-number)
-                               :case-insensitive-p (case-insensitive-mode-p
-                                                    flags))))
-            ;; (:CHAR-CLASS|:INVERTED-CHAR-CLASS {<item>}*)
-            ;; where item is one of
-            ;;   - a character
-            ;;   - a character range: (:RANGE <char1> <char2>)
-            ;;   - a special char class symbol like :DIGIT-CHAR-CLASS
-            ((:char-class :inverted-char-class)
-              ;; first create the hash-table and some auxiliary values
-              (let* (hash
-                     hash-keys
-                     (count most-positive-fixnum)
-                     (item-list (rest parse-tree))
-                     (invertedp (eq (first parse-tree) :inverted-char-class))
-                     word-char-class-p)
-                (cond ((every (lambda (item) (eq item :word-char-class))
-                              item-list)
-                        ;; treat "[\\w]" like "\\w"
-                        (setq word-char-class-p t))
-                      ((every (lambda (item) (eq item :non-word-char-class))
-                              item-list)
-                        ;; treat "[\\W]" like "\\W"
-                        (setq word-char-class-p t)
-                        (setq invertedp (not invertedp)))
-                      (t
-                        (setq hash (convert-char-class-to-hash item-list)
-                              count (hash-table-count hash))
-                        (when (<= count 2)
-                          ;; collect the hash-table keys into a list if
-                          ;; COUNT is smaller than 3
-                          (setq hash-keys
-                                  (loop for chr being the hash-keys of hash
-                                        collect chr)))))
-                (cond ((and (not invertedp)
-                            (= count 1))
-                        ;; convert one-element hash table into a STR
-                        ;; object and try to accumulate into
-                        ;; STARTS-WITH
-                        (let ((str (make-instance 'str
-                                                  :str (string
-                                                        (first hash-keys))
-                                                  :case-insensitive-p nil)))
-                          (maybe-accumulate str)
-                          str))
-                      ((and (not invertedp)
-                            (= count 2)
-                            (char-equal (first hash-keys) (second hash-keys)))
-                        ;; convert two-element hash table into a
-                        ;; case-insensitive STR object and try to
-                        ;; accumulate into STARTS-WITH if the two
-                        ;; characters are CHAR-EQUAL
-                        (let ((str (make-instance 'str
-                                                  :str (string
-                                                        (first hash-keys))
-                                                  :case-insensitive-p t)))
-                          (maybe-accumulate str)
-                          str))
-                      (t
-                        ;; the general case; stop accumulating into STARTS-WITH
-                        (setq accumulate-start-p nil)
-                        (make-instance 'char-class
-                                       :hash hash
-                                       :case-insensitive-p
-                                         (case-insensitive-mode-p flags)
-                                       :invertedp invertedp
-                                       :word-char-class-p word-char-class-p)))))
-            ;; (:FLAGS {<flag>}*)
-            ;; where flag is a modifier symbol like :CASE-INSENSITIVE-P
-            ((:flags)
-              ;; set/unset the flags corresponding to the symbols
-              ;; following :FLAGS
-              (mapc #'set-flag (rest parse-tree))
-              ;; we're only interested in the side effect of
-              ;; setting/unsetting the flags and turn this syntactical
-              ;; construct into a VOID object which'll be optimized
-              ;; away when creating the matcher
-              (make-instance 'void))
-            (otherwise
-              (signal-ppcre-syntax-error
-               "Unknown token ~A in parse-tree"
-               (first parse-tree)))))
-        ((or (characterp parse-tree) (stringp parse-tree))
-          ;; turn characters or strings into STR objects and try to
-          ;; accumulate into STARTS-WITH
-          (let ((str (make-instance 'str
-                                    :str (string parse-tree)
+                (flet ((make-back-ref (backref-number)
+                         (make-instance 'back-reference
+                                        ;; we start counting from 0 internally
+                                        :num (1- backref-number)
+                                        :case-insensitive-p (case-insensitive-mode-p flags)
+                                        ;; backref-name is NIL or string, safe to copy
+                                        :name (copy-seq backref-name))))
+                  (cond
+                   ((cdr referred-regs)
+                    ;; several registers share the same name
+                    ;; we will try to match any of them, starting
+                    ;; with the most recent first
+                    ;; alternation is used to accomplish matching
+                    (make-instance 'alternation
+                                   :choices (loop
+                                             for reg-index in referred-regs
+                                             collect (make-back-ref reg-index))))
+                   ;; simple case - backref corresponds to only one register
+                   (t
+                    (make-back-ref backref-number)))))))
+           ;; (:REGEX <string>)
+           ((:regex)
+            (let ((regex (second parse-tree)))
+              (convert-aux (parse-string regex))))
+           ;; (:CHAR-CLASS|:INVERTED-CHAR-CLASS {<item>}*)
+           ;; where item is one of
+           ;;   - a character
+           ;;   - a character range: (:RANGE <char1> <char2>)
+           ;;   - a special char class symbol like :DIGIT-CHAR-CLASS
+           ((:char-class :inverted-char-class)
+            ;; first create the charset and some auxiliary values
+            (let* (set set-contents
+                   (count most-positive-fixnum)
+                   (item-list (rest parse-tree))
+                   (invertedp (eq (first parse-tree) :inverted-char-class))
+                   word-char-class-p)
+              (cond ((every (lambda (item) (eq item :word-char-class))
+                            item-list)
+                     ;; treat "[\\w]" like "\\w"
+                     (setq word-char-class-p t))
+                    ((every (lambda (item) (eq item :non-word-char-class))
+                            item-list)
+                     ;; treat "[\\W]" like "\\W"
+                     (setq word-char-class-p t)
+                     (setq invertedp (not invertedp)))
+                    (t
+                     (setq set (convert-char-class-to-charset item-list)
+                           count (charset-count set))
+                     (when (<= count 2)
+                       ;; collect the contents of SET into a list if
+                       ;; COUNT is smaller than 3
+                       (setq set-contents (all-characters set)))))
+              (cond ((and (not invertedp)
+                          (= count 1))
+                     ;; convert one-element charset into a STR object
+                     ;; and try to accumulate into STARTS-WITH
+                     (let ((str (make-instance 'str
+                                               :str (string (first set-contents))
+                                               :case-insensitive-p nil)))
+                       (maybe-accumulate str)
+                       str))
+                    ((and (not invertedp)
+                          (= count 2)
+                          (char-equal (first set-contents) (second set-contents)))
+                     ;; convert two-element charset into a
+                     ;; case-insensitive STR object and try to
+                     ;; accumulate into STARTS-WITH if the two
+                     ;; characters are CHAR-EQUAL
+                     (let ((str (make-instance 'str
+                                               :str (string (first set-contents))
+                                               :case-insensitive-p t)))
+                       (maybe-accumulate str)
+                       str))
+                    (t
+                     ;; the general case; stop accumulating into STARTS-WITH
+                     (setq accumulate-start-p nil)
+                     (make-instance 'char-class
+                                    :charset set
                                     :case-insensitive-p
-                                      (case-insensitive-mode-p flags))))
-            (maybe-accumulate str)
-            str))
+                                    (case-insensitive-mode-p flags)
+                                    :invertedp invertedp
+                                    :word-char-class-p word-char-class-p)))))
+           ;; (:FLAGS {<flag>}*)
+           ;; where flag is a modifier symbol like :CASE-INSENSITIVE-P
+           ((:flags)
+            ;; set/unset the flags corresponding to the symbols
+            ;; following :FLAGS
+            (mapc #'set-flag (rest parse-tree))
+            ;; we're only interested in the side effect of
+            ;; setting/unsetting the flags and turn this syntactical
+            ;; construct into a VOID object which'll be optimized
+            ;; away when creating the matcher
+            (make-instance 'void))
+           (otherwise
+            (signal-ppcre-syntax-error
+             "Unknown token ~A in parse-tree"
+             (first parse-tree)))))
+        ((or (characterp parse-tree) (stringp parse-tree))
+         ;; turn characters or strings into STR objects and try to
+         ;; accumulate into STARTS-WITH
+         (let ((str (make-instance 'str
+                                   :str (string parse-tree)
+                                   :case-insensitive-p
+                                   (case-insensitive-mode-p flags))))
+           (maybe-accumulate str)
+           str))
         (t
-          ;; and now for the tokens which are symbols
-          (case parse-tree
-            ((:void)
-              (make-instance 'void))
-            ((:word-boundary)
-              (make-instance 'word-boundary :negatedp nil))             
-            ((:non-word-boundary)
-              (make-instance 'word-boundary :negatedp t))             
-            ;; the special character classes
-            ((:digit-class
-              :non-digit-class
-              :word-char-class
-              :non-word-char-class
-              :whitespace-char-class
-              :non-whitespace-char-class)
-              ;; stop accumulating into STARTS-WITH
-              (setq accumulate-start-p nil)
-              (make-instance 'char-class
-                             ;; use the constants defined in util.lisp
-                             :hash (case parse-tree
-                                     ((:digit-class
-                                       :non-digit-class)
-                                       +digit-hash+)
-                                     ((:word-char-class
-                                       :non-word-char-class)
+         ;; and now for the tokens which are symbols
+         (case parse-tree
+           ((:void)
+            (make-instance 'void))
+           ((:word-boundary)
+            (make-instance 'word-boundary :negatedp nil))             
+           ((:non-word-boundary)
+            (make-instance 'word-boundary :negatedp t))             
+           ;; the special character classes
+           ((:digit-class
+             :non-digit-class
+             :word-char-class
+             :non-word-char-class
+             :whitespace-char-class
+             :non-whitespace-char-class)
+            ;; stop accumulating into STARTS-WITH
+            (setq accumulate-start-p nil)
+            (make-instance 'char-class
+                           ;; use the constants defined in util.lisp
+                           :charset (case parse-tree
+                                      ((:digit-class
+                                        :non-digit-class)
+                                       +digit-set+)
+                                      ((:word-char-class
+                                        :non-word-char-class)
                                        nil)
-                                     ((:whitespace-char-class
-                                       :non-whitespace-char-class)
-                                       +whitespace-char-hash+))
-                             ;; this value doesn't really matter but
-                             ;; NIL should result in slightly faster
-                             ;; matchers
-                             :case-insensitive-p nil
-                             :invertedp (member parse-tree
-                                                '(:non-digit-class
-                                                  :non-word-char-class
-                                                  :non-whitespace-char-class)
-                                                :test #'eq)
-                             :word-char-class-p (member parse-tree
-                                                        '(:word-char-class
-                                                          :non-word-char-class)
-                                                        :test #'eq)))
-            ((:start-anchor             ; Perl's "^"
-              :end-anchor               ; Perl's "$"
-              :modeless-end-anchor-no-newline
+                                      ((:whitespace-char-class
+                                        :non-whitespace-char-class)
+                                       +whitespace-char-set+))
+                           ;; this value doesn't really matter but
+                           ;; NIL should result in slightly faster
+                           ;; matchers
+                           :case-insensitive-p nil
+                           :invertedp (member parse-tree
+                                              '(:non-digit-class
+                                                :non-word-char-class
+                                                :non-whitespace-char-class)
+                                              :test #'eq)
+                           :word-char-class-p (member parse-tree
+                                                      '(:word-char-class
+                                                        :non-word-char-class)
+                                                      :test #'eq)))
+           ((:start-anchor              ; Perl's "^"
+             :end-anchor                ; Perl's "$"
+             :modeless-end-anchor-no-newline
                                         ; Perl's "\z"
-              :modeless-start-anchor    ; Perl's "\A"
-              :modeless-end-anchor)     ; Perl's "\Z"
-              (make-instance 'anchor
-                             :startp (member parse-tree
-                                             '(:start-anchor
-                                               :modeless-start-anchor)
-                                             :test #'eq)
-                             ;; set this value according to the
-                             ;; current settings of FLAGS (unless it's
-                             ;; a modeless anchor)
-                             :multi-line-p
-                               (and (multi-line-mode-p flags)
-                                    (not (member parse-tree
-                                                 '(:modeless-start-anchor
-                                                   :modeless-end-anchor
-                                                   :modeless-end-anchor-no-newline)
-                                                 :test #'eq)))
-                             :no-newline-p
-                               (eq parse-tree
-                                   :modeless-end-anchor-no-newline)))
-            ((:everything)
-              ;; stop accumulating into STARTS-WITHS
-              (setq accumulate-start-p nil)
-              (make-instance 'everything
-                             :single-line-p (single-line-mode-p flags)))
-            ;; special tokens corresponding to Perl's "ism" modifiers
-            ((:case-insensitive-p
-              :case-sensitive-p
-              :multi-line-mode-p
-              :not-multi-line-mode-p
-              :single-line-mode-p
-              :not-single-line-mode-p)
-              ;; we're only interested in the side effect of
-              ;; setting/unsetting the flags and turn these tokens
-              ;; into VOID objects which'll be optimized away when
-              ;; creating the matcher
-              (set-flag parse-tree)
-              (make-instance 'void))
-            (otherwise
-             (let ((translation (and (symbolp parse-tree)
-                                     (parse-tree-synonym parse-tree))))
-               (if translation
-                 (convert-aux (copy-tree translation))
-                 (signal-ppcre-syntax-error "Unknown token ~A in parse-tree"
-                                            parse-tree))))))))
+             :modeless-start-anchor     ; Perl's "\A"
+             :modeless-end-anchor)      ; Perl's "\Z"
+            (make-instance 'anchor
+                           :startp (member parse-tree
+                                           '(:start-anchor
+                                             :modeless-start-anchor)
+                                           :test #'eq)
+                           ;; set this value according to the
+                           ;; current settings of FLAGS (unless it's
+                           ;; a modeless anchor)
+                           :multi-line-p
+                           (and (multi-line-mode-p flags)
+                                (not (member parse-tree
+                                             '(:modeless-start-anchor
+                                               :modeless-end-anchor
+                                               :modeless-end-anchor-no-newline)
+                                             :test #'eq)))
+                           :no-newline-p
+                           (eq parse-tree
+                               :modeless-end-anchor-no-newline)))
+           ((:everything)
+            ;; stop accumulating into STARTS-WITHS
+            (setq accumulate-start-p nil)
+            (make-instance 'everything
+                           :single-line-p (single-line-mode-p flags)))
+           ;; special tokens corresponding to Perl's "ism" modifiers
+           ((:case-insensitive-p
+             :case-sensitive-p
+             :multi-line-mode-p
+             :not-multi-line-mode-p
+             :single-line-mode-p
+             :not-single-line-mode-p)
+            ;; we're only interested in the side effect of
+            ;; setting/unsetting the flags and turn these tokens
+            ;; into VOID objects which'll be optimized away when
+            ;; creating the matcher
+            (set-flag parse-tree)
+            (make-instance 'void))
+           (otherwise
+            (let ((translation (and (symbolp parse-tree)
+                                    (parse-tree-synonym parse-tree))))
+              (if translation
+                (convert-aux (copy-tree translation))
+                (signal-ppcre-syntax-error "Unknown token ~A in parse-tree"
+                                           parse-tree))))))))
 
 (defun convert (parse-tree)
   (declare #.*standard-optimize-settings*)
@@ -736,11 +779,14 @@ or an EVERYTHING object (if the regex starts with something like
   ;; and then calls CONVERT-AUX to do all the work
   (let* ((flags (list nil nil nil))
          (reg-num 0)
+         reg-names
+         named-reg-seen
          (accumulate-start-p t)
          starts-with
          (max-back-ref 0)
          (converted-parse-tree (convert-aux parse-tree)))
-    (declare (special flags reg-num accumulate-start-p starts-with max-back-ref))
+    (declare (special flags reg-num reg-names named-reg-seen
+                      accumulate-start-p starts-with max-back-ref))
     ;; make sure we don't reference registers which aren't there
     (when (> (the fixnum max-back-ref)
              (the fixnum reg-num))
@@ -750,4 +796,8 @@ or an EVERYTHING object (if the regex starts with something like
     (when (typep starts-with 'str)
       (setf (slot-value starts-with 'str)
               (coerce (slot-value starts-with 'str) 'simple-string)))
-    (values converted-parse-tree reg-num starts-with)))
+    (values converted-parse-tree reg-num starts-with
+            ;; we can't simply use *ALLOW-NAMED-REGISTERS*
+            ;; since parse-tree syntax ignores it
+            (when named-reg-seen
+              (nreverse reg-names)))))

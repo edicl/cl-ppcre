@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE-TEST; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/ppcre-tests.lisp,v 1.31 2005/08/23 12:23:13 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/ppcre-tests.lisp,v 1.36 2008/06/25 14:04:28 edi Exp $
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -41,7 +41,8 @@
   #+:ecl (si:gc t)
   #+:clisp (ext:gc)
   #+:cormanlisp (loop for i from 0 to 3 do (cormanlisp:gc i))
-  #+:lispworks (hcl:mark-and-sweep 3)
+  #+:lispworks4 (hcl:mark-and-sweep 3)
+  #+:lispworks5 (hcl:gc-generation #+:lispworks-32bit 3 #+:lispworks-64bit :blocking-gen-num)
   #+:sbcl (sb-ext:gc :full t))
 
 ;; warning: ugly code ahead!!
@@ -52,7 +53,7 @@
                                multi-line-mode
                                single-line-mode
                                extended-mode)
-  (declare #.*standard-optimize-settings*)
+  (declare #.ppcre::*standard-optimize-settings*)
   "Auxiliary function used by TEST to benchmark a regex scanner
 against Perl timings."
   (declare (type string string))
@@ -73,7 +74,7 @@ against Perl timings."
       lispworks
       (and sbcl sb-thread))
 (defun threaded-scan (scanner target-string &key (threads 10) (repetitions 5000))
-  (declare #.*standard-optimize-settings*)
+  (declare #.ppcre::*standard-optimize-settings*)
   "Auxiliary function used by TEST to check whether SCANNER is thread-safe."
   (full-gc)
   (let ((collector (make-array threads))
@@ -133,7 +134,7 @@ against Perl timings."
                                   :defaults *cl-ppcre-test-base-directory*)
                    file-name-provided-p)
                   threaded)
-  (declare #.*standard-optimize-settings*)
+  (declare #.ppcre::*standard-optimize-settings*)
   (declare (ignorable threaded))
   "Loop through all test cases in FILE-NAME and print report. Only in
 LispWorks and SCL: If THREADED is true, also test whether the scanners

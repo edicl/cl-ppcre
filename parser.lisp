@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/parser.lisp,v 1.21 2005/08/03 21:11:27 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/parser.lisp,v 1.25 2008/06/25 14:04:28 edi Exp $
 
 ;;; The parser will - with the help of the lexer - parse a regex
 ;;; string and convert it into a "parse tree" (see docs for details
@@ -7,7 +7,7 @@
 ;;; illegal parse trees. It is assumed that the conversion process
 ;;; later on will track them down.
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -38,19 +38,20 @@
 (defun group (lexer)
   (declare #.*standard-optimize-settings*)
   "Parses and consumes a <group>.
-The productions are: <group> -> \"(\"<regex>\")\"
-                                \"(?:\"<regex>\")\"
-                                \"(?>\"<regex>\")\"
-                                \"(?<flags>:\"<regex>\")\"
-                                \"(?=\"<regex>\")\"
-                                \"(?!\"<regex>\")\"
-                                \"(?<=\"<regex>\")\"
-                                \"(?<!\"<regex>\")\"
-                                \"(?(\"<num>\")\"<regex>\")\"
-                                \"(?(\"<regex>\")\"<regex>\")\"
+The productions are: <group> -> \"\(\"<regex>\")\"
+                                \"\(?:\"<regex>\")\"
+                                \"\(?>\"<regex>\")\"
+                                \"\(?<flags>:\"<regex>\")\"
+                                \"\(?=\"<regex>\")\"
+                                \"\(?!\"<regex>\")\"
+                                \"\(?<=\"<regex>\")\"
+                                \"\(?<!\"<regex>\")\"
+                                \"\(?\(\"<num>\")\"<regex>\")\"
+                                \"\(?\(\"<regex>\")\"<regex>\")\"
+                                \"\(?<name>\"<regex>\")\" \(when *ALLOW-NAMED-REGISTERS* is T)
                                 <legal-token>
 where <flags> is parsed by the lexer function MAYBE-PARSE-FLAGS.
-Will return <parse-tree> or (<grouping-type> <parse-tree>) where
+Will return <parse-tree> or \(<grouping-type> <parse-tree>) where
 <grouping-type> is one of six keywords - see source for details."
   (multiple-value-bind (open-token flags)
       (get-token lexer)
@@ -103,17 +104,21 @@ Will return <parse-tree> or (<grouping-type> <parse-tree>) where
                                 :open-paren-equal
                                 :open-paren-exclamation
                                 :open-paren-less-equal
-                                :open-paren-less-exclamation)
+                                :open-paren-less-exclamation
+                                :open-paren-less-letter)
                    :test #'eq)
             ;; make changes to extended-mode-p local
             (let ((*extended-mode-p* *extended-mode-p*))
               ;; we saw one of the six token representing opening
               ;; parentheses
               (let* ((open-paren-pos (car (lexer-last-pos lexer)))
+                     (register-name (when (eq open-token :open-paren-less-letter)
+                                      (parse-register-name-aux lexer)))
                      (reg-expr (reg-expr lexer))
                      (close-token (get-token lexer)))
-                (when (eq open-token :open-paren)
-                  ;; if this is the "("<regex>")" production we have to
+                (when (or (eq open-token :open-paren)
+                          (eq open-token :open-paren-less-letter))
+                  ;; if this is the "("<regex>")" or "(?"<name>""<regex>")" production we have to
                   ;; increment the register counter of the lexer
                   (incf (lexer-reg lexer)))
                 (unless (eq close-token :close-paren)
@@ -126,27 +131,33 @@ Will return <parse-tree> or (<grouping-type> <parse-tree>) where
                   ;; if the lexer has returned a list of flags this must
                   ;; have been the "(?:"<regex>")" production
                   (cons :group (nconc flags (list reg-expr)))
-                  (list (case open-token
-                          ((:open-paren)
-                            :register)
-                          ((:open-paren-colon)
-                            :group)
-                          ((:open-paren-greater)
-                            :standalone)
-                          ((:open-paren-equal)
-                            :positive-lookahead)
-                          ((:open-paren-exclamation)
-                            :negative-lookahead)
-                          ((:open-paren-less-equal)
-                            :positive-lookbehind)
-                          ((:open-paren-less-exclamation)
-                            :negative-lookbehind))
-                        reg-expr)))))
+                  (if (eq open-token :open-paren-less-letter)
+                      (list :named-register
+                            ;; every string was reversed, so we have to
+                            ;; reverse it back to get the name
+                            (nreverse register-name)
+                            reg-expr)
+                      (list (case open-token
+                              ((:open-paren)
+                               :register)
+                              ((:open-paren-colon)
+                               :group)
+                              ((:open-paren-greater)
+                               :standalone)
+                              ((:open-paren-equal)
+                               :positive-lookahead)
+                              ((:open-paren-exclamation)
+                               :negative-lookahead)
+                              ((:open-paren-less-equal)
+                               :positive-lookbehind)
+                              ((:open-paren-less-exclamation)
+                               :negative-lookbehind))
+                            reg-expr))))))
           (t
-            ;; this is the <legal-token> production; <legal-token> is
-            ;; any token which passes START-OF-SUBEXPR-P (otherwise
-            ;; parsing had already stopped in the SEQ method)
-            open-token))))
+           ;; this is the <legal-token> production; <legal-token> is
+           ;; any token which passes START-OF-SUBEXPR-P (otherwise
+           ;; parsing had already stopped in the SEQ method)
+           open-token))))
 
 (defun greedy-quant (lexer)
   (declare #.*standard-optimize-settings*)

@@ -1,9 +1,9 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre-test.asd,v 1.8 2005/11/01 09:51:01 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre-test.asd,v 1.14 2008/06/25 14:04:27 edi Exp $
 
 ;;; This ASDF system definition was kindly provided by Marco Baringer.
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz.  All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz.  All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -29,13 +29,6 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(defpackage #:cl-ppcre-test.system
-  (:use #:cl
-        #:asdf))
-
-(in-package #:cl-ppcre-test.system)
-
-(defsystem #:cl-ppcre-test
-  :version "1.2.12"
-  :depends-on (#:cl-ppcre)
+(asdf:defsystem :cl-ppcre-test
+  :depends-on (:cl-ppcre)
   :components ((:file "ppcre-tests")))

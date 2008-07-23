@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/repetition-closures.lisp,v 1.24 2005/04/13 15:35:58 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/repetition-closures.lisp,v 1.29 2008/06/25 14:04:28 edi Exp $
 
 ;;; This is actually a part of closures.lisp which we put into a
 ;;; separate file because it is rather complex. We only deal with
@@ -7,7 +7,7 @@
 ;;; rather crazy micro-optimizations which were introduced to be as
 ;;; competitive with Perl as possible in tight loops.
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -804,45 +804,41 @@ that REPETITION has a constant number of repetitions."))
 ;; utilizes all the functions and macros defined above
 
 (defmethod create-matcher-aux ((repetition repetition) next-fn)
-  (with-slots ((minimum minimum)
-               (maximum maximum)
-               (len len)
-               (min-len min-len)
-               (greedyp greedyp)
-               (contains-register-p contains-register-p))
+  (declare #.*standard-optimize-settings*)
+  (with-slots (minimum maximum len min-len greedyp contains-register-p)
       repetition
     (cond ((and maximum
                 (zerop maximum))
-            ;; this should have been optimized away by CONVERT but just
-            ;; in case...
-            (error "Got REPETITION with MAXIMUM 0 \(should not happen)"))
+           ;; this should have been optimized away by CONVERT but just
+           ;; in case...
+           (error "Got REPETITION with MAXIMUM 0 \(should not happen)"))
           ((and maximum
                 (= minimum maximum 1))
-            ;; this should have been optimized away by CONVERT but just
-            ;; in case...
-            (error "Got REPETITION with MAXIMUM 1 and MINIMUM 1 \(should not happen)"))
+           ;; this should have been optimized away by CONVERT but just
+           ;; in case...
+           (error "Got REPETITION with MAXIMUM 1 and MINIMUM 1 \(should not happen)"))
           ((and (eql minimum maximum)
                 len
                 (not contains-register-p))
-            (create-constant-repetition-constant-length-matcher repetition next-fn))
+           (create-constant-repetition-constant-length-matcher repetition next-fn))
           ((eql minimum maximum)
-            (create-constant-repetition-matcher repetition next-fn))
+           (create-constant-repetition-matcher repetition next-fn))
           ((and greedyp
                 len
                 (not contains-register-p))
-            (create-greedy-constant-length-matcher repetition next-fn))
+           (create-greedy-constant-length-matcher repetition next-fn))
           ((and greedyp
                 (or (plusp min-len)
                     (eql maximum 1)))
-            (create-greedy-no-zero-matcher repetition next-fn))
+           (create-greedy-no-zero-matcher repetition next-fn))
           (greedyp
-            (create-greedy-matcher repetition next-fn))
+           (create-greedy-matcher repetition next-fn))
           ((and len
                 (plusp len)
                 (not contains-register-p))
-            (create-non-greedy-constant-length-matcher repetition next-fn))
+           (create-non-greedy-constant-length-matcher repetition next-fn))
           ((or (plusp min-len)
                (eql maximum 1))
-            (create-non-greedy-no-zero-matcher repetition next-fn))
+           (create-non-greedy-no-zero-matcher repetition next-fn))
           (t
-            (create-non-greedy-matcher repetition next-fn)))))
+           (create-non-greedy-matcher repetition next-fn)))))

@@ -1,3 +1,61 @@
+Version 1.4.1
+2008-07-03
+Skip non-characters in CREATE-RANGES-FROM-SET	
+
+Version 1.4.0
+2008-07-03
+Replaced hash tables with charsets (by Nikodemus Siivola)
+Get rid of duplicates in REGEX-APROPOS(-LIST)
+
+Version 1.3.3
+2008-06-25
+Let the Lisp decide how it wants to enlarge its hash tables
+Fixed anchors for special variables in docs
+Fixed typo in docs (thanks to Jason S. Cornez)
+
+Version 1.3.2
+2007-09-13
+Updated docs and ChangeLog to be really in sync with 1.3.1 changes (thanks to Sébastien Saint-Sevin)
+
+Version 1.3.1
+2007-08-24
+Second return value for REGEX-REPLACE and REGEX-REPLACE-ALL (patch by Matthew Sachs)
+
+Version 1.3.0
+2007-03-24
+Optional support for named registers (patch by Ondrej Svitek)
+
+Version 1.2.19
+2007-01-16
+Fixed behaviour of look-behind in repeated scans (caught by RegexCoach user Hans Jud)
+
+Version 1.2.18
+2006-10-12
+Changed default element type for LispWorks
+Fixed documentation for REGEX-REPLACE-ALL	
+
+Version 1.2.17
+2006-10-11
+Fixed bug in DO-SCANS which affected anchors (caught by RegexCoach user Laurent Taupiac)
+Update link for 'man perlre' (thanks to Ricardo Boccato Alves)
+
+Version 1.2.16
+2006-07-16
+Added :ELEMENT-TYPE to REGEX-REPLACE(-ALL)
+
+Version 1.2.15
+2006-07-03
+Added :REGEX tag to parse tree syntax (thanks to Frédéric Jolliton)
+
+Version 1.2.14
+2006-05-24
+Added missing </code> tag in docs (thanks to Wojciech Kaczmarek)
+Fixed IMPORT statement for LW	
+
+Version 1.2.13
+2005-12-06
+Fixed bug involving *REAL-START-POS* (caught by "tichy")
+
 Version 1.2.12
 2005-11-01
 REGEX-APROPOS-AUX now also uses :INHERITED

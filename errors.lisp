@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/errors.lisp,v 1.14 2005/04/01 21:29:09 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/errors.lisp,v 1.18 2008/06/25 14:04:27 edi Exp $
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -61,7 +61,7 @@ encountered \(or NIL if the error happened while trying to convert a
 parse tree).")
 
 (setf (documentation 'ppcre-syntax-error-pos 'function)
-      "Returns the position within the string where the error occured
+      "Returns the position within the string where the error occurred
 \(or NIL if the error happened while trying to convert a parse tree")
 
 (define-condition ppcre-invocation-error (ppcre-error)

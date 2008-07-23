@@ -1,9 +1,9 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.21 2005/04/01 21:29:10 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.27 2008/07/03 08:13:28 edi Exp $
 
 ;;; globally declared special variables
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -45,7 +45,7 @@
 
 (defvar *special-optimize-settings*
   '(optimize speed space)
-  "Special optimize settings used only be a few declaration expressions.")
+  "Special optimize settings used only by a few declaration expressions.")
 
 ;;; special variables used by the lexer/parser combo
 
@@ -55,6 +55,13 @@
 
 ;;; special variables used by the SCAN function and the matchers
 
+(defvar *regex-char-code-limit* char-code-limit
+  "The upper exclusive bound on the char-codes of characters which can
+occur in character classes.  Change this value BEFORE creating
+scanners if you don't need the \(full) Unicode support of
+implementations like AllegroCL, CLISP, LispWorks, or SBCL.")
+(declaim (type fixnum *regex-char-code-limit*))
+  
 (defvar *string* ""
   "The string which is currently scanned by SCAN.
 Will always be coerced to a SIMPLE-STRING.")
@@ -120,11 +127,16 @@ but large) Boyer-Moore-Horspool matchers.")
 (defvar *allow-quoting* nil
   "Whether the parser should support Perl's \\Q and \\E.")
 
+(defvar *allow-named-registers* nil
+  "Whether the parser should support AllegroCL's named registers
+\(?<name>\"<regex>\") and back-reference \\k<name> syntax.")
+
 (pushnew :cl-ppcre *features*)
 
 ;; stuff for Nikodemus Siivola's HYPERDOC
 ;; see <http://common-lisp.net/project/hyperdoc/>
 ;; and <http://www.cliki.net/hyperdoc>
+;; also used by LW-ADD-ONS
 
 (defvar *hyperdoc-base-uri* "http://weitz.de/cl-ppcre/")
 

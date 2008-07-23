@@ -1,13 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/util.lisp,v 1.32 2005/08/23 10:32:30 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/util.lisp,v 1.40 2008/07/03 10:06:16 edi Exp $
 
-;;; Utility functions and constants dealing with the hash-tables
-;;; we use to encode character classes
+;;; Utility functions and constants dealing with the character sets we
+;;; use to encode character classes
 
-;;; Hash-tables are treated like sets, i.e. a character C is a member of the
-;;; hash-table H iff (GETHASH C H) is true.
-
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -36,7 +33,8 @@
 (in-package #:cl-ppcre)
 
 #+:lispworks
-(import 'lw:with-unique-names)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (import 'lw:with-unique-names))
 
 #-:lispworks
 (defmacro with-unique-names ((&rest bindings) &body body)
@@ -103,22 +101,15 @@ are discarded \(that is, the body is an implicit PROGN)."
                               ,,@body))))))
 
 (eval-when (:compile-toplevel :execute :load-toplevel)
-  (defvar *regex-char-code-limit* char-code-limit
-    "The upper exclusive bound on the char-codes of characters which
-can occur in character classes.  Change this value BEFORE creating
-scanners if you don't need the Unicode support of implementations like
-AllegroCL, CLISP, LispWorks, or SBCL.")
-  (declaim (type fixnum *regex-char-code-limit*))
-  
-  (defun make-char-hash (test)
+  (defun make-char-set (test)
     (declare #.*special-optimize-settings*)
-    "Returns a hash-table of all characters satisfying test."
-    (loop with hash = (make-hash-table)
-          for c of-type fixnum from 0 below char-code-limit
-          for chr = (code-char c)
-          if (and chr (funcall test chr))
-            do (setf (gethash chr hash) t)
-          finally (return hash)))
+    "Returns a CHARSET for all characters satisfying test."
+    (loop with set = (make-charset)
+          for code of-type fixnum from 0 below char-code-limit
+          for char = (code-char code)
+          if (and char (funcall test char))
+          do (add-to-charset char set)
+          finally (return set)))
 
   (declaim (inline word-char-p))
   
@@ -147,101 +138,72 @@ i.e. whether it would match [\\s] in Perl."
 ;; the following DEFCONSTANT statements are wrapped with
 ;; (UNLESS (BOUNDP ...) ...) to make SBCL happy
 
-(unless (boundp '+digit-hash+)
-  (defconstant +digit-hash+
-    (make-char-hash (lambda (chr) (char<= #\0 chr #\9)))
-    "Hash-table containing the digits from 0 to 9."))
+(unless (boundp '+digit-set+)
+  (defconstant +digit-set+
+    (make-char-set (lambda (chr) (char<= #\0 chr #\9)))
+    "Character set containing the digits from 0 to 9."))
 
-(unless (boundp '+word-char-hash+)
-  (defconstant +word-char-hash+
-    (make-char-hash #'word-char-p)
-    "Hash-table containing all \"word\" characters."))
+(unless (boundp '+word-char-set+)
+  (defconstant +word-char-set+
+    (make-char-set #'word-char-p)
+    "Character set containing all \"word\" characters."))
 
-(unless (boundp '+whitespace-char-hash+)
-  (defconstant +whitespace-char-hash+
-    (make-char-hash #'whitespacep)
-    "Hash-table containing all whitespace characters."))
+(unless (boundp '+whitespace-char-set+)
+  (defconstant +whitespace-char-set+
+    (make-char-set #'whitespacep)
+    "Character set containing all whitespace characters."))
 
-(defun merge-hash (hash1 hash2)
+(defun create-ranges-from-set (set &key downcasep)
   (declare #.*standard-optimize-settings*)
-  "Returns the \"sum\" of two hashes. This is a destructive operation
-on HASH1."
-  (cond ((> (hash-table-count hash2)
-            *regex-char-code-limit*)
-          ;; don't walk through, e.g., the whole +WORD-CHAR-HASH+ if
-          ;; the user has set *REGEX-CHAR-CODE-LIMIT* to a lower value
-          (loop for c of-type fixnum from 0 below *regex-char-code-limit*
-                for chr = (code-char c)
-                if (and chr (gethash chr hash2))
-                do (setf (gethash chr hash1) t)))
-        (t
-          (loop for chr being the hash-keys of hash2
-                do (setf (gethash chr hash1) t))))
-  hash1)
-
-(defun merge-inverted-hash (hash1 hash2)
-  (declare #.*standard-optimize-settings*)
-  "Returns the \"sum\" of HASH1 and the \"inverse\" of HASH2. This is
-a destructive operation on HASH1."
-  (loop for c of-type fixnum from 0 below *regex-char-code-limit*
-        for chr = (code-char c)
-        if (and chr (not (gethash chr hash2)))
-          do (setf (gethash chr hash1) t))
-  hash1)
-
-(defun create-ranges-from-hash (hash &key downcasep)
-  (declare #.*standard-optimize-settings*)
-  "Tries to identify up to three intervals (with respect to CHAR<)
-which together comprise HASH. Returns NIL if this is not possible.
-If DOWNCASEP is true it will treat the hash-table as if it represents
-both the lower-case and the upper-case variants of its members and
-will only return the respective lower-case intervals."
-  ;; discard empty hash-tables
-  (unless (and hash (plusp (hash-table-count hash)))
-    (return-from create-ranges-from-hash nil))
+  "Tries to identify up to three intervals \(with respect to CHAR<)
+which together comprise the charset SET.  Returns NIL if this is not
+possible.  If DOWNCASEP is true it will treat the charset as if it
+represents both the lower-case and the upper-case variants of its
+members and will only return the respective lower-case intervals."
+  ;; discard empty charsets
+  (unless (and set (plusp (charset-count set)))
+    (return-from create-ranges-from-set nil))
   (loop with min1 and min2 and min3
         and max1 and max2 and max3
-        ;; loop through all characters in HASH, sorted by CHAR<
-        for chr in (sort (the list
-                           (loop for chr being the hash-keys of hash
-                                 collect (if downcasep
-                                           (char-downcase chr)
-                                           chr)))
-		         #'char<)
-        for code = (char-code chr)
+        ;; loop through all characters in SET, sorted by CHAR<
+        ;; (actually by < on their character codes, see 13.1.6 in the
+        ;; ANSI standard)
+        for code of-type fixnum below *regex-char-code-limit*
+        for char = (code-char code)
+        when (and char (in-charset-p (if downcasep (char-downcase char) char) set))
         ;; MIN1, MAX1, etc. are _exclusive_
         ;; bounds of the intervals identified so far
         do (cond
-             ((not min1)
-               ;; this will only happen once, for the first character
-               (setq min1 (1- code)
-                     max1 (1+ code)))
-             ((<= (the fixnum min1) code (the fixnum max1))
-               ;; we're here as long as CHR fits into the first interval
-               (setq min1 (min (the fixnum min1) (1- code))
-                     max1 (max (the fixnum max1) (1+ code))))
-             ((not min2)
-               ;; we need to open a second interval
-               ;; this'll also happen only once
-               (setq min2 (1- code)
-                     max2 (1+ code)))
-             ((<= (the fixnum min2) code (the fixnum max2))
-               ;; CHR fits into the second interval
-               (setq min2 (min (the fixnum min2) (1- code))
-                     max2 (max (the fixnum max2) (1+ code))))
-             ((not min3)
-               ;; we need to open the third interval
-               ;; happens only once
-               (setq min3 (1- code)
-                     max3 (1+ code)))
-             ((<= (the fixnum min3) code (the fixnum max3))
-               ;; CHR fits into the third interval
-               (setq min3 (min (the fixnum min3) (1- code))
-                     max3 (max (the fixnum max3) (1+ code))))
-             (t
-               ;; we're out of luck, CHR doesn't fit
-               ;; into one of the three intervals
-               (return nil)))
+            ((not min1)
+             ;; this will only happen once, for the first character
+             (setq min1 (1- code)
+                   max1 (1+ code)))
+            ((<= (the fixnum min1) code (the fixnum max1))
+             ;; we're here as long as CHAR fits into the first interval
+             (setq min1 (min (the fixnum min1) (1- code))
+                   max1 (max (the fixnum max1) (1+ code))))
+            ((not min2)
+             ;; we need to open a second interval
+             ;; this'll also happen only once
+             (setq min2 (1- code)
+                   max2 (1+ code)))
+            ((<= (the fixnum min2) code (the fixnum max2))
+             ;; CHAR fits into the second interval
+             (setq min2 (min (the fixnum min2) (1- code))
+                   max2 (max (the fixnum max2) (1+ code))))
+            ((not min3)
+             ;; we need to open the third interval
+             ;; happens only once
+             (setq min3 (1- code)
+                   max3 (1+ code)))
+            ((<= (the fixnum min3) code (the fixnum max3))
+             ;; CHAR fits into the third interval
+             (setq min3 (min (the fixnum min3) (1- code))
+                   max3 (max (the fixnum max3) (1+ code))))
+            (t
+             ;; we're out of luck, CHAR doesn't fit
+             ;; into one of the three intervals
+             (return nil)))
         ;; on success return all bounds
         ;; make them inclusive bounds before returning
         finally (return (values (code-char (1+ min1))

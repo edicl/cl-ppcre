@@ -1,9 +1,9 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/lispworks-defsystem.lisp,v 1.1 2005/04/30 20:00:50 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/lispworks-defsystem.lisp,v 1.4 2008/06/25 14:04:27 edi Exp $
 
 ;;; This system definition for LispWorks was kindly provided by Wade Humeniuk
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz.  All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz.  All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

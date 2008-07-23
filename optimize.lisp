@@ -1,10 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/optimize.lisp,v 1.26 2005/04/13 15:35:57 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/optimize.lisp,v 1.31 2008/06/25 14:04:27 edi Exp $
 
 ;;; This file contains optimizations which can be applied to converted
 ;;; parse trees.
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -40,6 +40,7 @@ transforms #<SEQ #<STR \"a\"> #<SEQ #<STR \"b\"> #<STR \"c\">>> to
 operation on REGEX."))
 
 (defmethod flatten ((seq seq))
+  (declare #.*standard-optimize-settings*)
   ;; this looks more complicated than it is because we modify SEQ in
   ;; place to avoid unnecessary consing
   (let ((elements-rest (elements seq)))
@@ -71,6 +72,7 @@ operation on REGEX."))
           (t (make-instance 'void)))))
 
 (defmethod flatten ((alternation alternation))
+  (declare #.*standard-optimize-settings*)
   ;; same algorithm as above
   (let ((choices-rest (choices alternation)))
     (loop
@@ -98,9 +100,8 @@ operation on REGEX."))
               "Encountered alternation without choices.")))))
 
 (defmethod flatten ((branch branch))
-  (with-slots ((test test)
-               (then-regex then-regex)
-               (else-regex else-regex))
+  (declare #.*standard-optimize-settings*)
+  (with-slots (test then-regex else-regex)
       branch
     (setq test
             (if (numberp test)
@@ -111,6 +112,7 @@ operation on REGEX."))
     branch))
 
 (defmethod flatten ((regex regex))
+  (declare #.*standard-optimize-settings*)
   (typecase regex
     ((or repetition register lookahead lookbehind standalone)
       ;; if REGEX contains exactly one inner REGEX object flatten it
@@ -124,12 +126,13 @@ operation on REGEX."))
       regex)))
 
 (defgeneric gather-strings (regex)
-    (declare #.*standard-optimize-settings*)
+  (declare #.*standard-optimize-settings*)
   (:documentation "Collects adjacent strings or characters into one
 string provided they have the same case mode. This is a destructive
 operation on REGEX."))
 
 (defmethod gather-strings ((seq seq))
+  (declare #.*standard-optimize-settings*)
   ;; note that GATHER-STRINGS is to be applied after FLATTEN, i.e. it
   ;; expects SEQ to be flattened already; in particular, SEQ cannot be
   ;; empty and cannot contain embedded SEQ objects
@@ -246,6 +249,7 @@ operation on REGEX."))
     seq))
 
 (defmethod gather-strings ((alternation alternation))
+  (declare #.*standard-optimize-settings*)
   ;; loop ON the choices of ALTERNATION so we can modify them directly
   (loop for choices-rest on (choices alternation)
         while choices-rest
@@ -254,9 +258,8 @@ operation on REGEX."))
   alternation)
 
 (defmethod gather-strings ((branch branch))
-  (with-slots ((test test)
-               (then-regex then-regex)
-               (else-regex else-regex))
+  (declare #.*standard-optimize-settings*)
+  (with-slots (test then-regex else-regex)
       branch
     (setq test
             (if (numberp test)
@@ -267,6 +270,7 @@ operation on REGEX."))
     branch))
 
 (defmethod gather-strings ((regex regex))
+  (declare #.*standard-optimize-settings*)
   (typecase regex
     ((or repetition register lookahead lookbehind standalone)
       ;; if REGEX contains exactly one inner REGEX object apply
@@ -283,7 +287,7 @@ operation on REGEX."))
 ;; Note that START-ANCHORED-P will be called after FLATTEN and GATHER-STRINGS.
 
 (defgeneric start-anchored-p (regex &optional in-seq-p)
-    (declare #.*standard-optimize-settings*)
+  (declare #.*standard-optimize-settings*)
   (:documentation "Returns T if REGEX starts with a \"real\" start
 anchor, i.e. one that's not in multi-line mode, NIL otherwise. If
 IN-SEQ-P is true the function will return :ZERO-LENGTH if REGEX is a
@@ -302,6 +306,7 @@ zero-length assertion."))
         finally (return (and anchored-p (not (eq anchored-p :zero-length))))))
 
 (defmethod start-anchored-p ((alternation alternation) &optional in-seq-p)
+  (declare #.*standard-optimize-settings*)
   (declare (ignore in-seq-p))
   ;; clearly an alternation can only be start-anchored if all of its
   ;; choices are start-anchored
@@ -309,30 +314,36 @@ zero-length assertion."))
         always (start-anchored-p choice)))
 
 (defmethod start-anchored-p ((branch branch) &optional in-seq-p)
+  (declare #.*standard-optimize-settings*)
   (declare (ignore in-seq-p))
   (and (start-anchored-p (then-regex branch))
        (start-anchored-p (else-regex branch))))
 
 (defmethod start-anchored-p ((repetition repetition) &optional in-seq-p)
+  (declare #.*standard-optimize-settings*)
   (declare (ignore in-seq-p))
   ;; well, this wouldn't make much sense, but anyway...
   (and (plusp (minimum repetition))
        (start-anchored-p (regex repetition))))
 
 (defmethod start-anchored-p ((register register) &optional in-seq-p)
+  (declare #.*standard-optimize-settings*)
   (declare (ignore in-seq-p))
   (start-anchored-p (regex register)))
 
 (defmethod start-anchored-p ((standalone standalone) &optional in-seq-p)
+  (declare #.*standard-optimize-settings*)
   (declare (ignore in-seq-p))
   (start-anchored-p (regex standalone)))
 
 (defmethod start-anchored-p ((anchor anchor) &optional in-seq-p)
+  (declare #.*standard-optimize-settings*)
   (declare (ignore in-seq-p))
   (and (startp anchor)
        (not (multi-line-p anchor))))
 
 (defmethod start-anchored-p ((regex regex) &optional in-seq-p)
+  (declare #.*standard-optimize-settings*)
   (typecase regex
     ((or lookahead lookbehind word-boundary void)
       ;; zero-length assertions
@@ -352,7 +363,7 @@ zero-length assertion."))
 ;; Note that END-STRING-AUX will be called after FLATTEN and GATHER-STRINGS.
 
 (defgeneric end-string-aux (regex &optional old-case-insensitive-p)
-    (declare #.*standard-optimize-settings*)
+  (declare #.*standard-optimize-settings*)
   (:documentation "Returns the constant string (if it exists) REGEX
 ends with wrapped into a STR object, otherwise NIL.
 OLD-CASE-INSENSITIVE-P is the CASE-INSENSITIVE-P slot of the last STR
@@ -361,6 +372,7 @@ function called by END-STRIN.)"))
 
 (defmethod end-string-aux ((str str)
                            &optional (old-case-insensitive-p :void))
+  (declare #.*standard-optimize-settings*)
   (declare (special last-str))
   (cond ((and (not (skip str))          ; avoid constituents of STARTS-WITH
               ;; only use STR if nothing has been collected yet or if
@@ -376,6 +388,7 @@ function called by END-STRIN.)"))
 
 (defmethod end-string-aux ((seq seq)
                            &optional (old-case-insensitive-p :void))
+  (declare #.*standard-optimize-settings*)
   (declare (special continuep))
   (let (case-insensitive-p
         concatenated-string
@@ -444,14 +457,17 @@ function called by END-STRIN.)"))
 
 (defmethod end-string-aux ((register register)
                            &optional (old-case-insensitive-p :void))
+  (declare #.*standard-optimize-settings*)
   (end-string-aux (regex register) old-case-insensitive-p))
     
 (defmethod end-string-aux ((standalone standalone)
                            &optional (old-case-insensitive-p :void))
+  (declare #.*standard-optimize-settings*)
   (end-string-aux (regex standalone) old-case-insensitive-p))
     
 (defmethod end-string-aux ((regex regex)
                            &optional (old-case-insensitive-p :void))
+  (declare #.*standard-optimize-settings*)
   (declare (special last-str end-anchored-p continuep))
   (typecase regex
     ((or anchor lookahead lookbehind word-boundary void)
@@ -474,14 +490,11 @@ function called by END-STRIN.)"))
       ;; REPETITION, FILTER)
       nil)))
 
-(defgeneric end-string (regex)
-  (declare #.*standard-optimize-settings*)
-  (:documentation "Returns the constant string (if it exists) REGEX ends with wrapped
-into a STR object, otherwise NIL."))
-
-(defmethod end-string ((regex regex))
+(defun end-string (regex)
   (declare (special end-string-offset))
-    (declare #.*standard-optimize-settings*)
+  (declare #.*standard-optimize-settings*)
+  "Returns the constant string (if it exists) REGEX ends with wrapped
+into a STR object, otherwise NIL."
   ;; LAST-STR points to the last STR object (seen from the end) that's
   ;; part of END-STRING; CONTINUEP is set to T if we stop collecting
   ;; in the middle of a SEQ
@@ -499,53 +512,64 @@ into a STR object, otherwise NIL."))
               end-string-offset (offset last-str))))))
 
 (defgeneric compute-min-rest (regex current-min-rest)
-    (declare #.*standard-optimize-settings*)
+  (declare #.*standard-optimize-settings*)
   (:documentation "Returns the minimal length of REGEX plus
 CURRENT-MIN-REST. This is similar to REGEX-MIN-LENGTH except that it
 recurses down into REGEX and sets the MIN-REST slots of REPETITION
 objects."))
 
 (defmethod compute-min-rest ((seq seq) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (loop for element in (reverse (elements seq))
         for last-min-rest = current-min-rest then this-min-rest
         for this-min-rest = (compute-min-rest element last-min-rest)
         finally (return this-min-rest)))
     
 (defmethod compute-min-rest ((alternation alternation) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (loop for choice in (choices alternation)
         minimize (compute-min-rest choice current-min-rest)))
 
 (defmethod compute-min-rest ((branch branch) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (min (compute-min-rest (then-regex branch) current-min-rest)
        (compute-min-rest (else-regex branch) current-min-rest)))
 
 (defmethod compute-min-rest ((str str) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (+ current-min-rest (len str)))
     
 (defmethod compute-min-rest ((filter filter) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (+ current-min-rest (or (len filter) 0)))
     
 (defmethod compute-min-rest ((repetition repetition) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (setf (min-rest repetition) current-min-rest)
   (compute-min-rest (regex repetition) current-min-rest)
   (+ current-min-rest (* (minimum repetition) (min-len repetition))))
 
 (defmethod compute-min-rest ((register register) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (compute-min-rest (regex register) current-min-rest))
     
 (defmethod compute-min-rest ((standalone standalone) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (declare (ignore current-min-rest))
   (compute-min-rest (regex standalone) 0))
     
 (defmethod compute-min-rest ((lookahead lookahead) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (compute-min-rest (regex lookahead) 0)
   current-min-rest)
     
 (defmethod compute-min-rest ((lookbehind lookbehind) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (compute-min-rest (regex lookbehind) (+ current-min-rest (len lookbehind)))
   current-min-rest)
     
 (defmethod compute-min-rest ((regex regex) current-min-rest)
+  (declare #.*standard-optimize-settings*)
   (typecase regex
     ((or char-class everything)
       (1+ current-min-rest))

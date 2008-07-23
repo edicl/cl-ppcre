@@ -1,9 +1,9 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre.asd,v 1.12 2005/11/01 09:51:01 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre.asd,v 1.30 2008/07/03 10:06:15 edi Exp $
 
 ;;; This ASDF system definition was kindly provided by Marco Baringer.
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz.  All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz.  All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -29,17 +29,12 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(defpackage #:cl-ppcre.system
-  (:use #:cl
-        #:asdf))
-
-(in-package #:cl-ppcre.system)
-
-(defsystem #:cl-ppcre
-  :version "1.2.12"
+(asdf:defsystem :cl-ppcre
+  :version "1.4.1"
   :serial t
   :components ((:file "packages")
                (:file "specials")
+               (:file "charset")
                (:file "util")
                (:file "errors")
                #-:use-acl-regexp2-engine

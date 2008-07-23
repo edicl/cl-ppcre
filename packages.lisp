@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/packages.lisp,v 1.19 2005/04/01 21:29:10 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/packages.lisp,v 1.24 2008/06/25 14:04:27 edi Exp $
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -53,15 +53,14 @@
            #:*regex-char-code-limit*
            #:*use-bmh-matchers*
            #:*allow-quoting*
+           #:*allow-named-registers*
            #:ppcre-error
            #:ppcre-invocation-error
            #:ppcre-syntax-error
            #:ppcre-syntax-error-string
            #:ppcre-syntax-error-pos
            #:register-groups-bind
-           #:do-register-groups
-           #:*standard-optimize-settings*
-           #:*special-optimize-settings*))
+           #:do-register-groups))
 
 #+:cormanlisp
 (defpackage "CL-PPCRE"
@@ -86,15 +85,14 @@
            "*REGEX-CHAR-CODE-LIMIT*"
            "*USE-BMH-MATCHERS*"
            "*ALLOW-QUOTING*"
+           "*ALLOW-NAMED-REGISTERS*"
            "PPCRE-ERROR"
            "PPCRE-INVOCATION-ERROR"
            "PPCRE-SYNTAX-ERROR"
            "PPCRE-SYNTAX-ERROR-STRING"
            "PPCRE-SYNTAX-ERROR-POS"
            "REGISTER-GROUPS-BIND"
-           "DO-REGISTER-GROUPS"
-           "*STANDARD-OPTIMIZE-SETTINGS*"
-           "*SPECIAL-OPTIMIZE-SETTINGS*"))
+           "DO-REGISTER-GROUPS"))
 
 #-:cormanlisp
 (defpackage #:cl-ppcre-test

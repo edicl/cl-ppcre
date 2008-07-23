@@ -1,10 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/closures.lisp,v 1.29 2005/05/16 16:29:23 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/closures.lisp,v 1.36 2008/07/03 07:44:06 edi Exp $
 
 ;;; Here we create the closures which together build the final
 ;;; scanner.
 
-;;; Copyright (c) 2002-2005, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -63,6 +63,7 @@ START-POS, and tests whether REGEX can match *STRING* at START-POS
 such that the call to NEXT-FN after the match would succeed."))
                 
 (defmethod create-matcher-aux ((seq seq) next-fn)
+  (declare #.*standard-optimize-settings*)
   ;; the closure for a SEQ is a chain of closures for the elements of
   ;; this sequence which call each other in turn; the last closure
   ;; calls NEXT-FN
@@ -72,6 +73,7 @@ such that the call to NEXT-FN after the match would succeed."))
         finally (return next-matcher)))
 
 (defmethod create-matcher-aux ((alternation alternation) next-fn)
+  (declare #.*standard-optimize-settings*)
   ;; first create closures for all alternations of ALTERNATION
   (let ((all-matchers (mapcar #'(lambda (choice)
                                   (create-matcher-aux choice next-fn))
@@ -84,6 +86,7 @@ such that the call to NEXT-FN after the match would succeed."))
             thereis (funcall (the function matcher) start-pos)))))
 
 (defmethod create-matcher-aux ((register register) next-fn)
+  (declare #.*standard-optimize-settings*)
   ;; the position of this REGISTER within the whole regex; we start to
   ;; count at 0
   (let ((num (num register)))
@@ -122,6 +125,7 @@ such that the call to NEXT-FN after the match would succeed."))
               next-pos)))))))
 
 (defmethod create-matcher-aux ((lookahead lookahead) next-fn)
+  (declare #.*standard-optimize-settings*)
   ;; create a closure which just checks for the inner regex and
   ;; doesn't care about NEXT-FN
   (let ((test-matcher (create-matcher-aux (regex lookahead) #'identity)))
@@ -139,6 +143,7 @@ such that the call to NEXT-FN after the match would succeed."))
              (funcall next-fn start-pos))))))
 
 (defmethod create-matcher-aux ((lookbehind lookbehind) next-fn)
+  (declare #.*standard-optimize-settings*)
   (let ((len (len lookbehind))
         ;; create a closure which just checks for the inner regex and
         ;; doesn't care about NEXT-FN
@@ -150,14 +155,14 @@ such that the call to NEXT-FN after the match would succeed."))
       ;; far enough from the start of *STRING*), then call NEXT-FN
       (lambda (start-pos)
         (declare (type fixnum start-pos))
-        (and (>= (- start-pos *start-pos*) len)
+        (and (>= (- start-pos (or *real-start-pos* *start-pos*)) len)
              (funcall test-matcher (- start-pos len))
              (funcall next-fn start-pos)))
       ;; negative look-behind: check failure of inner regex (if we're
       ;; far enough from the start of *STRING*), then call NEXT-FN
       (lambda (start-pos)
         (declare (type fixnum start-pos))
-        (and (or (< start-pos len)
+        (and (or (< (- start-pos (or *real-start-pos* *start-pos*)) len)
                  (not (funcall test-matcher (- start-pos len))))
              (funcall next-fn start-pos))))))
 
@@ -172,55 +177,54 @@ against CHR-EXPR."
                (subst new '(char-class-test) body
                       :test #'equalp)))
       `(let* ((,%char-class ,char-class)
-              (hash (hash ,%char-class))
-              (count (if hash
-                       (hash-table-count hash)
+              (set (charset ,%char-class))
+              (count (if set
+                       (charset-count set)
                        most-positive-fixnum))
-              ;; collect a list of "all" characters in the hash if
+              ;; collect a list of "all" characters in the set if
               ;; there aren't more than two
-              (key-list (if (<= count 2)
-                          (loop for chr being the hash-keys of hash
-                                collect chr)
-                          nil))
+              (all-chars (if (<= count 2)
+                           (all-characters set)
+                           nil))
               downcasedp)
         (declare (type fixnum count))
-        ;; check if we can partition the hash into three ranges (or
+        ;; check if we can partition the charset into three ranges (or
         ;; less)
         (multiple-value-bind (min1 max1 min2 max2 min3 max3)
-            (create-ranges-from-hash hash)
+            (create-ranges-from-set set)
           ;; if that didn't work and CHAR-CLASS is case-insensitive we
           ;; try it again with every character downcased
           (when (and (not min1)
                      (case-insensitive-p ,%char-class))
             (multiple-value-setq (min1 max1 min2 max2 min3 max3)
-              (create-ranges-from-hash hash :downcasep t))
+              (create-ranges-from-set set :downcasep t))
             (setq downcasedp t))
           (cond ((= count 1)
-                  ;; hash contains exactly one character so we just
+                  ;; charset contains exactly one character so we just
                   ;; check for this single character; (note that this
                   ;; actually can't happen because this case is
                   ;; optimized away in CONVERT already...)
-                  (let ((chr1 (first key-list)))
+                  (let ((chr1 (first all-chars)))
                     ,@(substitute-char-class-tester
                        `(char= ,chr-expr chr1))))
                 ((= count 2)
-                  ;; hash contains exactly two characters
-                  (let ((chr1 (first key-list))
-                        (chr2 (second key-list)))
+                  ;; set contains exactly two characters
+                  (let ((chr1 (first all-chars))
+                        (chr2 (second all-chars)))
                     ,@(substitute-char-class-tester
                        `(let ((chr ,chr-expr))
                          (or (char= chr chr1)
                              (char= chr chr2))))))
                 ((word-char-class-p ,%char-class)
-                  ;; special-case: hash is \w, \W, [\w], [\W] or
+                  ;; special-case: set is \w, \W, [\w], [\W] or
                   ;; something equivalent
                   ,@(substitute-char-class-tester
                      `(word-char-p ,chr-expr)))
                 ((= count *regex-char-code-limit*)
                   ;; according to the ANSI standard we might have all
-                  ;; possible characters in the hash even if it
-                  ;; doesn't contain CHAR-CODE-LIMIT characters but
-                  ;; this doesn't seem to be the case for current
+                  ;; possible characters in the set even if it doesn't
+                  ;; contain CHAR-CODE-LIMIT characters but this
+                  ;; doesn't seem to be the case for current
                   ;; implementations (also note that this optimization
                   ;; implies that you must not have characters with
                   ;; character codes beyond *REGEX-CHAR-CODE-LIMIT* in
@@ -264,17 +268,13 @@ against CHR-EXPR."
                      `(char<= min1 ,chr-expr max1)))
                 (t
                   ;; the general case; note that most of the above
-                  ;; "optimizations" are based on experiences and
-                  ;; benchmarks with CMUCL - if you're really
-                  ;; concerned with speed you might find out that the
-                  ;; general case is almost always the best one for
-                  ;; other implementations (because the speed of their
-                  ;; hash-table access in relation to other operations
-                  ;; might be better than in CMUCL)
+                  ;; "optimizations" are based on early (2002)
+                  ;; experiences and benchmarks with CMUCL
                   ,@(substitute-char-class-tester
-                     `(gethash ,chr-expr hash)))))))))
+                     `(in-charset-p ,chr-expr set)))))))))
 
 (defmethod create-matcher-aux ((char-class char-class) next-fn)
+  (declare #.*standard-optimize-settings*)
   (declare (type function next-fn))
   ;; insert a test against the current character within *STRING*
   (insert-char-class-tester (char-class (schar *string* start-pos))
@@ -291,6 +291,7 @@ against CHR-EXPR."
              (funcall next-fn (1+ start-pos)))))))
 
 (defmethod create-matcher-aux ((str str) next-fn)
+  (declare #.*standard-optimize-settings*)
   (declare (type fixnum *end-string-pos*)
            (type function next-fn)
            ;; this special value is set by CREATE-SCANNER when the
@@ -405,6 +406,7 @@ against CHR-EXPR."
                   (word-char-p (schar *string* start-pos)))))))
 
 (defmethod create-matcher-aux ((word-boundary word-boundary) next-fn)
+  (declare #.*standard-optimize-settings*)
   (declare (type function next-fn))
   (if (negatedp word-boundary)
     (lambda (start-pos)
@@ -415,6 +417,7 @@ against CHR-EXPR."
            (funcall next-fn start-pos)))))
 
 (defmethod create-matcher-aux ((everything everything) next-fn)
+  (declare #.*standard-optimize-settings*)
   (declare (type function next-fn))
   (if (single-line-p everything)
     ;; closure for single-line-mode: we really match everything, so we
@@ -432,11 +435,12 @@ against CHR-EXPR."
            (funcall next-fn (1+ start-pos))))))
 
 (defmethod create-matcher-aux ((anchor anchor) next-fn)
+  (declare #.*standard-optimize-settings*)
   (declare (type function next-fn))
   (let ((startp (startp anchor))
         (multi-line-p (multi-line-p anchor)))
     (cond ((no-newline-p anchor)
-            ;; this must be and end-anchor and it must be modeless, so
+            ;; this must be an end-anchor and it must be modeless, so
             ;; we just have to check whether START-POS equals
             ;; *END-POS*
             (lambda (start-pos)
@@ -486,6 +490,7 @@ against CHR-EXPR."
                    (funcall next-fn start-pos)))))))
 
 (defmethod create-matcher-aux ((back-reference back-reference) next-fn)
+  (declare #.*standard-optimize-settings*)
   (declare (type function next-fn))
   ;; the position of the corresponding REGISTER within the whole
   ;; regex; we start to count at 0
@@ -525,6 +530,7 @@ against CHR-EXPR."
                    (funcall next-fn next-pos)))))))))
 
 (defmethod create-matcher-aux ((branch branch) next-fn)
+  (declare #.*standard-optimize-settings*)
   (let* ((test (test branch))
          (then-matcher (create-matcher-aux (then-regex branch) next-fn))
          (else-matcher (create-matcher-aux (else-regex branch) next-fn)))
@@ -545,6 +551,7 @@ against CHR-EXPR."
                   (funcall else-matcher start-pos))))))))
 
 (defmethod create-matcher-aux ((standalone standalone) next-fn)
+  (declare #.*standard-optimize-settings*)
   (let ((inner-matcher (create-matcher-aux (regex standalone) #'identity)))
     (declare (type function next-fn inner-matcher))
     (lambda (start-pos)
@@ -553,6 +560,7 @@ against CHR-EXPR."
              (funcall next-fn next-pos))))))
 
 (defmethod create-matcher-aux ((filter filter) next-fn)
+  (declare #.*standard-optimize-settings*)
   (let ((fn (fn filter)))
     (lambda (start-pos)
       (let ((next-pos (funcall fn start-pos)))
@@ -560,5 +568,6 @@ against CHR-EXPR."
              (funcall next-fn next-pos))))))
 
 (defmethod create-matcher-aux ((void void) next-fn)
+  (declare #.*standard-optimize-settings*)
   ;; optimize away VOIDs: don't create a closure, just return NEXT-FN
   next-fn)
