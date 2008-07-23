@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/scanner.lisp,v 1.34 2008/07/06 18:12:05 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/scanner.lisp,v 1.35 2008/07/23 22:25:15 edi Exp $
 
 ;;; Here the scanner for the actual regex as well as utility scanners
 ;;; for the constant start and end strings are created.
@@ -36,21 +36,21 @@
   "Auxiliary macro used by CREATE-BMH-MATCHER."
   (let ((char-compare (if case-insensitive-p 'char-equal 'char=)))
     `(lambda (start-pos)
-      (declare (fixnum start-pos))
-      (if (or (minusp start-pos)
-              (> (the fixnum (+ start-pos m)) *end-pos*))
-        nil
-        (loop named bmh-matcher
-              for k of-type fixnum = (+ start-pos m -1)
-                then (+ k (max 1 (aref skip (char-code (schar *string* k)))))
-              while (< k *end-pos*)
-              do (loop for j of-type fixnum downfrom (1- m)
-                       for i of-type fixnum downfrom k
-                       while (and (>= j 0)
-                                  (,char-compare (schar *string* i)
-                                                 (schar pattern j)))
-                       finally (if (minusp j)
-                                 (return-from bmh-matcher (1+ i)))))))))
+       (declare (fixnum start-pos))
+       (if (or (minusp start-pos)
+               (> (the fixnum (+ start-pos m)) *end-pos*))
+         nil
+         (loop named bmh-matcher
+               for k of-type fixnum = (+ start-pos m -1)
+               then (+ k (max 1 (aref skip (char-code (schar *string* k)))))
+               while (< k *end-pos*)
+               do (loop for j of-type fixnum downfrom (1- m)
+                        for i of-type fixnum downfrom k
+                        while (and (>= j 0)
+                                   (,char-compare (schar *string* i)
+                                                  (schar pattern j)))
+                        finally (if (minusp j)
+                                  (return-from bmh-matcher (1+ i)))))))))
 
 (defun create-bmh-matcher (pattern case-insensitive-p)
   "Returns a Boyer-Moore-Horspool matcher which searches the (special)
@@ -76,15 +76,15 @@ instead.  \(BMH matchers are faster but need much more space.)"
                        :test test))))))
   (let* ((m (length pattern))
 	 (skip (make-array *regex-char-code-limit*
-			  :element-type 'fixnum
-			  :initial-element m)))
+                           :element-type 'fixnum
+                           :initial-element m)))
     (declare (fixnum m))
     (loop for k of-type fixnum below m
           if case-insensitive-p
-            do (setf (aref skip (char-code (char-upcase (schar pattern k)))) (- m k 1)
-                     (aref skip (char-code (char-downcase (schar pattern k)))) (- m k 1))
+          do (setf (aref skip (char-code (char-upcase (schar pattern k)))) (- m k 1)
+                   (aref skip (char-code (char-downcase (schar pattern k)))) (- m k 1))
 	  else
-	    do (setf (aref skip (char-code (schar pattern k))) (- m k 1)))
+          do (setf (aref skip (char-code (schar pattern k))) (- m k 1)))
     (if case-insensitive-p
       (bmh-matcher-aux :case-insensitive-p t)
       (bmh-matcher-aux))))

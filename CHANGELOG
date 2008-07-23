@@ -1,12 +1,13 @@
 Version 2.0.0
-2008-07-23
+2008-07-24
 Added named properties (\p{foo})
 Added Unicode support
 Introduced test functions for character classes
 Added optional test function optimization	
 Cleaned up test suite, removed performance cruft
 Removed the various alternative system definitions (too much maintenance work)
-Exported PARSE-STRING	
+Exported PARSE-STRING
+Changed default value of *USE-BMH-MATCHERS*
 General cleanup	
 Lots of documentation additions
 

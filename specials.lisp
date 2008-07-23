@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.40 2008/07/23 02:14:06 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.41 2008/07/23 22:25:15 edi Exp $
 
 ;;; globally declared special variables
 
@@ -120,7 +120,7 @@ where we saw repetitive patterns.
 Only used for patterns which might have zero length.")
 (declaim (simple-vector *last-pos-stores*))
 
-(defvar *use-bmh-matchers* t
+(defvar *use-bmh-matchers* nil
   "Whether the scanners created by CREATE-SCANNER should use the \(fast
 but large) Boyer-Moore-Horspool matchers.")
 

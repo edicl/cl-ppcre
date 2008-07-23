@@ -143,6 +143,7 @@ href="http://weitz.de/regex-coach/">The Regex Coach</a>.
     <li><a href="#backslash">Backslashes may confuse you...</a>
   </ol>
   <li><a href="#allegro">AllegroCL compatibility mode</a>
+  <li><a href="#blabla">Hints, comments, performance considerations</a>
   <li><a href="#ack">Acknowledgements</a>
 </ol>
 
@@ -223,8 +224,7 @@ they obviously don't make sense in Lisp.
 <li><code>\N{name}</code> (named characters), <code>\x{263a}</code>
 (wide hex characters), <code>\l</code>, <code>\u</code>,
 <code>\L</code>, and <code>\U</code>
-because they're actually not part of Perl's regex syntax and
-(honestly) because I was too lazy - but see <a href="http://weitz.de/cl-interpol/">CL-INTERPOL</a>.
+because they're actually not part of Perl's <em>regex</em> syntax - but see <a href="http://weitz.de/cl-interpol/">CL-INTERPOL</a>.
 
 <li><code>\X</code> (extended Unicode), and <code>\C</code> (single
 character). But you can of course use all characters
@@ -1192,20 +1192,19 @@ play dirty tricks with implementation-dependent behaviour, though.</blockquote>
 <p><br>[Special variable]
 <br><a class=none name="*use-bmh-matchers*"><b>*use-bmh-matchers*</b></a>
 
-<blockquote><br>Usually, the scanners created by <a
-href="#create-scanner"><code>CREATE-SCANNER</code></a> (or
-implicitly by other functions and macros) will use fast <a
-href="http://www-igm.univ-mlv.fr/~lecroq/string/node18.html">Boyer-Moore-Horspool
-matchers</a> to check for constant strings at the start or end of the
-regular expression. If <code>*USE-BMH-MATCHERS*</code> is
-<code>NIL</code> (the default is <code>T</code>), the standard
-function <a
-href="http://www.lispworks.com/documentation/HyperSpec/Body/f_search.htm"><code>SEARCH</code></a>
-will be used instead. This will usually be a bit slower but can save
-lots of space if you're storing many scanners. The <a
-href="#test">test suite</a> will automatically set
-<code>*USE-BMH-MATCHERS*</code> to <code>NIL</code> while you're running
-the default test.
+<blockquote><br>Usually, the scanners created
+by <a href="#create-scanner"><code>CREATE-SCANNER</code></a> (or
+implicitly by other functions and macros) will use the standard
+function <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_search.htm"><code>SEARCH</code></a>
+to check for constant strings at the start or end of the regular
+expression.  If <code>*USE-BMH-MATCHERS*</code> is true (the default
+is <code>NIL</code>),
+fast <a href="http://www-igm.univ-mlv.fr/~lecroq/string/node18.html">Boyer-Moore-Horspool
+matchers</a> will be used instead.  This will usually be faster but
+can make the scanners considerably bigger.  Per BMH matcher - there
+can be up to two per scanner - a fixnum array of
+size <a href="#*regex-char-code-limit*"><code>*REGEX-CHAR-CODE-LIMIT*</code></a>
+is allocated and closed over.
 <p>
 Note: Due to the nature of <a href="http://www.lispworks.com/documentation/HyperSpec/Body/s_ld_tim.htm"><code>LOAD-TIME-VALUE</code></a> and the <a
 href="#compiler-macro">compiler macro for <code>SCAN</code> and other functions</a>, some
@@ -1638,7 +1637,7 @@ convert a parse tree).
 <br>&nbsp;<br><h3><a name="unicode" class=none>Unicode properties</a></h3>
 
 You can add support for Unicode properties to CL-PPCRE by loading
-the CL-PPCRE-UNICODE system:
+the CL-PPCRE-UNICODE system (which depends on <a href="http://weitz.de/cl-unicode/">CL-UNICODE</a>):
 <pre>
 (asdf:oos 'asdf:load-op :cl-ppcre-unicode)
 </pre>
@@ -2039,6 +2038,148 @@ To use the AllegroCL compatibility mode you have to
 </pre>
 <em>before</em> you compile CL-PPCRE.
 
+<br>&nbsp;<br><h3><a class=none name="blabla">Hints, comments, performance considerations</a></h3>
+
+Here are, in no particular order, a couple of things about CL-PPCRE 
+and regular expressions in general that you might or might not want to
+read.
+
+<ul>
+  <li>A lot of hackers (especially users of Perl and other scripting
+  languages) think that regular expressions are the greatest thing
+  since slice bread and use it for almost everything.  That is just
+  plain wrong.  Other hackers (especially Lispers) tend to think that
+  regular expressions are the work of the devil and try to avoid them
+  at all cost.  That's also wrong.  Regular expressions are a handy
+  and useful addition to your toolkit which you should use when
+  appropriate - you should just try to figure out first <em>if</em>
+  they're appropriate for the task at hand.
+
+  <li>If you're concerned about the string syntax of regular
+  expressions which can look like line noise and is really hard to
+  read for long expressions, consider using
+  CL-PPCRE's <a href="#create-scanner2">S-expression syntax</a>
+  instead.  It is less error-prone and you don't have to worry about
+  escaping characters.  It is also easier to manipulate
+  programmatically.
+
+  <li>For alternations, order is important.  The general rule is that
+  the regex engine tries from left to right and tries to match as much
+  as possible.
+<pre>
+CL-USER 1 > (scan-to-strings "<=|<" "<=")
+"<="
+#()
+
+CL-USER 2 > (scan-to-strings "<|<=" "<=")
+"<"
+#()
+</pre>
+
+   <li><a class=none name="compiler-macro">CL-PPCRE</a>
+   uses <a href="http://www.lispworks.com/documentation/HyperSpec/Body/03_bba.htm">compiler
+   macros</a> to pre-compile scanners
+   at <a href=="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_l.htm#load_time">load
+   time</a> if possible.  This happens if the compiler can determine
+   that the regular expression (no matter if it's a string or an
+   S-expression)
+   is <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_consta.htm">constant</a>
+   at <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_c.htm#compile_time">compile
+   time</a> and is intended to save the time for creating scanners
+   at <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_e.htm#execution_time">execution
+   time</a> (probably creating the same scanner over and over in a
+   loop).  Make sure you don't prevent the compiler from helping you.
+   For example, a definition like this one is usually not a good idea:
+<pre>
+(defun regex-match (regex target)
+  <font color=orange>;; don't do that!</font>
+  (scan regex target))
+</pre>
+
+  <li>If you want to search for a substring in a large string or if
+  you search for the same string very
+  often, <a href="#scan"><code>SCAN</code></a> will usually be faster
+  than Common
+  Lisp's <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_search.htm"><code>SEARCH</code></a>
+  if you <a href="#*use-bmh-matchers*">use BMH matchers</a>.  However,
+  this only makes sense if scanner creation time is not the
+  limiting factor, i.e. if the search target is <em>very</em> large or
+  if you're using the same scanner very often.
+
+  <li>Complementary to the last hint, <em>don't</em> use regular
+  expressions for one-time searches for constant strings.  That's a
+  terrible waste of resources.
+
+  <li><a href="#*use-bmh-matchers*"><code>*USE-BMH-MATCHERS*</code></a> together with a large value for
+  <a href="#*regex-char-code-limit*"><code>*REGEX-CHAR-CODE-LIMIT*</code></a>
+  can lead to huge scanners.
+
+  <li>A character class is by default translated into a sequence of
+  tests exactly as you might expect.  For
+  example, <code>"[af-l\\d]"</code> means to test if the character is
+  equal to <code>#\a</code>, then to test if it's
+  between <code>#\f</code> and <code>#\l</code>, then if it's a digit.
+  There's by default no attempt to remove redundancy (as
+  in <code>"[a-ge-kf]"</code>) or to otherwise optimize these tests
+  for speed.  However, you can play
+  with <a href="#*optimize-char-classes*"><code>*OPTIMIZE-CHAR-CLASSES*</code></a>
+  if you've identified character classes as bottleneck and want to
+  make sure that you have <em>O(1)</em> test functions.
+
+  <li>If you know that the expression you're looking for is anchored,
+  use anchors in your regex.  This can help the engine a lot to make
+  your scanners more efficient.
+
+  <li>In addition to anchors, constant strings at the start or end of a
+  regular expression can help the engine to quickly scan a strang.
+  Note that for example <code>"(a-d|aebf)"</code>
+  and <code>"ab(cd|ef)"</code> are equivalent, but only the second
+  form has a constant start the regex engine can recognize.
+
+  <li>Try to avoid alternations if possible or at least factor them
+  out as in the example above.
+
+  <li>If neither anchors nor constant strings are in sight, maybe
+  "standalone" (sometimes also called "possessive") regular
+  expressions can be helpful.  Try the following:
+<pre>
+(let ((target (make-string 10000 :initial-element #\a))
+      (scanner-1 (create-scanner "a*\\d"))
+      (scanner-2 (create-scanner "(?>a*)\\d")))
+  (time (scan scanner-1 target))
+  (time (scan scanner-2 target)))
+</pre>
+
+  <li>Consider using <a href="#create-scanner">"single-line mode"</a>
+  if it makes sense for your task.  By default (following Perl's
+  practice), a dot means to search for any character <em>except</em>
+  line breaks.  In single-line mode a dot searches for <em>any</em>
+  character which in some cases means that large parts of the target
+  can actually be skipped.  This can be vastly more efficient for
+  large targets.
+
+  <li>Don't use capturing register groups where a non-capturing group
+  would do, i.e. <em>only</em> use registers if you need to refer to
+  them later.  If you use a register, each scan process needs to
+  allocate space for it and update its contents (possibly many times)
+  until it's finished.  (In Perl parlance - use <code>"(?:foo)"</code> instead of
+  <code>"(foo)"</code> whenever possible.)
+
+  <li>In addition to what has been said in the last hint, note that
+  Perl semantics force the regex engine to report the <em>last</em>
+  match for each register.  This implies for example
+  that <code>"([a-c])+"</code> and <code>"[a-c]*([a-c])"</code> have
+  exactly the same semantics but completely different performance
+  characteristics.  (Actually, in some cases CL-PPCRE automatically
+  converts expressions from the first type into the second type.
+  That's not always possible, though, and you shouldn't rely on it.)
+
+  <li>By default, repetitions are "greedy" in Perl (and thus in
+  CL-PPCRE).  This has an impact on performance and also on the actual
+  outcome of a scan.  Look at your repetitions and ponder if a greedy
+  repetition is really what you want.
+</ul>
+
 <br>&nbsp;<br><h3><a class=none name="ack">Acknowledgements</a></h3>
 
 Although I didn't use their code, I was heavily inspired by looking at
@@ -2067,7 +2208,7 @@ me her PowerBook to test early versions of CL-PPCRE with MCL and
 OpenMCL.
 
 <p>
-$Header: /usr/local/cvsrep/cl-ppcre/doc/index.html,v 1.191 2008/07/23 02:14:09 edi Exp $
+$Header: /usr/local/cvsrep/cl-ppcre/doc/index.html,v 1.195 2008/07/23 22:24:52 edi Exp $
 <p><a href="http://weitz.de/index.html">BACK TO MY HOMEPAGE</a>
 
 </body>
