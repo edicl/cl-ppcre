@@ -325,7 +325,7 @@ it.  Will also
   (:documentation "Helper function for CONVERT-AUX which converts
 parse trees which are conses and dispatches on TOKEN which is the
 first element of the parse tree.")
-  (:method (token parse-tree &key)
+  (:method (token (parse-tree t) &key)
    (signal-syntax-error "Unknown token ~A in parse-tree." token)))
 
 (defmethod convert-compound-parse-tree ((token (eql :sequence)) parse-tree &key)
