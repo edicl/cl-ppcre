@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/lexer.lisp,v 1.34 2008/07/06 22:36:30 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/lexer.lisp,v 1.35 2009/09/17 19:17:31 edi Exp $
 
 ;;; The lexer's responsibility is to convert the regex string into a
 ;;; sequence of tokens which are in turn consumed by the parser.
@@ -9,7 +9,7 @@
 ;;; has opened so far.  (The latter is necessary for interpreting
 ;;; strings like "\\10" correctly.)
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

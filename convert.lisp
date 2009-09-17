@@ -1,11 +1,11 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/convert.lisp,v 1.54 2008/07/23 02:14:06 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/convert.lisp,v 1.57 2009/09/17 19:17:31 edi Exp $
 
 ;;; Here the parse tree is converted into its internal representation
 ;;; using REGEX objects.  At the same time some optimizations are
 ;;; already applied.
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -184,7 +184,7 @@ The arguments to this function correspond to the REPETITION slots of
 the same name."
   (declare #.*standard-optimize-settings*)
   (declare (fixnum minimum)
-           ((or fixnum null) maximum))
+           (type (or fixnum null) maximum))
   ;; note the usage of COPY-REGEX here; we can't use the same REGEX
   ;; object in both REPETITIONS because they will have different
   ;; offsets
@@ -325,7 +325,7 @@ it.  Will also
   (:documentation "Helper function for CONVERT-AUX which converts
 parse trees which are conses and dispatches on TOKEN which is the
 first element of the parse tree.")
-  (:method (token (parse-tree t) &key)
+  (:method ((token t) parse-tree &key)
    (signal-syntax-error "Unknown token ~A in parse-tree." token)))
 
 (defmethod convert-compound-parse-tree ((token (eql :sequence)) parse-tree &key)

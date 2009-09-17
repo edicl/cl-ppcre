@@ -1,10 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/optimize.lisp,v 1.35 2008/07/06 18:12:04 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/optimize.lisp,v 1.36 2009/09/17 19:17:31 edi Exp $
 
 ;;; This file contains optimizations which can be applied to converted
 ;;; parse trees.
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

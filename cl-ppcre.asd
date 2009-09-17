@@ -1,9 +1,9 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre.asd,v 1.45 2008/07/23 02:14:06 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/cl-ppcre.asd,v 1.48 2009/09/17 19:17:30 edi Exp $
 
 ;;; This ASDF system definition was kindly provided by Marco Baringer.
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz.  All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz.  All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -37,7 +37,7 @@
 (in-package :cl-ppcre-asd)
 
 (defsystem :cl-ppcre
-  :version "2.0.0"
+  :version "2.0.2"
   :serial t
   :components ((:file "packages")
                (:file "specials")

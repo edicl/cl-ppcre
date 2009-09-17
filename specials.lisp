@@ -1,9 +1,9 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.41 2008/07/23 22:25:15 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.42 2009/09/17 19:17:32 edi Exp $
 
 ;;; globally declared special variables
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

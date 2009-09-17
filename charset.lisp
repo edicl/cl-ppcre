@@ -1,10 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/charset.lisp,v 1.9 2008/07/23 00:47:58 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/charset.lisp,v 1.10 2009/09/17 19:17:30 edi Exp $
 
 ;;; A specialized set implementation for characters by Nikodemus Siivola.
 
 ;;; Copyright (c) 2008, Nikodemus Siivola. All rights reserved.
-;;; Copyright (c) 2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2008-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

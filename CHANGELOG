@@ -1,3 +1,12 @@
+Version 2.0.2
+2009-09-17
+Fixed typo in chartest.lisp (caught by Peter Seibel)
+Appease CCL (thanks to Hans Hübner)
+
+Version 2.0.1
+2008-09-02
+Fixed faulty declaration (caught by Brent Fulgham)
+
 Version 2.0.0
 2008-07-24
 Added named properties (\p{foo})

@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/parser.lisp,v 1.30 2008/07/06 18:12:05 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/parser.lisp,v 1.31 2009/09/17 19:17:31 edi Exp $
 
 ;;; The parser will - with the help of the lexer - parse a regex
 ;;; string and convert it into a "parse tree" (see docs for details
@@ -7,7 +7,7 @@
 ;;; return illegal parse trees.  It is assumed that the conversion
 ;;; process later on will track them down.
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/repetition-closures.lisp,v 1.33 2008/07/06 18:12:05 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/repetition-closures.lisp,v 1.34 2009/09/17 19:17:31 edi Exp $
 
 ;;; This is actually a part of closures.lisp which we put into a
 ;;; separate file because it is rather complex. We only deal with
@@ -7,7 +7,7 @@
 ;;; rather crazy micro-optimizations which were introduced to be as
 ;;; competitive with Perl as possible in tight loops.
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

@@ -1,9 +1,9 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/charmap.lisp,v 1.18 2008/07/22 23:54:59 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/charmap.lisp,v 1.19 2009/09/17 19:17:30 edi Exp $
 
 ;;; An optimized representation of sets of characters.
 
-;;; Copyright (c) 2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2008-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

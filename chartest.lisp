@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/chartest.lisp,v 1.3 2008/07/23 00:47:58 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/chartest.lisp,v 1.5 2009/09/17 19:17:30 edi Exp $
 
-;;; Copyright (c) 2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2008-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -88,7 +88,7 @@ which contains either the set or its complement."
                   (not (in-charset-p char charset)))))))
     ((:hash-table :hash-table*)
      (let ((hash-table (create-hash-table-from-test-function test-function start end)))
-       (cond ((or (eq kind :charset)
+       (cond ((or (eq kind :hash-table)
                   (<= (hash-table-count hash-table) (ceiling (- end start) 2)))
               (lambda (char)
                 (gethash char hash-table)))

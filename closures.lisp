@@ -1,10 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/closures.lisp,v 1.44 2008/07/22 22:38:05 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/closures.lisp,v 1.45 2009/09/17 19:17:30 edi Exp $
 
 ;;; Here we create the closures which together build the final
 ;;; scanner.
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

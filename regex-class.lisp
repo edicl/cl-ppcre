@@ -1,10 +1,10 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/regex-class.lisp,v 1.42 2008/07/22 22:38:05 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/regex-class.lisp,v 1.43 2009/09/17 19:17:31 edi Exp $
 
 ;;; This file defines the REGEX class.  REGEX objects are used to
 ;;; represent the (transformed) parse trees internally
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions

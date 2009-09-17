@@ -1,7 +1,7 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-USER; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/test/packages.lisp,v 1.3 2008/07/22 12:58:52 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/test/packages.lisp,v 1.4 2009/09/17 19:17:36 edi Exp $
 
-;;; Copyright (c) 2002-2008, Dr. Edmund Weitz. All rights reserved.
+;;; Copyright (c) 2002-2009, Dr. Edmund Weitz. All rights reserved.
 
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
