@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/util.lisp,v 1.47 2009/09/17 19:17:32 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/util.lisp,v 1.48 2009/10/28 07:36:15 edi Exp $
 
 ;;; Utility functions and constants dealing with the character sets we
 ;;; use to encode character classes
@@ -137,10 +137,15 @@ match [\\s] in Perl."
   "Coerces STRING to a simple STRING unless it already is one."
   (with-unique-names (=string=)
     `(let ((,=string= ,string))
-      (cond ((simple-string-p ,=string=)
+      (cond (#+:lispworks
+             (lw:simple-text-string-p ,=string=)
+             #-:lispworks
+             (simple-string-p ,=string=)
               ,=string=)
             (t
-              (coerce ,=string= 'simple-string))))))
+             (coerce ,=string=
+                     #+:lispworks 'lw:simple-text-string
+                     #-:lispworks 'simple-string))))))
 
 (declaim (inline nsubseq))
 (defun nsubseq (sequence start &optional (end (length sequence)))
@@ -171,7 +176,9 @@ short form of VAR-LIST."
     (dolist (string string-list)
       #-:genera (declare (string string))
       (incf total-size (length string)))
-    (let ((result-string (make-sequence 'simple-string total-size))
+    (let ((result-string (make-sequence #-:lispworks 'simple-string
+                                        #+:lispworks 'lw:simple-text-string
+                                        total-size))
           (curr-pos 0))
       (declare (fixnum curr-pos))
       (dolist (string string-list)

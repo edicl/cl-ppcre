@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/regex-class.lisp,v 1.43 2009/09/17 19:17:31 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/regex-class.lisp,v 1.44 2009/10/28 07:36:15 edi Exp $
 
 ;;; This file defines the REGEX class.  REGEX objects are used to
 ;;; represent the (transformed) parse trees internally
@@ -248,7 +248,12 @@ defined by the user."))
   (declare (ignore init-args))
   "Automatically computes the length of a STR after initialization."
   (let ((str-slot (slot-value str 'str)))
-    (unless (typep str-slot 'simple-string)
-      (setf (slot-value str 'str) (coerce str-slot 'simple-string))))
+    (unless (typep str-slot
+                   #-:lispworks 'simple-string
+                   #+:lispworks 'lw:simple-text-string)
+      (setf (slot-value str 'str)
+            (coerce str-slot
+                   #-:lispworks 'simple-string
+                   #+:lispworks 'lw:simple-text-string))))
   (setf (len str) (length (str str))))
 

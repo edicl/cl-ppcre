@@ -1,5 +1,5 @@
 ;;; -*- Mode: LISP; Syntax: COMMON-LISP; Package: CL-PPCRE; Base: 10 -*-
-;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.42 2009/09/17 19:17:32 edi Exp $
+;;; $Header: /usr/local/cvsrep/cl-ppcre/specials.lisp,v 1.43 2009/10/28 07:36:15 edi Exp $
 
 ;;; globally declared special variables
 
@@ -65,6 +65,9 @@ implementations like AllegroCL, CLISP, LispWorks, or SBCL.")
 (defvar *string* ""
   "The string which is currently scanned by SCAN.
 Will always be coerced to a SIMPLE-STRING.")
+#+:lispworks
+(declaim (lw:simple-text-string *string*))
+#-:lispworks
 (declaim (simple-string *string*))
 
 (defvar *start-pos* 0
