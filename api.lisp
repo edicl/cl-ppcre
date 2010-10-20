@@ -1224,8 +1224,8 @@ sections. These sections may nest."
 (let* ((*use-bmh-matchers* nil)
        (comment-scanner (create-scanner "(?s)\\(\\?#.*?\\)"))
        (extended-comment-scanner (create-scanner "(?m:#.*?$)|(?s:\\(\\?#.*?\\))"))
-       (quote-token-scanner "\\\\[QE]")
-       (quote-token-replace-scanner "\\\\([QE])"))
+       (quote-token-scanner (create-scanner "\\\\[QE]"))
+       (quote-token-replace-scanner (create-scanner "\\\\([QE])")))
   (defun clean-comments (string &optional extended-mode)
     "Clean \(?#...) comments within STRING for quoting, i.e. convert
 \\Q to Q and \\E to E.  If EXTENDED-MODE is true, also clean
