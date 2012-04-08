@@ -701,11 +701,15 @@ Also used for inverted char classes when INVERTEDP is true."
 (defmethod convert-compound-parse-tree ((token (eql :property)) parse-tree &key)
   "The case for \(:PROPERTY <name>) where <name> is a string."
   (declare #.*standard-optimize-settings*)
+  (declare (special accumulate-start-p))
+  (setq accumulate-start-p nil)
   (make-instance 'char-class :test-function (resolve-property (second parse-tree))))
 
 (defmethod convert-compound-parse-tree ((token (eql :inverted-property)) parse-tree &key)
   "The case for \(:INVERTED-PROPERTY <name>) where <name> is a string."
   (declare #.*standard-optimize-settings*)
+  (declare (special accumulate-start-p))
+  (setq accumulate-start-p nil)
   (make-instance 'char-class :test-function (complement* (resolve-property (second parse-tree)))))
 
 (defmethod convert-compound-parse-tree ((token (eql :flags)) parse-tree &key)
