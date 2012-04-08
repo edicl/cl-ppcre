@@ -38,6 +38,7 @@
 
 (defsystem :cl-ppcre
   :version "2.0.3"
+  :description "Perl-compatible regular expression library"
   :serial t
   :components ((:file "packages")
                (:file "specials")
