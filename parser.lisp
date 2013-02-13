@@ -128,10 +128,7 @@ Will return <parse-tree> or \(<grouping-type> <parse-tree>) where
                   ;; have been the "(?:"<regex>")" production
                   (cons :group (nconc flags (list reg-expr)))
                   (if (eq open-token :open-paren-less-letter)
-                      (list :named-register
-                            ;; every string was reversed, so we have to
-                            ;; reverse it back to get the name
-                            (nreverse register-name)
+                      (list :named-register register-name
                             reg-expr)
                       (list (case open-token
                               ((:open-paren)
@@ -201,54 +198,42 @@ Will return <parse-tree> or (:SEQUENCE <parse-tree> <parse-tree>)."
     ;; to parse a <seq> or <quant> in order to catch empty regular
     ;; expressions
     (if (start-of-subexpr-p lexer)
-      (let ((quant (quant lexer)))
-        (if (start-of-subexpr-p lexer)
-          (let* ((seq (seq lexer))
-                 (quant-is-char-p (characterp quant))
-                 (seq-is-sequence-p (and (consp seq)
-                                         (eq (first seq) :sequence))))
-            (cond ((and quant-is-char-p
-                        (characterp seq))
-                    (make-array-from-two-chars seq quant))
-                  ((and quant-is-char-p
-                        (stringp seq))
-                    (vector-push-extend quant seq)
-                    seq)
-                  ((and quant-is-char-p
-                        seq-is-sequence-p
-                        (characterp (second seq)))
-                    (cond ((cddr seq)
-                            (setf (cdr seq)
-                                    (cons
-                                     (make-array-from-two-chars (second seq)
-                                                                quant)
-                                     (cddr seq)))
-                            seq)
-                          (t (make-array-from-two-chars (second seq) quant))))
-                  ((and quant-is-char-p
-                        seq-is-sequence-p
-                        (stringp (second seq)))
-                    (cond ((cddr seq)
-                            (setf (cdr seq)
-                                    (cons
-                                     (progn
-                                       (vector-push-extend quant (second seq))
-                                       (second seq))
-                                     (cddr seq)))
-                            seq)
-                          (t 
-                            (vector-push-extend quant (second seq))
-                            (second seq))))
-                  (seq-is-sequence-p
-                    ;; if <seq> is also a :SEQUENCE parse tree we merge
-                    ;; both lists into one to avoid unnecessary consing
-                    (setf (cdr seq)
-                            (cons quant (cdr seq)))
-                    seq)
-                  (t (list :sequence quant seq))))
-          quant))
-      :void)))
-  
+        (loop with seq-is-sequence-p = nil
+              with last-cdr
+              for quant = (quant lexer)
+              for quant-is-char-p = (characterp quant)
+              for seq = quant
+              then
+              (cond ((and quant-is-char-p (characterp seq))
+                     (make-array-from-two-chars seq quant))
+                    ((and quant-is-char-p (stringp seq))
+                     (vector-push-extend quant seq)
+                     seq)
+                    ((not seq-is-sequence-p)
+                     (setf last-cdr (list quant)
+                           seq-is-sequence-p t)
+                     (list* :sequence seq last-cdr))
+                    ((and quant-is-char-p
+                          (characterp (car last-cdr)))
+                     (setf (car last-cdr)
+                           (make-array-from-two-chars (car last-cdr)
+                                                      quant))
+                     seq)
+                    ((and quant-is-char-p
+                          (stringp (car last-cdr)))
+                     (vector-push-extend quant (car last-cdr))
+                     seq)
+                    (t
+                     ;; if <seq> is also a :SEQUENCE parse tree we merge
+                     ;; both lists into one
+                     (let ((cons (list quant)))
+                       (psetf last-cdr cons
+                              (cdr last-cdr) cons))
+                     seq))
+              while (start-of-subexpr-p lexer)
+              finally (return seq))
+        :void)))
+
 (defun reg-expr (lexer)
   "Parses and consumes a <regex>, a complete regular expression.
 The productions are: <regex> -> <seq> | <seq>\"|\"<regex>.
@@ -294,25 +279,11 @@ Will return <parse-tree> or (:ALTERNATION <parse-tree> <parse-tree>)."
               (setf (lexer-pos lexer) pos)
               seq)))))))
 
-(defun reverse-strings (parse-tree)
-  "Recursively walks through PARSE-TREE and destructively reverses all
-strings in it."
-  (declare #.*standard-optimize-settings*)
-  (cond ((stringp parse-tree)
-          (nreverse parse-tree))
-        ((consp parse-tree)
-          (loop for parse-tree-rest on parse-tree
-                while parse-tree-rest
-                do (setf (car parse-tree-rest)
-                           (reverse-strings (car parse-tree-rest))))
-          parse-tree)
-        (t parse-tree)))
-
 (defun parse-string (string)
   "Translate the regex string STRING into a parse tree."
   (declare #.*standard-optimize-settings*)
   (let* ((lexer (make-lexer string))
-         (parse-tree (reverse-strings (reg-expr lexer))))
+         (parse-tree (reg-expr lexer)))
     ;; check whether we've consumed the whole regex string
     (if (end-of-string-p lexer)
       parse-tree
