@@ -367,7 +367,7 @@ zero-length assertion."))
 ends with wrapped into a STR object, otherwise NIL.
 OLD-CASE-INSENSITIVE-P is the CASE-INSENSITIVE-P slot of the last STR
 collected or :VOID if no STR has been collected yet. (This is a helper
-function called by END-STRIN.)"))
+function called by END-STRING.)"))
 
 (defmethod end-string-aux ((str str)
                            &optional (old-case-insensitive-p :void))

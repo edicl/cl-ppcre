@@ -290,8 +290,7 @@ handled elsewhere."
                        (return))
                      (write-char char out))))))
     (list (if (char= first-char #\p) :property :inverted-property)
-          ;; we must reverse here because of what PARSE-STRING does
-          (nreverse name))))
+          name)))
 
 (defun collect-char-class (lexer)
   "Reads and consumes characters from regex string until a right
@@ -571,7 +570,7 @@ closing #\> will also be consumed."
                           ;; back-referencing a named register
                           (incf (lexer-pos lexer))
                           (list :back-reference
-                                (nreverse (parse-register-name-aux lexer))))
+                                (parse-register-name-aux lexer)))
                          (t
                           ;; false alarm, just unescape \k
                           #\k)))

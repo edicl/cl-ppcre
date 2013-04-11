@@ -108,6 +108,10 @@ must appear after this repetition.")
 register."))
   (:documentation "REPETITION objects represent repetitions of regexes."))
 
+(defmethod print-object ((repetition repetition) stream)
+  (print-unreadable-object (repetition stream :type t :identity t)
+    (princ (regex repetition) stream)))
+
 (defclass register (regex)
   ((regex :initarg :regex
           :accessor regex
@@ -121,6 +125,10 @@ This is the index into *REGS-START* and *REGS-END*.")
          :reader name
          :documentation "Name of this register or NIL."))
   (:documentation "REGISTER objects represent register groups."))
+
+(defmethod print-object ((register register) stream)
+  (print-unreadable-object (register stream :type t :identity t)
+    (princ (regex register) stream)))
 
 (defclass standalone (regex)
   ((regex :initarg :regex
@@ -180,6 +188,10 @@ string because the SCAN function has done this already.")
                           :documentation "If this is the unique
 STR which starts END-STRING (a slot of MATCHER)."))
   (:documentation "STR objects represent string."))
+
+(defmethod print-object ((str str) stream)
+  (print-unreadable-object (str stream :type t :identity t)
+    (princ (str str) stream)))
 
 (defclass anchor (regex)
   ((startp :initarg :startp
