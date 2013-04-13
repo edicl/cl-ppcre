@@ -151,7 +151,7 @@ href="http://weitz.de/regex-coach/">The Regex Coach</a>.
 
 CL-PPCRE together with this documentation can be downloaded from <a
 href="http://weitz.de/files/cl-ppcre.tar.gz">http://weitz.de/files/cl-ppcre.tar.gz</a>. The
-current version is 2.0.3.
+current version is 2.0.4.
 <p>
 CL-PPCRE comes with a system definition
 for <a href="http://www.cliki.net/asdf">ASDF</a> and you compile and
@@ -159,13 +159,10 @@ load it in the usual way.  There are no dependencies (except that the
 <a href="#test">test suite</a> which is not needed for normal operation depends
 on <a href="http://weitz.de/flexi-streams/">FLEXI-STREAMS</a>).
 <p>
-CL-PPCRE is integrated into the package/port systems
-of <a href="http://www.debian.org/">Debian</a>, <a href="http://www.gentoo.org/">Gentoo</a>,
-and <a href="http://www.freebsd.org/">FreeBSD</a>, but before you
-install it from there, you should check if they actually offer the
-latest release.  Installation
-via <a href="http://www.cliki.net/asdf-install">ASDF-Install</a>
-should as well be possible.
+  The preferred way to install CL-PPCRE is
+through <a href="http://www.quicklisp.org/" target="_new">Quicklisp</a>:
+  <pre>(ql:quickload :cl-ppcre)</pre>
+</p>
 <p>
 <a class=none name="test">You</a> can run a test suite which tests most aspects of the library with
 <pre>

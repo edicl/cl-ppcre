@@ -37,7 +37,7 @@
 (in-package :cl-ppcre-asd)
 
 (defsystem :cl-ppcre
-  :version "2.0.3"
+  :version "2.0.4"
   :serial t
   :components ((:file "packages")
                (:file "specials")
