@@ -1,3 +1,9 @@
+Version 2.0.4
+2013-04-13
+Rewrite SEQ without using recursion (Stas Boukarev)
+:property and :invert-property scanning bug fix (Cyrus Harmon)
+Improve documentation (David Lindes)
+
 Version 2.0.3
 2009-10-28
 Use LW:SIMPLE-TEXT-STRING throughout for LispWorks
