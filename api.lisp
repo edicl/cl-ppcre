@@ -332,28 +332,32 @@ substrings may share structure with TARGET-STRING."
   (with-rebinding (target-string)
     (with-unique-names (match-start match-end reg-starts reg-ends
                                     start-index substr-fn)
-      `(multiple-value-bind (,match-start ,match-end ,reg-starts ,reg-ends)
-            (scan ,regex ,target-string :start (or ,start 0)
-                                        :end (or ,end (length ,target-string)))
-          (declare (ignore ,match-end))
-          (when ,match-start            
-            (let* ,(cons
-                    `(,substr-fn (if ,sharedp
-                                   #'nsubseq
-                                   #'subseq))
-                    (loop for (function var) in (normalize-var-list var-list)
-                          for counter from 0
-                          when var
-                            collect `(,var (let ((,start-index
-                                                   (aref ,reg-starts ,counter)))
-                                             (if ,start-index
-                                               (funcall ,function
-                                                        (funcall ,substr-fn
-                                                                 ,target-string
-                                                                 ,start-index
-                                                                 (aref ,reg-ends ,counter)))
-                                               nil)))))
-              ,@body))))))
+      (let ((var-bindings
+              (loop for (function var) in (normalize-var-list var-list)
+                    for counter from 0
+                    when var
+                      collect `(,var (let ((,start-index
+                                             (aref ,reg-starts ,counter)))
+                                       (if ,start-index
+                                           (funcall ,function
+                                                    (funcall ,substr-fn
+                                                             ,target-string
+                                                             ,start-index
+                                                             (aref ,reg-ends ,counter)))
+                                           nil))))))
+        `(multiple-value-bind (,match-start ,match-end ,reg-starts ,reg-ends)
+             (scan ,regex ,target-string :start (or ,start 0)
+                                         :end (or ,end (length ,target-string)))
+           (declare (ignore ,match-end))
+           ,@(unless var-bindings
+               `((declare (ignore ,reg-starts ,reg-ends))))
+           (when ,match-start
+             ,@(if var-bindings
+                   `((let* ,(list*
+                             `(,substr-fn (if ,sharedp #'nsubseq #'subseq))
+                             var-bindings)
+                       ,@body))
+                   body)))))))
 
 (defmacro do-scans ((match-start match-end reg-starts reg-ends regex
                                  target-string
