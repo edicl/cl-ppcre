@@ -315,7 +315,7 @@ it.  Will also
   - keep track of the highest subpattern reference seen in the special variable
     MAX-SUBPATTERN-REF,
   - keep track of all named subpattern references seen in the special variable
-    NAMED-SUBPATTERN-REFS-SEEN,
+    NAMED-SUBPATTERN-REFS,
   - maintain and adher to the currently applicable modifiers in the special
     variable FLAGS, and
   - maybe even wash your car..."
@@ -676,7 +676,7 @@ when NAME is not NIL."
 (defmethod convert-compound-parse-tree ((token (eql :subpattern-reference)) parse-tree &key)
   "The case for parse trees like \(:SUBPATTERN-REFERENCE <number>|<name>)."
   (declare #.*standard-optimize-settings*)
-  (declare (special max-subpattern-ref named-subpattern-refs-seen))
+  (declare (special max-subpattern-ref named-subpattern-refs))
   ;; Subpattern references may refer to registers that come later in the regex,
   ;; so we don't validate the subpattern name/number until the entire object has
   ;; been constructed.
@@ -691,7 +691,7 @@ when NAME is not NIL."
     (when (not (or reg-name reg-num))
       (signal-syntax-error "Illegal subpattern reference: ~S." parse-tree))
     (if reg-name
-        (pushnew reg-name named-subpattern-refs-seen :test #'string=)
+        (pushnew reg-name named-subpattern-refs :test #'string=)
         (setf max-subpattern-ref (max max-subpattern-ref reg-num)))
     (make-instance 'subpattern-reference
                    ;; For named references, register numbers will be computed
@@ -888,14 +888,14 @@ or an EVERYTHING object \(if the regex starts with something like
          (reg-num 0)
          reg-names
          named-reg-seen
-         named-subpattern-refs-seen
+         named-subpattern-refs
          (accumulate-start-p t)
          starts-with
          (max-back-ref 0)
          (max-subpattern-ref 0)
          (converted-parse-tree (convert-aux parse-tree)))
     (declare (special flags reg-num reg-names named-reg-seen accumulate-start-p
-                      starts-with max-back-ref max-subpattern-ref named-subpattern-refs-seen))
+                      starts-with max-back-ref max-subpattern-ref named-subpattern-refs))
     ;; make sure we don't reference registers which aren't there
     (when (> (the fixnum max-back-ref)
              (the fixnum reg-num))
@@ -914,7 +914,7 @@ or an EVERYTHING object \(if the regex starts with something like
             ;; since parse-tree syntax ignores it
             (when named-reg-seen
               (let ((nonexistent-regs
-                     (set-difference named-subpattern-refs-seen reg-names :test #'string=)))
+                     (set-difference named-subpattern-refs reg-names :test #'string=)))
                 (when nonexistent-regs
                   (signal-syntax-error
                    "Subpattern reference to named register ~A which has not been defined."
