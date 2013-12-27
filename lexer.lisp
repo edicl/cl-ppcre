@@ -693,11 +693,32 @@ closing #\> will also be consumed."
                                    ;; also syntax error
                                    (signal-syntax-error* (1- (lexer-pos lexer))
                                                          "Character '~A' may not follow '(?<'."
-                                                         next-char ))))))
+                                                         next-char))))))
+                         ((#\&)
+                          ;; subpattern reference by register name
+                          (unless *allow-named-registers*
+                            (signal-syntax-error* (1- (lexer-pos lexer))
+                                                  "Character '~A' may not follow '(?'."
+                                                  next-char))
+                          (let ((next-char (next-char-non-extended lexer)))
+                            (if (alpha-char-p next-char)
+                                (progn
+                                  ;; put the letter back
+                                  (decf (lexer-pos lexer))
+                                  :open-paren-ampersand)
+                                (signal-syntax-error* (1- (lexer-pos lexer))
+                                                      "Character '~A' may not follow '(?&'."
+                                                      next-char))))
                          (otherwise
-                          (signal-syntax-error* (1- (lexer-pos lexer))
-                                                "Character '~A' may not follow '(?'."
-                                                next-char)))))
+                          (if (digit-char-p next-char)
+                              ;; subpattern reference by register number
+                              (progn
+                                ;; put the digit back
+                                (decf (lexer-pos lexer))
+                               :open-paren-digit)
+                              (signal-syntax-error* (1- (lexer-pos lexer))
+                                                    "Character '~A' may not follow '(?'."
+                                                    next-char))))))
                     (t
                      ;; if next-char was not #\? (this is within
                      ;; the first COND), we've just seen an opening
