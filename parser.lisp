@@ -38,7 +38,6 @@
 (defun group (lexer)
   "Parses and consumes a <group>.
 The productions are: <group> -> \"\(\"<regex>\")\"
-                                \"\(?\"<num>\")\"
                                 \"\(?:\"<regex>\")\"
                                 \"\(?>\"<regex>\")\"
                                 \"\(?<flags>:\"<regex>\")\"
@@ -49,7 +48,6 @@ The productions are: <group> -> \"\(\"<regex>\")\"
                                 \"\(?\(\"<num>\")\"<regex>\")\"
                                 \"\(?\(\"<regex>\")\"<regex>\")\"
                                 \"\(?<name>\"<regex>\")\" \(when *ALLOW-NAMED-REGISTERS* is T)
-                                \"\(?&\"<name>\")\" \(when *ALLOW-NAMED-REGISTERS* is T)
                                 <legal-token>
 where <flags> is parsed by the lexer function MAYBE-PARSE-FLAGS.
 Will return <parse-tree> or \(<grouping-type> <parse-tree>) where
