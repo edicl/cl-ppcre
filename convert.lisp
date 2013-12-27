@@ -673,6 +673,10 @@ when NAME is not NIL."
        (t
         (make-back-ref backref-number))))))
 
+(defmethod convert-compound-parse-tree ((token (eql :subpattern-reference)) parse-tree &key)
+  "The case for parse trees like \(:SUBPATTERN-REFERENCE <number>|<name>)."
+  (signal-syntax-error "Subpattern references not yet supported."))
+
 (defmethod convert-compound-parse-tree ((token (eql :regex)) parse-tree &key)
   "The case for \(:REGEX <string>)."
   (declare #.*standard-optimize-settings*)
