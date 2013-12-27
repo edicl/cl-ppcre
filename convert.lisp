@@ -857,16 +857,22 @@ or an EVERYTHING object \(if the regex starts with something like
          (reg-num 0)
          reg-names
          named-reg-seen
+         named-subpattern-refs-seen
          (accumulate-start-p t)
          starts-with
          (max-back-ref 0)
+         (max-subpattern-ref 0)
          (converted-parse-tree (convert-aux parse-tree)))
-    (declare (special flags reg-num reg-names named-reg-seen
-                      accumulate-start-p starts-with max-back-ref))
+    (declare (special flags reg-num reg-names named-reg-seen accumulate-start-p
+                      starts-with max-back-ref max-subpattern-ref named-subpattern-refs-seen))
     ;; make sure we don't reference registers which aren't there
     (when (> (the fixnum max-back-ref)
              (the fixnum reg-num))
       (signal-syntax-error "Backreference to register ~A which has not been defined." max-back-ref))
+    (when (> (the fixnum max-subpattern-ref)
+             (the fixnum reg-num))
+      (signal-syntax-error "Subpattern reference to register ~A which has not been defined."
+                           max-subpattern-ref))
     (when (typep starts-with 'str)
       (setf (slot-value starts-with 'str)
               (coerce (slot-value starts-with 'str)
@@ -876,4 +882,10 @@ or an EVERYTHING object \(if the regex starts with something like
             ;; we can't simply use *ALLOW-NAMED-REGISTERS*
             ;; since parse-tree syntax ignores it
             (when named-reg-seen
+              (let ((nonexistent-regs
+                     (set-difference named-subpattern-refs-seen reg-names :test #'string=)))
+                (when nonexistent-regs
+                  (signal-syntax-error
+                   "Subpattern reference to named register ~A which has not been defined."
+                   (car nonexistent-regs))))
               (nreverse reg-names)))))
