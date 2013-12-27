@@ -709,16 +709,14 @@ closing #\> will also be consumed."
                                 (signal-syntax-error* (1- (lexer-pos lexer))
                                                       "Character '~A' may not follow '(?&'."
                                                       next-char))))
+                         ((#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                          ;; put the digit back
+                          (decf (lexer-pos lexer))
+                          :open-paren-digit)
                          (otherwise
-                          (if (digit-char-p next-char)
-                              ;; subpattern reference by register number
-                              (progn
-                                ;; put the digit back
-                                (decf (lexer-pos lexer))
-                               :open-paren-digit)
-                              (signal-syntax-error* (1- (lexer-pos lexer))
-                                                    "Character '~A' may not follow '(?'."
-                                                    next-char))))))
+                          (signal-syntax-error* (1- (lexer-pos lexer))
+                                                "Character '~A' may not follow '(?'."
+                                                next-char)))))
                     (t
                      ;; if next-char was not #\? (this is within
                      ;; the first COND), we've just seen an opening
