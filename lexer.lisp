@@ -704,19 +704,30 @@ will also be consumed."
                             (signal-syntax-error* (1- (lexer-pos lexer))
                                                   "Character '~A' may not follow '(?'."
                                                   next-char))
-                          (let ((next-char (next-char-non-extended lexer)))
+                          (let ((next-char (next-char lexer)))
                             (if (alpha-char-p next-char)
+                               ;; FIXME: Does Perl allow whitespace around register name here?
                                 (progn
                                   ;; put the letter back
                                   (decf (lexer-pos lexer))
-                                  :open-paren-ampersand)
+                                  (list :subpattern-reference
+                                        (parse-register-name-aux lexer :subpattern-reference t)))
                                 (signal-syntax-error* (1- (lexer-pos lexer))
                                                       "Character '~A' may not follow '(?&'."
                                                       next-char))))
                          ((#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                           ;; put the digit back
                           (decf (lexer-pos lexer))
-                          :open-paren-digit)
+                          (prog1
+                            (list :subpattern-reference (get-number lexer :no-whitespace-p t))
+                            (let ((next-char (next-char lexer)))
+                              (when (or (null next-char)
+                                        (not (char= (the character next-char) #\))))
+                                ;; closing ) missing or not in the proper position
+                                ;; FIXME: Does Perl allow whitespace around number here?
+                                (signal-syntax-error*
+                                 (1- (lexer-pos lexer))
+                                 "Numbered subpattern reference has no closing #\\).")))))
                          (otherwise
                           (signal-syntax-error* (1- (lexer-pos lexer))
                                                 "Character '~A' may not follow '(?'."
