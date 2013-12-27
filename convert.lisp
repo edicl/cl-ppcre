@@ -675,6 +675,29 @@ when NAME is not NIL."
 
 (defmethod convert-compound-parse-tree ((token (eql :subpattern-reference)) parse-tree &key)
   "The case for parse trees like \(:SUBPATTERN-REFERENCE <number>|<name>)."
+  (declare #.*standard-optimize-settings*)
+  (declare (special max-subpattern-ref named-subpattern-refs-seen))
+  ;; Subpattern references may refer to registers that come later in the regex,
+  ;; so we don't validate the subpattern name/number until the entire object has
+  ;; been constructed.
+  ;; FIXME: In Perl, which named subpattern is referred to when there are more
+  ;; than one subpatterns of the same name?
+  (let* ((reg (second parse-tree))
+         (reg-name (and (stringp reg) reg))
+         (reg-num (and (null reg-name)
+                       (typep reg 'fixnum)
+                       (plusp reg)
+                       reg)))
+    (when (not (or reg-name reg-num))
+      (signal-syntax-error "Illegal subpattern reference: ~S." parse-tree))
+    (if reg-name
+        (pushnew reg-name named-subpattern-refs-seen :test #'string=)
+        (setf max-subpattern-ref (max max-subpattern-ref reg-num)))
+    (make-instance 'subpattern-reference
+                   ;; For named references, register numbers will be computed
+                   ;; later.
+                   :num (or reg-num -1)
+                   :name (copy-seq reg-name)))
   (signal-syntax-error "Subpattern references not yet supported."))
 
 (defmethod convert-compound-parse-tree ((token (eql :regex)) parse-tree &key)
