@@ -312,6 +312,10 @@ it.  Will also
   - keep track of all named registers seen in the special variable REG-NAMES
   - keep track of the highest backreference seen in the special
     variable MAX-BACK-REF,
+  - keep track of the highest subpattern reference seen in the special variable
+    MAX-SUBPATTERN-REF,
+  - keep track of all named subpattern references seen in the special variable
+    NAMED-SUBPATTERN-REFS-SEEN,
   - maintain and adher to the currently applicable modifiers in the special
     variable FLAGS, and
   - maybe even wash your car..."
