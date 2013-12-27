@@ -255,7 +255,7 @@ defined by the user."))
   ()
   (:documentation "VOID objects represent empty regular expressions."))
 
-(defclass recursive-subpattern (regex)
+(defclass subpattern-reference (regex)
   ((num :initarg :num
         :accessor num
         :type fixnum
@@ -265,7 +265,7 @@ refers to.")
          :accessor name
          :documentation "The name of the register this subpattern reference
 refers to or NIL."))
-  (:documentation "RECURSIVE-SUBPATTERN objects represent subpattern references
+  (:documentation "SUBPATTERN-REFERENCE objects represent subpattern references
   for matching self-similar strings like nested parentheses."))
 
 (defmethod initialize-instance :after ((str str) &rest init-args)
