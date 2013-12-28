@@ -103,7 +103,7 @@ modify its first argument \(but only if it's a parse tree)."))
     (when flags
       (setq parse-tree (list :group (cons :flags flags) parse-tree))))
   (let ((*syntax-error-string* nil))
-    (multiple-value-bind (regex reg-num starts-with reg-names)
+    (multiple-value-bind (regex reg-num starts-with reg-names subpattern-refs)
         (convert parse-tree)
       ;; simplify REGEX by flattening nested SEQ and ALTERNATION
       ;; constructs and gathering STR objects

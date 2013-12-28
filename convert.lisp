@@ -907,11 +907,12 @@ parse trees which are atoms.")
     ((or str void))))
 
 (defun convert (parse-tree)
-  "Converts the parse tree PARSE-TREE into an equivalent REGEX object
-and returns three values: the REGEX object, the number of registers
-seen and an object the regex starts with which is either a STR object
-or an EVERYTHING object \(if the regex starts with something like
-\".*\") or NIL."
+  "Converts the parse tree PARSE-TREE into an equivalent REGEX object and
+returns five values: the REGEX object; the number of registers seen; an object
+the regex starts with, which is either a STR object or an EVERYTHING object \(if
+the regex starts with something like \".*\") or NIL; a list of named registers
+defined in the REGEX; and a list of numbers denoting the registers referred to
+by subpattern references in the REGEX."
   (declare #.*standard-optimize-settings*)
   ;; this function basically just initializes the special variables
   ;; and then calls CONVERT-AUX to do all the work
@@ -960,4 +961,6 @@ or an EVERYTHING object \(if the regex starts with something like
             ;; we can't simply use *ALLOW-NAMED-REGISTERS*
             ;; since parse-tree syntax ignores it
             (when named-reg-seen
-              (nreverse reg-names)))))
+              (nreverse reg-names))
+            (when numbered-subpattern-refs
+              (nreverse numbered-subpattern-refs)))))
