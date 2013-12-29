@@ -159,6 +159,12 @@ which are not of type STR."))
                  :num (num back-reference)
                  :case-insensitive-p (case-insensitive-p back-reference)))
 
+(defmethod copy-regex ((subpattern-reference subpattern-reference))
+  (declare #.*standard-optimize-settings*)
+  (make-instance 'subpattern-reference
+                 :num (num subpattern-reference)
+                 :name (name subpattern-reference)))
+
 (defmethod copy-regex ((char-class char-class))
   (declare #.*standard-optimize-settings*)
   (make-instance 'char-class
@@ -312,8 +318,8 @@ to this object, otherwise NIL.  So, \"(.){1}\" would return true
 
 (defmethod everythingp ((regex regex))
   (declare #.*standard-optimize-settings*)
-  ;; the general case for ANCHOR, BACK-REFERENCE, BRANCH, CHAR-CLASS,
-  ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY
+  ;; the general case for ANCHOR, BACK-REFERENCE, SUBPATTERN-REFERENCE, BRANCH,
+  ;; CHAR-CLASS, LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY
   nil)
 
 (defgeneric regex-length (regex)
@@ -547,6 +553,12 @@ slots of STR objects further down the tree."))
   ;; with enough effort we could possibly do better here, but
   ;; currently we just give up and return NIL
   (declare (ignore start-pos))
+  nil)
+
+(defmethod compute-offsets ((subpattern-reference subpattern-reference) start-pos)
+  (declare #.*standard-optimize-settings*)
+  (declare (ignore start-pos))
+  ;; FIXME: Not sure what this does...
   nil)
 
 (defmethod compute-offsets ((filter filter) start-pos)

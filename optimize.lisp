@@ -119,9 +119,9 @@ operation on REGEX."))
               (flatten (regex regex)))
       regex)
     (t
-      ;; otherwise (ANCHOR, BACK-REFERENCE, CHAR-CLASS, EVERYTHING,
-      ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY)
-      ;; do nothing
+      ;; otherwise (ANCHOR, BACK-REFERENCE, SUBPATTERN-REFERENCE, CHAR-CLASS,
+      ;; EVERYTHING, LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and
+      ;; WORD-BOUNDARY) do nothing
       regex)))
 
 (defgeneric gather-strings (regex)
@@ -278,9 +278,9 @@ operation on REGEX."))
               (gather-strings (regex regex)))
       regex)
     (t
-      ;; otherwise (ANCHOR, BACK-REFERENCE, CHAR-CLASS, EVERYTHING,
-      ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY)
-      ;; do nothing
+      ;; otherwise (ANCHOR, BACK-REFERENCE, SUBPATTERN-REFERENCE, CHAR-CLASS,
+      ;; EVERYTHING, LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and
+      ;; WORD-BOUNDARY) do nothing
       regex)))
 
 ;; Note that START-ANCHORED-P will be called after FLATTEN and GATHER-STRINGS.
@@ -356,7 +356,7 @@ zero-length assertion."))
         :zero-length
         nil))
     (t
-      ;; BACK-REFERENCE, CHAR-CLASS, EVERYTHING, and STR
+      ;; BACK-REFERENCE, SUBPATTERN-REFERENCE, CHAR-CLASS, EVERYTHING, and STR
       nil)))
 
 ;; Note that END-STRING-AUX will be called after FLATTEN and GATHER-STRINGS.
@@ -575,6 +575,6 @@ objects."))
     ((or char-class everything)
       (1+ current-min-rest))
     (t
-      ;; zero min-len and no embedded regexes (ANCHOR,
-      ;; BACK-REFERENCE, VOID, and WORD-BOUNDARY)
+      ;; zero min-len and no embedded regexes (ANCHOR, BACK-REFERENCE,
+      ;; SUBPATTERN-REFERENCE, VOID, and WORD-BOUNDARY)
       current-min-rest)))
