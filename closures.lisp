@@ -86,7 +86,9 @@ such that the call to NEXT-FN after the match would succeed."))
 
 (defmethod create-matcher-aux ((register register) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (special subpattern-refs referenced-register-matchers))
+  (declare (special subpattern-refs
+                    referenced-register-matchers
+                    inside-subpattern-reference))
   ;; the position of this REGISTER within the whole regex; we start to
   ;; count at 0
   (let ((num (num register)))
@@ -97,8 +99,9 @@ such that the call to NEXT-FN after the match would succeed."))
     (flet ((store-end-of-reg (start-pos)
                (declare (fixnum start-pos)
                         (function next-fn))
-               (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
-                     (svref *reg-ends* num) start-pos)
+               (unless inside-subpattern-reference
+                 (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
+                       (svref *reg-ends* num) start-pos))
            (funcall next-fn start-pos)))
       ;; the inner matcher is a closure corresponding to the regex
       ;; wrapped by this REGISTER
@@ -121,21 +124,25 @@ such that the call to NEXT-FN after the match would succeed."))
                (let ((next-pos (funcall inner-matcher-without-next-fn start-pos)))
                  (when next-pos
                    (funcall (the function other-fn) next-pos)))
-               ;; remember the old values of *REGS-START* and friends in
-               ;; case we cannot match
-               (let ((old-*reg-starts* (svref *reg-starts* num))
-                     (old-*regs-maybe-start* (svref *regs-maybe-start* num))
-                     (old-*reg-ends* (svref *reg-ends* num)))
-                 ;; we cannot use *REGS-START* here because Perl allows
-                 ;; regular expressions like /(a|\1x)*/
-                 (setf (svref *regs-maybe-start* num) start-pos)
-                 (let ((next-pos (funcall inner-matcher start-pos)))
-                   (unless next-pos
-                     ;; restore old values on failure
-                     (setf (svref *reg-starts* num) old-*reg-starts*
-                           (svref *regs-maybe-start* num) old-*regs-maybe-start*
-                           (svref *reg-ends* num) old-*reg-ends*))
-                   next-pos)))))))))
+               (if inside-subpattern-reference
+                   ;; Don't touch the register offsets if we've come to a
+                   ;; register from within a subpattern reference.
+                   (funcall inner-matcher start-pos)
+                   ;; remember the old values of *REGS-START* and friends in
+                   ;; case we cannot match
+                   (let ((old-*reg-starts* (svref *reg-starts* num))
+                         (old-*regs-maybe-start* (svref *regs-maybe-start* num))
+                         (old-*reg-ends* (svref *reg-ends* num)))
+                     ;; we cannot use *REGS-START* here because Perl allows
+                     ;; regular expressions like /(a|\1x)*/
+                     (setf (svref *regs-maybe-start* num) start-pos)
+                     (let ((next-pos (funcall inner-matcher start-pos)))
+                       (unless next-pos
+                         ;; restore old values on failure
+                         (setf (svref *reg-starts* num) old-*reg-starts*
+                               (svref *regs-maybe-start* num) old-*regs-maybe-start*
+                               (svref *reg-ends* num) old-*reg-ends*))
+                       next-pos))))))))))
 
 (defmethod create-matcher-aux ((lookahead lookahead) next-fn)
   (declare #.*standard-optimize-settings*)
@@ -443,16 +450,21 @@ against CHR-EXPR."
 
 (defmethod create-matcher-aux ((subpattern-reference subpattern-reference) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (function next-fn) (special referenced-register-matchers))
+  (declare (special referenced-register-matchers inside-subpattern-reference)
+           (function next-fn))
   ;; We have to close over the special variable REFERENCED-REGISTER-MATCHERS in
   ;; order to reference it during the match phase.
   ;; FIXME: In the case of forward subpattern references at least, we should be
   ;; able to get at the register matcher during the matcher construction phase.
   (let ((num (num subpattern-reference))
-        (referenced-register-matchers  referenced-register-matchers))
-    (declare (fixnum num))
+        (referenced-register-matchers  referenced-register-matchers)
+        (next-fn (lambda (start-pos)
+                   (setq inside-subpattern-reference nil)
+                   (funcall next-fn start-pos))))
+    (declare (fixnum num) (function next-fn))
     (lambda (start-pos)
       (let ((subpattern-matcher (getf (car referenced-register-matchers) (1- num))))
+        (setq inside-subpattern-reference t)
         (funcall (the function subpattern-matcher) start-pos next-fn)))))
 
 (defmethod create-matcher-aux ((branch branch) next-fn)
