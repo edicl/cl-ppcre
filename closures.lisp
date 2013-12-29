@@ -458,28 +458,14 @@ against CHR-EXPR."
   ;; able to get at the register matcher during the matcher construction phase.
   (let ((num (num subpattern-reference))
         (referenced-register-matchers  referenced-register-matchers)
-        ;; Wrap NEXT-FN in order to set INSIDE-SUBPATTERN-REFERENCE to NIL
-        ;; before proceeding.
         (next-fn (lambda (start-pos)
                    (setq inside-subpattern-reference nil)
-                   (funcall next-fn start-pos)))
-        seen)
-    (declare (fixnum num) (function next-fn) (type list seen))
+                   (funcall next-fn start-pos))))
+    (declare (fixnum num) (function next-fn))
     (lambda (start-pos)
-      (declare (fixnum start-pos))
-      (if (member start-pos seen :test #'=)
-          ;; We've been here before.  Return NIL so as to avoid infinite
-          ;; backtracking/recursion, as would otherwise happen with, e.g.:
-          ;;   (cl-ppcre:scan "(?1)(?2)(a|b|(?1))(c)" "acba")
-          ;; FIXME: The logic of this may be defective.  Is it possible for this
-          ;; closure to be called at the same place more than once and still
-          ;; succeed?
-          nil
-          (let ((subpattern-matcher (getf (car referenced-register-matchers)
-                                          (1- num))))
-            (push start-pos seen)
-            (setq inside-subpattern-reference t)
-            (funcall (the function subpattern-matcher) start-pos next-fn))))))
+      (let ((subpattern-matcher (getf (car referenced-register-matchers) (1- num))))
+        (setq inside-subpattern-reference t)
+        (funcall (the function subpattern-matcher) start-pos next-fn)))))
 
 (defmethod create-matcher-aux ((branch branch) next-fn)
   (declare #.*standard-optimize-settings*)
