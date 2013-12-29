@@ -374,6 +374,13 @@ to this object, otherwise NIL.  So, \"(.){1}\" would return true
   ;; with enough effort we could possibly do better here, but
   ;; currently we just give up and return NIL
   nil)
+
+(defmethod regex-length ((subpattern-reference subpattern-reference))
+  (declare #.*standard-optimize-settings*)
+  ;; with enough effort we could possibly do better here, but
+  ;; currently we just give up and return NIL
+  ;; FIXME
+  nil)
     
 (defmethod regex-length ((char-class char-class))
   (declare #.*standard-optimize-settings*)
@@ -456,7 +463,8 @@ to this object, otherwise NIL.  So, \"(.){1}\" would return true
 (defmethod regex-min-length ((regex regex))
   (declare #.*standard-optimize-settings*)
   ;; the general case for ANCHOR, BACK-REFERENCE, LOOKAHEAD,
-  ;; LOOKBEHIND, VOID, and WORD-BOUNDARY
+  ;; LOOKBEHIND, SUBPATTERN-REFERENCE, VOID, and WORD-BOUNDARY
+  ;; FIXME: Compute SUBPATTERN-REFERENCE minimum length.
   0)
 
 (defgeneric compute-offsets (regex start-pos)
