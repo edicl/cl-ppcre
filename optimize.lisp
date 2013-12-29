@@ -486,7 +486,9 @@ function called by END-STRING.)"))
                      :case-insensitive-p :void))
     (t
       ;; (ALTERNATION, BACK-REFERENCE, BRANCH, CHAR-CLASS, EVERYTHING,
-      ;; REPETITION, FILTER)
+      ;; REPETITION, FILTER, SUBPATTERN-REFERENCE)
+      ;; FIXME: Can we determine constant string ending in the case of
+      ;; SUBPATTERN-REFERENCE?
       nil)))
 
 (defun end-string (regex)

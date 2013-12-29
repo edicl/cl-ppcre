@@ -581,7 +581,7 @@ called with GREEDYP set to NIL as you would expect."
   "The case for \(:REGISTER <regex>).  Also used for named registers
 when NAME is not NIL."
   (declare #.*standard-optimize-settings*)
-  (declare (special flags reg-num reg-names))
+  (declare (special flags reg-num reg-names accumulate-start-p))
   ;; keep the effect of modifiers local to the enclosed regex; also,
   ;; assign the current value of REG-NUM to the corresponding slot of
   ;; the REGISTER object and increase this counter afterwards; for
@@ -594,6 +594,16 @@ when NAME is not NIL."
     (when name (setq named-reg-seen t))
     (incf (the fixnum reg-num))
     (push name reg-names)
+    ;; FIXME: While inside registers, we cannot indiscriminately accumulate into
+    ;; the special variable STARTS-WITH because recursive subpattern references
+    ;; might cause too much of the string to be skipped or endless recursion, as
+    ;; with:
+    ;;   (scan "(\\([^()]*(?:(?1)|\\))\\))" "(())")
+    ;; For now, we set ACCUMULATE-START-P to NIL, but it may be possible to
+    ;; determine which registers are referenced--either now or at the matcher
+    ;; generation phase--and not needlessly throw away information that may be
+    ;; helpful in optimization.
+    (setq accumulate-start-p nil)
     (make-instance 'register
                    :regex (convert-aux (if name (third parse-tree) (second parse-tree)))
                    :num stored-reg-num
@@ -678,7 +688,14 @@ when NAME is not NIL."
 (defmethod convert-compound-parse-tree ((token (eql :subpattern-reference)) parse-tree &key)
   "The case for parse trees like \(:SUBPATTERN-REFERENCE <number>|<name>)."
   (declare #.*standard-optimize-settings*)
-  (declare (special max-subpattern-ref numbered-subpattern-refs named-subpattern-refs))
+  (declare (special max-subpattern-ref
+                    numbered-subpattern-refs
+                    named-subpattern-refs
+                    accumulate-start-p))
+  ;; stop accumulating into STARTS-WITH
+  ;; FIXME: It may be possible to continue accumulating under certain
+  ;; circumstatnces.
+  (setq accumulate-start-p nil)
   ;; Subpattern references may refer to registers that come later in the regex,
   ;; so we don't validate the subpattern name/number until the entire object has
   ;; been constructed.

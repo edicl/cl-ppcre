@@ -135,7 +135,7 @@ modify its first argument \(but only if it's a parse tree)."))
                (*zero-length-num* 0)
                ;; keep track of the matcher functions of registers referenced by
                ;; subpattern references
-               referenced-register-matchers-plist
+               (referenced-register-matchers (cons nil nil))
                ;; create the actual matcher function (which does all the
                ;; work of matching the regular expression) corresponding
                ;; to REGEX and at the same time set the special
@@ -155,7 +155,7 @@ modify its first argument \(but only if it's a parse tree)."))
           (declare (special end-string-offset
                             end-anchored-p
                             end-string
-                            referenced-register-matchers-plist))
+                            referenced-register-matchers))
           ;; now create the scanner and return it
           (values (create-scanner-aux match-fn
                                       (regex-min-length regex)
