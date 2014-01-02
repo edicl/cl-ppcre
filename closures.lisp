@@ -120,29 +120,31 @@ such that the call to NEXT-FN after the match would succeed."))
         (setf (getf (car referenced-register-matchers) num)
          (lambda (start-pos &optional other-fn)
            (declare (fixnum start-pos))
-           (if other-fn
-               (let ((next-pos (funcall inner-matcher-without-next-fn start-pos)))
-                 (when next-pos
-                   (funcall (the function other-fn) next-pos)))
-               (if inside-subpattern-reference
-                   ;; Don't touch the register offsets if we've come to a
-                   ;; register from within a subpattern reference.
-                   (funcall inner-matcher start-pos)
-                   ;; remember the old values of *REGS-START* and friends in
-                   ;; case we cannot match
-                   (let ((old-*reg-starts* (svref *reg-starts* num))
-                         (old-*regs-maybe-start* (svref *regs-maybe-start* num))
-                         (old-*reg-ends* (svref *reg-ends* num)))
-                     ;; we cannot use *REGS-START* here because Perl allows
-                     ;; regular expressions like /(a|\1x)*/
-                     (setf (svref *regs-maybe-start* num) start-pos)
-                     (let ((next-pos (funcall inner-matcher start-pos)))
-                       (unless next-pos
-                         ;; restore old values on failure
-                         (setf (svref *reg-starts* num) old-*reg-starts*
-                               (svref *regs-maybe-start* num) old-*regs-maybe-start*
-                               (svref *reg-ends* num) old-*reg-ends*))
-                       next-pos))))))))))
+           (cond
+             (other-fn
+              (let ((next-pos (funcall inner-matcher-without-next-fn start-pos)))
+                (when next-pos
+                  (funcall (the function other-fn) next-pos))))
+             (inside-subpattern-reference
+              ;; Don't touch the register offsets if we've come to a
+              ;; register from within a subpattern reference.
+              (funcall inner-matcher start-pos))
+             (t
+              ;; remember the old values of *REGS-START* and friends in
+              ;; case we cannot match
+              (let ((old-*reg-starts* (svref *reg-starts* num))
+                    (old-*regs-maybe-start* (svref *regs-maybe-start* num))
+                    (old-*reg-ends* (svref *reg-ends* num)))
+                ;; we cannot use *REGS-START* here because Perl allows
+                ;; regular expressions like /(a|\1x)*/
+                (setf (svref *regs-maybe-start* num) start-pos)
+                (let ((next-pos (funcall inner-matcher start-pos)))
+                  (unless next-pos
+                    ;; restore old values on failure
+                    (setf (svref *reg-starts* num) old-*reg-starts*
+                          (svref *regs-maybe-start* num) old-*regs-maybe-start*
+                          (svref *reg-ends* num) old-*reg-ends*))
+                  next-pos))))))))))
 
 (defmethod create-matcher-aux ((lookahead lookahead) next-fn)
   (declare #.*standard-optimize-settings*)
