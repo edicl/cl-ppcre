@@ -126,25 +126,25 @@ test files."
                             (t
                              (when (not (eq start expected-result))
                                (if start
-                                 (let ((result (subseq target start end)))
-                                   (unless (string= result expected-result)
-                                     (push (format nil "expected ~S but got ~S."
-                                                   expected-result result)
-                                           errors))
-                                   (setq reg-starts (coerce reg-starts 'list)
-                                         reg-ends (coerce reg-ends 'list))
-                                   (loop for i from 0
-                                         for expected-register in expected-registers
-                                         for reg-start = (nth i reg-starts)
-                                         for reg-end = (nth i reg-ends)
-                                         for register = (if (and reg-start reg-end)
-                                                          (subseq target reg-start reg-end)
-                                                          nil)
-                                         unless (string= expected-register register)
-                                         do (push (format nil "\\~A: expected ~S but got ~S."
-                                                          (1+ i) expected-register register)
-                                                  errors)))
-                                 (push (format nil "expected ~S but got ~S."
-                                               expected-result start)
-                                       errors))))))
+                                   (let ((result (subseq target start end)))
+                                     (unless (string= result expected-result)
+                                       (push (format nil "expected ~S but got ~S."
+                                                     expected-result result)
+                                             errors))
+                                     (setq reg-starts (coerce reg-starts 'list)
+                                           reg-ends (coerce reg-ends 'list))
+                                     (loop for i from 0
+                                        for expected-register in expected-registers
+                                        for reg-start = (nth i reg-starts)
+                                        for reg-end = (nth i reg-ends)
+                                        for register = (if (and reg-start reg-end)
+                                                           (subseq target reg-start reg-end)
+                                                           nil)
+                                        unless (string= expected-register register)
+                                        do (push (format nil "\\~A: expected ~S but got ~S."
+                                                         (1+ i) expected-register register)
+                                                 errors)))
+                                   (push (format nil "expected ~S but got ~S."
+                                                 expected-result start)
+                                         errors))))))
                     errors))))))))))
