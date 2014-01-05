@@ -3946,3 +3946,11 @@
 
 /.{2}[a-z]/
     Axi
+
+/((a{0,5}){0,5}){0,5}c/
+    aaaaaaaaaac
+    aaaaaaaaaa
+
+/((a{0,5}){0,5})*c/
+    aaaaaaaaaac
+    aaaaaaaaaa
