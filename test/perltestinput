@@ -3954,3 +3954,20 @@
 /((a{0,5}){0,5})*c/
     aaaaaaaaaac
     aaaaaaaaaa
+
+/^(?=(?1))?[az]([abc])d/
+    abd 
+    zcdxx 
+
+/(?:(abc)|(xyz))(?1)/
+    abcabc
+    xyzabc 
+
+/^X(?5)(a)(?:(b)|(q))(c)(d)(Y)/
+    XYabcdY
+
+/^X(?7)(a)(?:(b|(r)(s))|(q))(c)(d)(Y)/
+    XYabcdY
+
+/^X(?7)(a)(?:(b|(?:(r)|(t))(s))|(q))(c)(d)(Y)/
+    XYabcdY
