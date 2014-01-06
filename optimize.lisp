@@ -373,20 +373,20 @@ function called by END-STRING.)"))
                            &optional (old-case-insensitive-p :void))
   (declare #.*standard-optimize-settings*)
   (declare (special last-str subpattern-refs))
-  ;; FIXME: Skip this optimization when we have subpattern references.  This may
-  ;; still be possible if we know about the context of this string, such as
-  ;; which register(s) it falls within.
-  (cond ((and (null subpattern-refs)
-              (not (skip str))          ; avoid constituents of STARTS-WITH
+  (cond ((and (not (skip str))          ; avoid constituents of STARTS-WITH
               ;; only use STR if nothing has been collected yet or if
               ;; the collected string has the same value for
               ;; CASE-INSENSITIVE-P
               (or (eq old-case-insensitive-p :void)
                   (eq (case-insensitive-p str) old-case-insensitive-p)))
-          (setf last-str str
-                ;; set the SKIP property of this STR
-                (skip str) t)
-          str)
+         ;; set the SKIP property of this STR
+         (setf last-str str)
+         ;; FIXME: Only apply this optimization when we don't have subpattern
+         ;; references.  This may still be possible if we know about the context
+         ;; of this string, such as which register(s) it falls within.
+         (when (null subpattern-refs)
+           (setf (skip str) t))
+         str)
         (t nil)))
 
 (defmethod end-string-aux ((seq seq)
