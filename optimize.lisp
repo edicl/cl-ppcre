@@ -372,8 +372,12 @@ function called by END-STRING.)"))
 (defmethod end-string-aux ((str str)
                            &optional (old-case-insensitive-p :void))
   (declare #.*standard-optimize-settings*)
-  (declare (special last-str))
-  (cond ((and (not (skip str))          ; avoid constituents of STARTS-WITH
+  (declare (special last-str subpattern-refs))
+  ;; FIXME: Skip this optimization when we have subpattern references.  This may
+  ;; still be possible if we know about the context of this string, such as
+  ;; which register(s) it falls within.
+  (cond ((and (null subpattern-refs)
+              (not (skip str))          ; avoid constituents of STARTS-WITH
               ;; only use STR if nothing has been collected yet or if
               ;; the collected string has the same value for
               ;; CASE-INSENSITIVE-P
