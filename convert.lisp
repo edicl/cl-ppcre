@@ -921,7 +921,7 @@ parse trees which are atoms.")
     (branch
      (mapc #'convert-named-subpattern-refs (list (then-regex converted-tree)
                                                  (else-regex converted-tree))))
-    ((or str void))))
+    ((or str char-class void))))
 
 (defun convert (parse-tree)
   "Converts the parse tree PARSE-TREE into an equivalent REGEX object and
