@@ -184,7 +184,7 @@ frob")
            ;; won't work for Corman Lisp because non-ASCII characters aren't 8-bit there
            (flet ((convert (target-string start end match-start match-end reg-starts reg-ends)
                     (declare (ignore start end match-end reg-starts reg-ends))
-                    (format nil "=~2,'0x" (char-code (char target-string match-start)))))
+                    (format nil "=~:@(~2,'0x~)" (char-code (char target-string match-start)))))
              (regex-replace-all qp-regex string #'convert))))
     (string= (encode-quoted-printable "Fête Sørensen naïve Hühner Straße")
              "F=EAte S=F8rensen na=EFve H=FChner Stra=DFe")))
@@ -195,7 +195,7 @@ frob")
            ;; won't work for Corman Lisp because non-ASCII characters aren't 8-bit there
            (flet ((convert (target-string start end match-start match-end reg-starts reg-ends)
                     (declare (ignore start end match-end reg-starts reg-ends))
-                    (format nil "%~2,'0x" (char-code (char target-string match-start)))))
+                    (format nil "%~:@(~2,'0x~)" (char-code (char target-string match-start)))))
              (regex-replace-all url-regex string #'convert))))
     (string= (url-encode "Fête Sørensen naïve Hühner Straße")
              "F%EAte%20S%F8rensen%20na%EFve%20H%FChner%20Stra%DFe")))
@@ -215,7 +215,7 @@ frob")
 Version using SIMPLE-CALLS keyword argument."
            ;; ;; won't work for Corman Lisp because non-ASCII characters aren't 8-bit there
            (flet ((convert (match)
-                    (format nil "=~2,'0x" (char-code (char match 0)))))
+                    (format nil "=~:@(~2,'0x~)" (char-code (char match 0)))))
              (regex-replace-all qp-regex string #'convert
                                 :simple-calls t))))
     (string= (encode-quoted-printable "Fête Sørensen naïve Hühner Straße")
@@ -309,11 +309,12 @@ Version using SIMPLE-CALLS keyword argument."
 (string= (handler-case
              (create-scanner "foo**x")
            (ppcre-syntax-error (condition)
-             (format nil "Houston, we've got a problem with the string ~S:  Looks like something went wrong at position ~A.  The last message we received was \"~?\"."
-                     (ppcre-syntax-error-string condition)
-                     (ppcre-syntax-error-pos condition)
-                     (simple-condition-format-control condition)
-                     (simple-condition-format-arguments condition))))
+             (with-standard-io-syntax
+               (format nil "Houston, we've got a problem with the string ~S:  Looks like something went wrong at position ~A.  The last message we received was \"~?\"."
+                       (ppcre-syntax-error-string condition)
+                       (ppcre-syntax-error-pos condition)
+                       (simple-condition-format-control condition)
+                       (simple-condition-format-arguments condition)))))
          "Houston, we've got a problem with the string \"foo**x\":  Looks like something went wrong at position 4.  The last message we received was \"Quantifier '*' not allowed.\".")
 
 (flet ((my-weird-filter (pos)

@@ -1,3 +1,11 @@
+Version 2.0.6
+2015-01-05
+Fix failing tests and spurious compiler warnings
+
+Version 2.0.5
+2014-01-05
+Fix spurious test failures (Edi Weitz)
+
 Version 2.0.4
 2013-04-13
 Rewrite SEQ without using recursion (Stas Boukarev)
