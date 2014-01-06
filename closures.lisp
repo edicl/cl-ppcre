@@ -86,8 +86,7 @@ such that the call to NEXT-FN after the match would succeed."))
 
 (defmethod create-matcher-aux ((register register) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (special subpattern-refs
-                    referenced-register-matchers
+  (declare (special referenced-register-matchers
                     inside-subpattern-reference))
   ;; the position of this REGISTER within the whole regex; we start to
   ;; count at 0
