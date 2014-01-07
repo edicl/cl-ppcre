@@ -105,19 +105,23 @@ test files."
                 (when verbose
                   (format t "~&~4D: ~S" counter info-string))                  
                 (block inner-test-block
-                  (let ((scanner
-                         (handler-bind ((error (lambda (condition)
-                                                 (declare (ignore condition))
-                                                 (when perl-error
-                                                   ;; we expected an
-                                                   ;; error, so we can
-                                                   ;; signal success
-                                                   (return-from inner-test-block)))))
-                           (create-scanner regex
-                                           :case-insensitive-mode case-insensitive-mode
-                                           :multi-line-mode multi-line-mode
-                                           :single-line-mode single-line-mode
-                                           :extended-mode extended-mode))))
+                  (let* ((parse-tree (ignore-errors (let ((*allow-named-registers* t))
+                                                      (parse-string regex))))
+                         (*allow-named-registers* (and parse-tree
+                                                       (has-named-register-p parse-tree)))
+                         (scanner
+                          (handler-bind ((error (lambda (condition)
+                                                  (declare (ignore condition))
+                                                  (when perl-error
+                                                    ;; we expected an
+                                                    ;; error, so we can
+                                                    ;; signal success
+                                                    (return-from inner-test-block)))))
+                            (create-scanner regex
+                                            :case-insensitive-mode case-insensitive-mode
+                                            :multi-line-mode multi-line-mode
+                                            :single-line-mode single-line-mode
+                                            :extended-mode extended-mode))))
                     (multiple-value-bind (start end reg-starts reg-ends)                        
                         (scan scanner target)
                       (cond (perl-error
@@ -148,3 +152,10 @@ test files."
                                                  expected-result start)
                                          errors))))))
                     errors))))))))))
+
+(defun has-named-register-p (parse-tree)
+  ;; A named register is present if :NAMED-REGISTER appears at the beginning of
+  ;; the list PARSE-TREE or of any of its sublists.
+  (and (consp parse-tree)
+       (or (eql (car parse-tree) :named-register)
+           (some #'has-named-register-p (cdr parse-tree)))))
