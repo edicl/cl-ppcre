@@ -121,7 +121,13 @@ such that the call to NEXT-FN after the match would succeed."))
            (declare (fixnum start-pos))
            (cond
              (other-fn
-              (let ((next-pos (funcall inner-matcher-without-next-fn start-pos)))
+              ;; The presence of OTHER-FN indicates we have been called by a
+              ;; subpattern reference closure.  Bind INSIDE-SUBPATTERN-REFERENCE
+              ;; and call the matcher for this register's regex.
+              (let ((next-pos
+                     (let ((inside-subpattern-reference t))
+                       (declare (special inside-subpattern-reference))
+                       (funcall inner-matcher-without-next-fn start-pos))))
                 (when next-pos
                   (funcall (the function other-fn) next-pos))))
              (inside-subpattern-reference
@@ -451,22 +457,17 @@ against CHR-EXPR."
 
 (defmethod create-matcher-aux ((subpattern-reference subpattern-reference) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (special referenced-register-matchers inside-subpattern-reference)
+  (declare (special referenced-register-matchers)
            (function next-fn))
   ;; We have to close over the special variable REFERENCED-REGISTER-MATCHERS in
   ;; order to reference it during the match phase.
   ;; FIXME: In the case of forward subpattern references at least, we should be
   ;; able to get at the register matcher during the matcher construction phase.
   (let ((num (num subpattern-reference))
-        (referenced-register-matchers  referenced-register-matchers)
-        (next-fn (lambda (start-pos)
-                   (break)
-                   (setf inside-subpattern-reference nil)
-                   (funcall next-fn start-pos))))
+        (referenced-register-matchers  referenced-register-matchers))
     (declare (fixnum num) (function next-fn))
     (lambda (start-pos)
       (let ((subpattern-matcher (getf (car referenced-register-matchers) (1- num))))
-        (setf inside-subpattern-reference t)
         (funcall (the function subpattern-matcher) start-pos next-fn)))))
 
 (defmethod create-matcher-aux ((branch branch) next-fn)
