@@ -98,9 +98,8 @@ such that the call to NEXT-FN after the match would succeed."))
     (flet ((store-end-of-reg (start-pos)
                (declare (fixnum start-pos)
                         (function next-fn))
-               (unless inside-subpattern-reference
-                 (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
-                       (svref *reg-ends* num) start-pos))
+               (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
+                     (svref *reg-ends* num) start-pos)
            (funcall next-fn start-pos)))
       ;; the inner matcher is a closure corresponding to the regex
       ;; wrapped by this REGISTER
@@ -125,15 +124,20 @@ such that the call to NEXT-FN after the match would succeed."))
               ;; subpattern reference closure.  Bind INSIDE-SUBPATTERN-REFERENCE
               ;; and call the matcher for this register's regex.
               (let ((next-pos
-                     (let ((inside-subpattern-reference t))
+                     (let* ((inside-subpattern-reference t)
+                            ;; Create a new temporary set of registers for
+                            ;; matching back references while inside a
+                            ;; subpattern reference, as with Perl.  Cf. tests
+                            ;; 1643-1646.
+                            (reg-num (array-dimension *reg-starts* 0))
+                            (*reg-starts* (make-array reg-num :initial-element nil))
+                            (*regs-maybe-start* (make-array reg-num :initial-element nil))
+                            (*reg-ends* (make-array reg-num :initial-element nil)))
                        (declare (special inside-subpattern-reference))
+                       (setf (svref *regs-maybe-start* num) start-pos)
                        (funcall inner-matcher-without-next-fn start-pos))))
                 (when next-pos
                   (funcall (the function other-fn) next-pos))))
-             (inside-subpattern-reference
-              ;; Don't touch the register offsets if we've come to a
-              ;; register from within a subpattern reference.
-              (funcall inner-matcher start-pos))
              (t
               ;; remember the old values of *REGS-START* and friends in
               ;; case we cannot match
