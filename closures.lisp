@@ -86,7 +86,7 @@ such that the call to NEXT-FN after the match would succeed."))
 
 (defmethod create-matcher-aux ((register register) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (special referenced-register-matchers))
+  (declare (special referenced-register-matchers subpattern-refs))
   ;; the position of this REGISTER within the whole regex; we start to
   ;; count at 0
   (let ((num (num register)))
@@ -104,14 +104,15 @@ such that the call to NEXT-FN after the match would succeed."))
       ;; wrapped by this REGISTER
       ;; FIXME: We make two matchers here, one for matching within the register
       ;; itself, and the other for matching a subpattern reference referring to
-      ;; this register.  This is far from ideal and probably not necessary.  At
-      ;; the very least, we should only create the latter matcher when we know
-      ;; this register is to be referenced.
+      ;; this register.  This is far from ideal and probably not necessary.
       (let ((inner-matcher (create-matcher-aux (regex register)
                                                #'store-end-of-reg))
-            (inner-matcher-without-next-fn (create-matcher-aux
-                                            (regex register)
-                                            #'identity)))
+            (inner-matcher-without-next-fn (and (member (the fixnum (1+ num))
+                                                        (the list subpattern-refs)
+                                                        :test #'=)
+                                                (create-matcher-aux
+                                                 (regex register)
+                                                 #'identity))))
         (declare (function inner-matcher inner-matcher-without-next-fn))
         ;; here comes the actual closure for REGISTER
         (setf (getf (car referenced-register-matchers) num)
