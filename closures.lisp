@@ -86,8 +86,7 @@ such that the call to NEXT-FN after the match would succeed."))
 
 (defmethod create-matcher-aux ((register register) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (special referenced-register-matchers
-                    inside-subpattern-reference))
+  (declare (special referenced-register-matchers))
   ;; the position of this REGISTER within the whole regex; we start to
   ;; count at 0
   (let ((num (num register)))
@@ -121,19 +120,15 @@ such that the call to NEXT-FN after the match would succeed."))
            (cond
              (other-fn
               ;; The presence of OTHER-FN indicates we have been called by a
-              ;; subpattern reference closure.  Bind INSIDE-SUBPATTERN-REFERENCE
-              ;; and call the matcher for this register's regex.
+              ;; subpattern reference closure.
               (let ((next-pos
-                     (let* ((inside-subpattern-reference t)
-                            ;; Create a new temporary set of registers for
-                            ;; matching back references while inside a
-                            ;; subpattern reference, as with Perl.  Cf. tests
-                            ;; 1643-1646.
-                            (reg-num (array-dimension *reg-starts* 0))
+                     ;; Create a new temporary set of registers for matching
+                     ;; back references while inside a subpattern reference, as
+                     ;; with Perl.  Cf. tests 1643-1646.
+                     (let* ((reg-num (array-dimension *reg-starts* 0))
                             (*reg-starts* (make-array reg-num :initial-element nil))
                             (*regs-maybe-start* (make-array reg-num :initial-element nil))
                             (*reg-ends* (make-array reg-num :initial-element nil)))
-                       (declare (special inside-subpattern-reference))
                        (setf (svref *regs-maybe-start* num) start-pos)
                        (funcall inner-matcher-without-next-fn start-pos))))
                 (when next-pos

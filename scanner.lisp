@@ -157,11 +157,8 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
                                  (str starts-with)
                                  nil))
               ;; we don't need to try further than MAX-END-POS
-              (max-end-pos (- *end-pos* min-len))
-              inside-subpattern-reference)
-         (declare (fixnum scan-start-pos)
-                  (special inside-subpattern-reference)
-                  (function match-fn))
+              (max-end-pos (- *end-pos* min-len)))
+         (declare (fixnum scan-start-pos) (function match-fn))
          ;; definition of ADVANCE-FN will be inserted here by macrology
          (labels ((advance-fn-definition))
            (declare (inline advance-fn))
