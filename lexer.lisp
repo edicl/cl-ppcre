@@ -706,7 +706,6 @@ will also be consumed."
                                                   next-char))
                           (let ((next-char (next-char lexer)))
                             (if (alpha-char-p next-char)
-                               ;; FIXME: Does Perl allow whitespace around register name here?
                                 (progn
                                   ;; put the letter back
                                   (decf (lexer-pos lexer))
@@ -725,7 +724,6 @@ will also be consumed."
                               (when (or (null next-char)
                                         (not (char= (the character next-char) #\))))
                                 ;; closing ) missing or not in the proper position
-                                ;; FIXME: Does Perl allow whitespace around number here?
                                 (signal-syntax-error*
                                  (1- (lexer-pos lexer))
                                  "Numbered subpattern reference has no closing #\\).")))))
