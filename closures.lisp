@@ -112,7 +112,7 @@ such that the call to NEXT-FN after the match would succeed."))
                                                (create-matcher-aux
                                                 (regex register)
                                                 #'identity))))
-        (declare (function inner-matcher inner-matcher-subpattern-ref))
+        (declare (function inner-matcher))
         ;; here comes the actual closure for REGISTER
         (setf (getf (car referenced-register-matchers) num)
          (lambda (start-pos &optional other-fn)
@@ -130,7 +130,7 @@ such that the call to NEXT-FN after the match would succeed."))
                             (*regs-maybe-start* (make-array reg-num :initial-element nil))
                             (*reg-ends* (make-array reg-num :initial-element nil)))
                        (setf (svref *regs-maybe-start* num) start-pos)
-                       (funcall inner-matcher-subpattern-ref start-pos))))
+                       (funcall (the function inner-matcher-subpattern-ref) start-pos))))
                 (when next-pos
                   (funcall (the function other-fn) next-pos))))
              (t
