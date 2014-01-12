@@ -3997,6 +3997,9 @@
     xyz
     xxyzxyzz
 
+/(?1)(f)(o)/
+    ffo
+
 /^(?=(?&regOne))?[az](?<regOne>[abc])d/
     abd 
     zcdxx 
@@ -4038,3 +4041,6 @@
 /^(?<regOne>x(y|(?&regOne){2})z)/
     xyz
     xxyzxyzz
+
+/(?&foo)(?<foo>f)(?<foo>o)/
+    ffo
