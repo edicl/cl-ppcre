@@ -4044,3 +4044,37 @@
 
 /(?&foo)(?<foo>f)(?<foo>o)/
     ffo
+
+/(foo)(? 1)/
+    foofoo
+
+/(?<foo>foo)(?& foo)/
+    foofoo
+
+/(foo)(?1 )/
+    foofoo
+
+/(?<foo>foo)(?&foo )/
+    foofoo
+
+/(foo)(? 1 )/
+    foofoo
+
+/(?<foo>foo)(?& foo )/
+    foofoo
+
+/(foo)(?
+1)/
+    foofoo
+
+/(?<foo>foo)(?&
+foo)/
+    foofoo
+
+/(foo)(?1
+)/
+    foofoo
+
+/(?<foo>foo)(?&foo
+)/
+    foofoo

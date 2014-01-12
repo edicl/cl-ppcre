@@ -14336,3 +14336,21 @@ b" nil "b" (nil nil nil nil nil nil nil nil nil nil nil nil nil nil nil nil))
 (1673 "\"xxyzxyzz\" =~ /^(?<regOne>x(y|(?&regOne){2})z)/" "^(?<regOne>x(y|(?&regOne){2})z)" nil nil nil nil "xxyzxyzz" nil "xxyzxyzz" ("xxyzxyzz" "xyzxyz" nil nil nil nil nil nil nil nil nil nil nil nil nil nil))
 (1674 "\"ffo\" =~ /(?1)(f)(o)/" "(?1)(f)(o)" nil nil nil nil "ffo" nil "ffo" ("f" "o" nil nil nil nil nil nil nil nil nil nil nil nil nil nil))
 (1675 "\"ffo\" =~ /(?&foo)(?<foo>f)(?<foo>o)/" "(?&foo)(?<foo>f)(?<foo>o)" nil nil nil nil "ffo" nil "ffo" ("f" "o" nil nil nil nil nil nil nil nil nil nil nil nil nil nil))
+(1676 "\"foofoo\" =~ /(foo)(? 1)/" "(foo)(? 1)" nil nil nil nil "foofoo" t nil nil)
+(1677 "\"foofoo\" =~ /(?<foo>foo)(?& foo)/" "(?<foo>foo)(?& foo)" nil nil nil nil "foofoo" t nil nil)
+(1678 "\"foofoo\" =~ /(foo)(?1 )/" "(foo)(?1 )" nil nil nil nil "foofoo" t nil nil)
+(1679 "\"foofoo\" =~ /(?<foo>foo)(?&foo )/" "(?<foo>foo)(?&foo )" nil nil nil nil "foofoo" t nil nil)
+(1680 "\"foofoo\" =~ /(foo)(? 1 )/" "(foo)(? 1 )" nil nil nil nil "foofoo" t nil nil)
+(1681 "\"foofoo\" =~ /(?<foo>foo)(?& foo )/" "(?<foo>foo)(?& foo )" nil nil nil nil "foofoo" t nil nil)
+(1682 "\"foofoo\" =~ /(foo)(?
+1)/" "(foo)(?
+1)" nil nil nil nil "foofoo" t nil nil)
+(1683 "\"foofoo\" =~ /(?<foo>foo)(?&
+foo)/" "(?<foo>foo)(?&
+foo)" nil nil nil nil "foofoo" t nil nil)
+(1684 "\"foofoo\" =~ /(foo)(?1
+)/" "(foo)(?1
+)" nil nil nil nil "foofoo" t nil nil)
+(1685 "\"foofoo\" =~ /(?<foo>foo)(?&foo
+)/" "(?<foo>foo)(?&foo
+)" nil nil nil nil "foofoo" t nil nil)
