@@ -902,16 +902,17 @@ parse trees which are atoms.")
   (etypecase converted-tree
     (subpattern-reference
      (when (= -1 (num converted-tree))
+       ;; find which register corresponds to the given name
        (let* ((reg-name (name converted-tree))
-              ;; find which register corresponds to the given name
-              ;; FIXME: When multiple named registers exist, do we want
-              ;; references to refer to the _last_?
-              (regs (loop for name in reg-names
-                       for reg-index from 0
-                       when (string= name reg-name)
-                       collect (- reg-num reg-index))))
-         (pushnew (first regs) numbered-subpattern-refs :test #'=)
-         (setf (num converted-tree) (first regs)))))
+              (this-reg-num nil))
+         ;; When more than one register have the same name, a named subpattern
+         ;; reference refers to the first.
+         (loop for name in reg-names
+            for reg-index from 0
+            when (string= name reg-name)
+            do (setf this-reg-num (- reg-num reg-index)))
+         (pushnew this-reg-num numbered-subpattern-refs :test #'=)
+         (setf (num converted-tree) this-reg-num))))
     (seq
      (mapc #'convert-named-subpattern-refs (elements converted-tree)))
     (alternation
