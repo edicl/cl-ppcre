@@ -86,7 +86,8 @@ format which is used to read the file.  Returns a true value iff all
 tests succeeded."
   (with-open-file (binary-stream file-name :element-type 'flex:octet)
     (let ((stream (flex:make-flexi-stream binary-stream :external-format external-format))
-          (*package* (find-package :cl-ppcre-test)))
+          (*package* (find-package :cl-ppcre-test))
+          (*allow-named-registers* nil))
       (do-tests ((format nil "Simple tests from file ~S" (file-namestring file-name))
                  (not verbose))
         (let ((form (or (read stream nil) (done))))
