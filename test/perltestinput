@@ -4045,6 +4045,12 @@
 /(?&foo)(?<foo>f)(?<foo>o)/
     ffo
 
+/(?2)(f)(o)/
+    ofo
+
+/(?&foo)(f)(?<foo>o)/
+    ofo
+
 /(foo)(? 1)/
     foofoo
 
