@@ -102,18 +102,17 @@ such that the call to NEXT-FN after the match would succeed."))
            (funcall next-fn start-pos)))
       ;; the inner matcher is a closure corresponding to the regex
       ;; wrapped by this REGISTER
-      ;; FIXME: We make two matchers here, one for matching within the register
-      ;; itself, and the other for matching a subpattern reference referring to
-      ;; this register.  This is far from ideal and probably not necessary.
       (let ((inner-matcher (create-matcher-aux (regex register)
                                                #'store-end-of-reg))
-            (inner-matcher-without-next-fn (and (member (the fixnum (1+ num))
-                                                        (the list subpattern-refs)
-                                                        :test #'=)
-                                                (create-matcher-aux
-                                                 (regex register)
-                                                 #'identity))))
-        (declare (function inner-matcher inner-matcher-without-next-fn))
+            ;; When this register is reached directly through a subpattern
+            ;; reference, don't pass control to NEXT-FN.
+            (inner-matcher-subpattern-ref (and (member (the fixnum (1+ num))
+                                                       (the list subpattern-refs)
+                                                       :test #'=)
+                                               (create-matcher-aux
+                                                (regex register)
+                                                #'identity))))
+        (declare (function inner-matcher inner-matcher-subpattern-ref))
         ;; here comes the actual closure for REGISTER
         (setf (getf (car referenced-register-matchers) num)
          (lambda (start-pos &optional other-fn)
@@ -131,7 +130,7 @@ such that the call to NEXT-FN after the match would succeed."))
                             (*regs-maybe-start* (make-array reg-num :initial-element nil))
                             (*reg-ends* (make-array reg-num :initial-element nil)))
                        (setf (svref *regs-maybe-start* num) start-pos)
-                       (funcall inner-matcher-without-next-fn start-pos))))
+                       (funcall inner-matcher-subpattern-ref start-pos))))
                 (when next-pos
                   (funcall (the function other-fn) next-pos))))
              (t
