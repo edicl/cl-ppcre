@@ -4039,6 +4039,10 @@
     xyz
     xxyzxyzz
 
+/(?<foo>f)(?<foo>o)(?&foo)/
+    foo
+    fof
+
 /(?1)(f)(o)/
     ffo
 
