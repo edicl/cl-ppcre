@@ -496,7 +496,7 @@ function called by END-STRING.)"))
       nil)))
 
 (defun end-string (regex)
-  (declare (special end-string-offset))
+  (declare (special end-string-offset subpattern-refs))
   (declare #.*standard-optimize-settings*)
   "Returns the constant string (if it exists) REGEX ends with wrapped
 into a STR object, otherwise NIL."
@@ -508,7 +508,9 @@ into a STR object, otherwise NIL."
     (declare (special continuep last-str))
     (prog1
       (end-string-aux regex)
-      (when last-str
+      ;; Don't set START-OF-END-STRING-P when subpattern references are present.
+      ;; FIXME: This may still be doable and preferable.
+      (when (and last-str (null subpattern-refs))
         ;; if we've found something set the START-OF-END-STRING-P of
         ;; the leftmost STR collected accordingly and remember the
         ;; OFFSET of this STR (in a special variable provided by the
