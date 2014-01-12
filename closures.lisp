@@ -458,10 +458,8 @@ against CHR-EXPR."
   (declare #.*standard-optimize-settings*)
   (declare (special referenced-register-matchers)
            (function next-fn))
-  ;; We have to close over the special variable REFERENCED-REGISTER-MATCHERS in
-  ;; order to reference it during the match phase.
-  ;; FIXME: In the case of forward subpattern references at least, we should be
-  ;; able to get at the register matcher during the matcher construction phase.
+  ;; Close over the special variable REFERENCED-REGISTER-MATCHERS in order to
+  ;; reference it during the match phase.
   (let ((num (num subpattern-reference))
         (referenced-register-matchers  referenced-register-matchers))
     (declare (fixnum num) (function next-fn))
