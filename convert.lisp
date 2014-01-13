@@ -699,8 +699,6 @@ when NAME is not NIL."
   ;; Subpattern references may refer to registers that come later in the regex,
   ;; so we don't validate the subpattern name/number until the entire object has
   ;; been constructed.
-  ;; FIXME: In Perl, which named subpattern is referred to when there are more
-  ;; than one subpatterns of the same name?
   (let* ((reg (second parse-tree))
          (reg-name (and (stringp reg) reg))
          (reg-num (and (null reg-name)
