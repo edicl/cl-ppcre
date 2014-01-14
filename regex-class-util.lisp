@@ -558,7 +558,8 @@ slots of STR objects further down the tree."))
 (defmethod compute-offsets ((subpattern-reference subpattern-reference) start-pos)
   (declare #.*standard-optimize-settings*)
   (declare (ignore start-pos))
-  ;; FIXME: Not sure what this does...
+  ;; This is doable in limited cases but impossible for the most useful
+  ;; application of subpattern references, namely, recursive matching.
   nil)
 
 (defmethod compute-offsets ((filter filter) start-pos)
