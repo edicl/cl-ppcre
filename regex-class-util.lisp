@@ -383,9 +383,9 @@ to this object, otherwise NIL.  So, \"(.){1}\" would return true
 
 (defmethod regex-length ((subpattern-reference subpattern-reference))
   (declare #.*standard-optimize-settings*)
-  ;; with enough effort we could possibly do better here, but
-  ;; currently we just give up and return NIL
-  ;; FIXME
+  ;; As with back references, this is possible for certain use cases; but it's
+  ;; impossible for recursive patterns, which are the main reason for subpattern
+  ;; references to begin with.
   nil)
     
 (defmethod regex-length ((char-class char-class))
