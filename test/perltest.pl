@@ -117,16 +117,6 @@ if (\$x =~ ${pattern}) {
   push \@subs,\$15;
   push \@subs,\$16;
 }
-
-\$test = sub {
-  my \$times = shift;
-
-  my \$start = time;
-  for (my \$i = 0; \$i < \$times; \$i++) {
-    \$x =~ ${pattern};
-  }
-  return time - \$start;
-};
 END
 
     $counter++;
