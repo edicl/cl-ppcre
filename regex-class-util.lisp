@@ -470,7 +470,6 @@ to this object, otherwise NIL.  So, \"(.){1}\" would return true
   (declare #.*standard-optimize-settings*)
   ;; the general case for ANCHOR, BACK-REFERENCE, LOOKAHEAD,
   ;; LOOKBEHIND, SUBPATTERN-REFERENCE, VOID, and WORD-BOUNDARY
-  ;; FIXME: Compute SUBPATTERN-REFERENCE minimum length.
   0)
 
 (defgeneric compute-offsets (regex start-pos)
