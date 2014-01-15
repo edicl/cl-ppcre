@@ -715,7 +715,6 @@ will also be consumed."
                                                       "Character '~A' may not follow '(?&'."
                                                       next-char))))
                          ((#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-                          ;; FIXME: Add support for (?0), AKA (?R).
                           ;; put the digit back
                           (decf (lexer-pos lexer))
                           (prog1
