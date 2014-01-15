@@ -633,7 +633,7 @@ when NAME is not NIL."
             ;; the same name and collect their respective numbers
             (loop for name in reg-names
                   for reg-index from 0
-                  when (string= name backref-name)
+                  when (and (stringp name) (string= name backref-name))
                   ;; NOTE: REG-NAMES stores register names in reversed
                   ;; order REG-NUM contains number of (any) registers
                   ;; seen so far; 1- will be done later

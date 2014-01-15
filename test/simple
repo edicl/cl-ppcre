@@ -364,3 +364,13 @@ characters if there's a match."
            (regex-replace-all (create-scanner "\\p{even}") "abcd" "+")
            (regex-replace-all (create-scanner "\\p{true}") "abcd" "+")))
    '("+b+d" "a+c+" "++++")))
+
+(handler-case
+    (progn
+      (scan '(:sequence
+              (:register "f")
+              (:register "o")
+              (:back-reference "NIL"))
+            "foo")
+      nil)
+  (error () t))
