@@ -589,9 +589,8 @@ when NAME is not NIL."
   ;; slot of the REGISTER object too
   (let ((flags (copy-list flags))
         (stored-reg-num reg-num))
-    (declare (special flags reg-seen named-reg-seen))
+    (declare (special flags reg-seen))
     (setq reg-seen t)
-    (when name (setq named-reg-seen t))
     (incf (the fixnum reg-num))
     (push name reg-names)
     ;; FIXME: While inside registers, we cannot indiscriminately accumulate into
@@ -937,7 +936,6 @@ by subpattern references in the REGEX."
   (let* ((flags (list nil nil nil))
          (reg-num 0)
          reg-names
-         named-reg-seen
          numbered-subpattern-refs
          named-subpattern-refs
          (accumulate-start-p t)
@@ -947,7 +945,6 @@ by subpattern references in the REGEX."
          (converted-parse-tree (convert-aux parse-tree)))
     (declare (special flags reg-num
                       reg-names
-                      named-reg-seen
                       accumulate-start-p
                       starts-with
                       max-back-ref
@@ -978,7 +975,7 @@ by subpattern references in the REGEX."
     (values converted-parse-tree reg-num starts-with
             ;; we can't simply use *ALLOW-NAMED-REGISTERS*
             ;; since parse-tree syntax ignores it
-            (when named-reg-seen
+            (when (some #'identity reg-names)
               (nreverse reg-names))
             (when numbered-subpattern-refs
               (nreverse numbered-subpattern-refs)))))
