@@ -95,11 +95,11 @@ such that the call to NEXT-FN after the match would succeed."))
     ;; update the corresponding values of *REGS-START* and *REGS-END*
     ;; after the inner matcher has succeeded
     (flet ((store-end-of-reg (start-pos)
-               (declare (fixnum start-pos)
-                        (function next-fn))
-               (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
-                     (svref *reg-ends* num) start-pos)
-           (funcall next-fn start-pos)))
+             (declare (fixnum start-pos)
+                      (function next-fn))
+             (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
+                   (svref *reg-ends* num) start-pos)
+             (funcall next-fn start-pos)))
       ;; the inner matcher is a closure corresponding to the regex
       ;; wrapped by this REGISTER
       (let ((inner-matcher (create-matcher-aux (regex register)
