@@ -124,7 +124,7 @@ such that the call to NEXT-FN after the match would succeed."))
               (let ((next-pos
                      ;; Create a new temporary set of registers for matching
                      ;; back references while inside a subpattern reference, as
-                     ;; with Perl.  Cf. tests 1643-1646.
+                     ;; with Perl.
                      (let* ((reg-num (array-dimension *reg-starts* 0))
                             (*reg-starts* (make-array reg-num :initial-element nil))
                             (*regs-maybe-start* (make-array reg-num :initial-element nil))
