@@ -300,6 +300,12 @@ NIL or a STR object of the same case mode. Always returns NIL."
         (setq accumulate-start-p nil))))
   nil)
 
+(defun has-subpattern-ref-p (parse-tree)
+  (declare #.*standard-optimize-settings*)
+  (and (consp parse-tree)
+       (or (eql (car parse-tree) :subpattern-reference)
+           (some #'has-subpattern-ref-p (cdr parse-tree)))))
+
 (declaim (inline convert-aux))
 (defun convert-aux (parse-tree)
   "Converts the parse tree PARSE-TREE into a REGEX object and returns
