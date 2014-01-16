@@ -3966,10 +3966,12 @@
 /(?:(abc)|(xyz))(?1)/
     abcabc
     xyzabc 
+    xyzxyz 
 
 /(?:(?<regOne>abc)|(xyz))(?&regOne)/
     abcabc
     xyzabc 
+    xyzxyz 
 
 /^X(?5)(a)(?:(b)|(q))(c)(d)(Y)/
     XYabcdY
@@ -3993,11 +3995,13 @@
     abc
     a(b)c
     a(b(c))d
+    a(b(c)d
 
 /^(?<regOne>[^()]|\((?&regOne)*\))*$/
     abc
     a(b)c
     a(b(c))d
+    a(b(c)d
 
 /^>abc>([^()]|\((?1)*\))*<xyz<$/
    >abc>123<xyz<
@@ -4014,30 +4018,38 @@
     Satanoscillatemymetallicsonatas
     AmanaplanacanalPanama
     AblewasIereIsawElba
+    Thequickbrownfox
 
 /^(?:(?<regOne>(.)(?&regOne)\2|)|(?<regThree>(.)(?&regThree)\4|.))$/i
     1221
     Satanoscillatemymetallicsonatas
     AmanaplanacanalPanama
     AblewasIereIsawElba
+    Thequickbrownfox
 
 /^(\d+|\((?1)([+*-])(?1)\)|-(?1))$/
     12
     (((2+2)*-3)-7)
     -12
+    ((2+2)*-3)-7)
 
 /^(?<regOne>\d+|\((?&regOne)([+*-])(?&regOne)\)|-(?&regOne))$/
     12
     (((2+2)*-3)-7)
     -12
+    ((2+2)*-3)-7)
 
 /^(x(y|(?1){2})z)/
     xyz
     xxyzxyzz
+    xxyzz
+    xxyzxyzxyzz
 
 /^(?<regOne>x(y|(?&regOne){2})z)/
     xyz
     xxyzxyzz
+    xxyzz
+    xxyzxyzxyzz
 
 /(?<foo>f)(?<foo>o)(?&foo)/
     foo
