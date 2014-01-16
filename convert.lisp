@@ -587,7 +587,7 @@ called with GREEDYP set to NIL as you would expect."
   "The case for \(:REGISTER <regex>).  Also used for named registers
 when NAME is not NIL."
   (declare #.*standard-optimize-settings*)
-  (declare (special flags reg-num reg-names accumulate-start-p))
+  (declare (special flags reg-num reg-names has-subpattern-ref accumulate-start-p))
   ;; keep the effect of modifiers local to the enclosed regex; also,
   ;; assign the current value of REG-NUM to the corresponding slot of
   ;; the REGISTER object and increase this counter afterwards; for
@@ -599,16 +599,18 @@ when NAME is not NIL."
     (setq reg-seen t)
     (incf (the fixnum reg-num))
     (push name reg-names)
-    ;; FIXME: While inside registers, we cannot indiscriminately accumulate into
-    ;; the special variable STARTS-WITH because recursive subpattern references
+    ;; While inside registers, we cannot indiscriminately accumulate into the
+    ;; special variable STARTS-WITH because recursive subpattern references
     ;; might cause too much of the string to be skipped or endless recursion, as
     ;; with:
     ;;   (scan "(\\([^()]*(?:(?1)|\\))\\))" "(())")
-    ;; For now, we set ACCUMULATE-START-P to NIL, but it may be possible to
-    ;; determine which registers are referenced--either now or at the matcher
-    ;; generation phase--and not needlessly throw away information that may be
-    ;; helpful in optimization.
-    (setq accumulate-start-p nil)
+    ;; For now, we set ACCUMULATE-START-P to NIL if the regex has one or more
+    ;; subpattern references, but it may be possible to determine which
+    ;; registers are referenced--either now or at the matcher generation
+    ;; phase--and not needlessly throw away information that may be helpful in
+    ;; optimization.
+    (when has-subpattern-ref
+      (setq accumulate-start-p nil))
     (make-instance 'register
                    :regex (convert-aux (if name (third parse-tree) (second parse-tree)))
                    :num stored-reg-num
@@ -948,6 +950,7 @@ by subpattern references in the REGEX."
          starts-with
          (max-back-ref 0)
          (max-subpattern-ref 0)
+         (has-subpattern-ref (has-subpattern-ref-p parse-tree))
          (converted-parse-tree (convert-aux parse-tree)))
     (declare (special flags reg-num
                       reg-names
@@ -956,7 +959,8 @@ by subpattern references in the REGEX."
                       max-back-ref
                       max-subpattern-ref
                       numbered-subpattern-refs
-                      named-subpattern-refs))
+                      named-subpattern-refs
+                      has-subpattern-ref))
     ;; make sure we don't reference registers which aren't there
     (when (> (the fixnum max-back-ref)
              (the fixnum reg-num))
