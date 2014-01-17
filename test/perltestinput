@@ -4111,3 +4111,23 @@ foo)/
 
 /(\([^()]*(?:(?1)|\))\))/
     (())
+
+/(o(?1)?)(?1)/
+    o
+    oo
+    ooo
+
+/(?<regOne>o(?&regOne)?)(?&regOne)/
+    o
+    oo
+    ooo
+
+/(?1)(o(?1)?)/
+    o
+    oo
+    ooo
+
+/(?&regOne)(?<regOne>o(?&regOne)?)/
+    o
+    oo
+    ooo
