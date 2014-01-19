@@ -381,9 +381,10 @@ function called by END-STRING.)"))
                   (eq (case-insensitive-p str) old-case-insensitive-p)))
          ;; set the SKIP property of this STR
          (setf last-str str)
-         ;; FIXME: Only apply this optimization when we don't have subpattern
-         ;; references.  This may still be possible if we know about the context
-         ;; of this string, such as which register(s) it falls within.
+         ;; only apply the "skip" optimization when there are no subpattern
+         ;; references: otherwise we may skip thinking we're at the end of the
+         ;; string when in fact we're just inside a forward subpattern
+         ;; reference; we could do better here, but it's probably not worth it
          (when (null subpattern-refs)
            (setf (skip str) t))
          str)
@@ -491,8 +492,6 @@ function called by END-STRING.)"))
     (t
       ;; (ALTERNATION, BACK-REFERENCE, BRANCH, CHAR-CLASS, EVERYTHING,
       ;; REPETITION, FILTER, SUBPATTERN-REFERENCE)
-      ;; FIXME: Can we determine constant string ending in the case of
-      ;; SUBPATTERN-REFERENCE?
       nil)))
 
 (defun end-string (regex)
@@ -508,8 +507,9 @@ into a STR object, otherwise NIL."
     (declare (special continuep last-str))
     (prog1
       (end-string-aux regex)
-      ;; Don't set START-OF-END-STRING-P when subpattern references are present.
-      ;; FIXME: This may still be doable and preferable.
+      ;; don't set START-OF-END-STRING-P when subpattern references are present:
+      ;; otherwise we may think we're at the end of a string when we're actually
+      ;; in a forward subpattern reference.
       (when (and last-str (null subpattern-refs))
         ;; if we've found something set the START-OF-END-STRING-P of
         ;; the leftmost STR collected accordingly and remember the
