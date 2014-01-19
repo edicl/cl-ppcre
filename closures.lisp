@@ -100,7 +100,14 @@ such that the call to NEXT-FN after the match would succeed."))
              (declare (fixnum start-pos)
                       (function next-fn))
              (if here-from-subpattern-ref
-                 start-pos
+                 (let* ((*reg-starts* (second (car here-from-subpattern-ref)))
+                        (*regs-maybe-start* (third (car here-from-subpattern-ref)))
+                        (*reg-ends* (fourth (car here-from-subpattern-ref)))
+                        (next-fn (first (car here-from-subpattern-ref)))
+                        (regs (pop here-from-subpattern-ref)))
+                   (prog1
+                       (funcall (the function next-fn) start-pos)
+                     (push regs here-from-subpattern-ref)))
                  (progn
                    (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
                          (svref *reg-ends* num) start-pos)
@@ -117,25 +124,23 @@ such that the call to NEXT-FN after the match would succeed."))
            (if other-fn
                ;; The presence of OTHER-FN indicates we have been called by a
                ;; subpattern reference closure.
-               (let ((next-pos
-                      ;; Create a new temporary set of registers for matching
-                      ;; back references while inside a subpattern reference, as
-                      ;; with Perl.
-                      (let* ((reg-num (array-dimension *reg-starts* 0))
-                             (*reg-starts* (make-array reg-num :initial-element nil))
-                             (*regs-maybe-start* (make-array reg-num :initial-element nil))
-                             (*reg-ends* (make-array reg-num :initial-element nil)))
-                        (setf (svref *regs-maybe-start* num) start-pos)
-                        ;; Push T onto HERE-FROM-SUBPATTERN-REF and pop it back
-                        ;; off after we have passed through the register
-                        ;; closure.  Using a special variable instead wouldn't
-                        ;; work, since it would be shared by all the registers.
-                        (push t here-from-subpattern-ref)
-                        (prog1
-                            (funcall inner-matcher start-pos)
-                          (pop here-from-subpattern-ref)))))
-                 (when next-pos
-                   (funcall (the function other-fn) next-pos)))
+               (progn
+                 ;; Create a new temporary set of registers for matching back
+                 ;; references while inside a subpattern reference, as with
+                 ;; Perl.  Save the old ones.
+                 (push (list other-fn *reg-starts* *regs-maybe-start* *reg-ends*)
+                       here-from-subpattern-ref)
+                 (let ((reg-num (array-dimension *reg-starts* 0)))
+                   (setf *reg-starts* (make-array reg-num :initial-element nil)
+                         *regs-maybe-start* (make-array reg-num :initial-element nil)
+                         *reg-ends* (make-array reg-num :initial-element nil))
+                   (setf (svref *regs-maybe-start* num) start-pos))
+                 (prog1
+                     (funcall inner-matcher start-pos)
+                   (setf *reg-starts* (second (car here-from-subpattern-ref))
+                         *regs-maybe-start* (third (car here-from-subpattern-ref))
+                         *reg-ends* (fourth (car here-from-subpattern-ref)))
+                   (pop here-from-subpattern-ref)))
                (let ((old-*reg-starts* (svref *reg-starts* num))
                      (old-*regs-maybe-start* (svref *regs-maybe-start* num))
                      (old-*reg-ends* (svref *reg-ends* num)))
