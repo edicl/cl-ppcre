@@ -4131,3 +4131,75 @@ foo)/
     o
     oo
     ooo
+
+/^\W*(?:((.)\W*(?1)\W*\2|)|((.)\W*(?3)\W*\4|\W*.\W*))\W*$/i
+    1221
+    Satan, oscillate my metallic sonatas!
+    A man, a plan, a canal: Panama!
+    Able was I ere I saw Elba.
+    The quick brown fox
+
+/^\W*(?:(?<one>(?<two>.)\W*(?&one)\W*\k<two>|)|(?<three>(?<four>.)\W*(?&three)\W*\k<four>|\W*.\W*))\W*$/i
+    1221
+    Satan, oscillate my metallic sonatas!
+    A man, a plan, a canal: Panama!
+    Able was I ere I saw Elba.
+    The quick brown fox
+
+/(a|b)(d|e)(?1){2}/
+    bdaa
+    bdab
+    bddd
+
+/(?<abc>a|b)(?<abc>d|e)(?&abc){2}/
+    bdaa
+    bdab
+    bddd
+
+/(?1)X(P)/i
+    abcPXP123
+
+/(?&abc)X(?<abc>P)/i
+    abcPXP123
+
+/(?:a(?1)b)*(x)/
+    123axbaxbaxbx456
+    123axbaxbaxb456
+
+/(?:a(?&abc)b)*(?<abc>x)/
+    123axbaxbaxbx456
+    123axbaxbaxb456
+
+/(?:a(?1)b){1,5}(x)/
+    123axbaxbaxbx456
+
+/(?:a(?&abc)b){1,5}(?<abc>x)/
+    123axbaxbaxbx456
+
+/(?:a(?1)b){2,5}(x)/
+    123axbaxbaxbx456
+
+/(?:a(?&abc)b){2,5}(?<abc>x)/
+    123axbaxbaxbx456
+
+/(?:a(?1)b){2,}(x)/
+    123axbaxbaxbx456
+
+/(?:a(?&abc)b){2,}(?<abc>x)/
+    123axbaxbaxbx456
+
+/(abc)(?i:(?1))/
+   defabcabcxyz
+   DEFabcABCXYZ
+
+/(?<regOne>abc)(?i:(?&regOne))/
+   defabcabcxyz
+   DEFabcABCXYZ
+
+/(abc)(?:(?i)(?1))/
+   defabcabcxyz
+   DEFabcABCXYZ
+
+/(?<regOne>abc)(?:(?i)(?&regOne))/
+   defabcabcxyz
+   DEFabcABCXYZ
