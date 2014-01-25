@@ -477,8 +477,8 @@ against CHR-EXPR."
   (declare #.*standard-optimize-settings*)
   (declare (special register-matchers)
            (function next-fn))
-  ;; Close over the special variable REGISTER-MATCHERS in order to reference it
-  ;; during the match phase.
+  ;; close over the special variable REGISTER-MATCHERS in order to reference it
+  ;; during the match phase
   (let ((num (num subpattern-reference))
         (register-matchers register-matchers))
     (declare (fixnum num) (function next-fn))

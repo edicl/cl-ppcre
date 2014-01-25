@@ -509,7 +509,7 @@ into a STR object, otherwise NIL."
       (end-string-aux regex)
       ;; don't set START-OF-END-STRING-P when subpattern references are present:
       ;; otherwise we may think we're at the end of a string when we're actually
-      ;; in a forward subpattern reference.
+      ;; in a forward subpattern reference
       (when (and last-str (null subpattern-refs))
         ;; if we've found something set the START-OF-END-STRING-P of
         ;; the leftmost STR collected accordingly and remember the

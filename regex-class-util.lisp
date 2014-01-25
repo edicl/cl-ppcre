@@ -383,9 +383,9 @@ to this object, otherwise NIL.  So, \"(.){1}\" would return true
 
 (defmethod regex-length ((subpattern-reference subpattern-reference))
   (declare #.*standard-optimize-settings*)
-  ;; As with back references, this is possible for certain use cases; but it's
+  ;; as with back references, this is possible for certain use cases; but it's
   ;; impossible for recursive patterns, which are the main reason for subpattern
-  ;; references to begin with.
+  ;; references to begin with
   nil)
     
 (defmethod regex-length ((char-class char-class))
@@ -557,8 +557,8 @@ slots of STR objects further down the tree."))
 (defmethod compute-offsets ((subpattern-reference subpattern-reference) start-pos)
   (declare #.*standard-optimize-settings*)
   (declare (ignore start-pos))
-  ;; This is doable in limited cases but impossible for the most useful
-  ;; application of subpattern references, namely, recursive matching.
+  ;; this is doable in limited cases but impossible for the most useful
+  ;; application of subpattern references, namely, recursive matching
   nil)
 
 (defmethod compute-offsets ((filter filter) start-pos)
