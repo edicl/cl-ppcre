@@ -700,11 +700,9 @@ when NAME is not NIL."
                     named-subpattern-refs
                     accumulate-start-p))
   ;; stop accumulating into STARTS-WITH
-  ;; FIXME: It may be possible to continue accumulating under certain
-  ;; circumstatnces.
   (setq accumulate-start-p nil)
   ;; Subpattern references may refer to registers that come later in the regex,
-  ;; so we don't validate the subpattern name/number until the entire object has
+  ;; so we don't validate the register name/number until the entire object has
   ;; been constructed.
   (let* ((reg (second parse-tree))
          (reg-name (and (stringp reg) reg))
