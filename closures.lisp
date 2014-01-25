@@ -86,7 +86,7 @@ such that the call to NEXT-FN after the match would succeed."))
 
 (defmethod create-matcher-aux ((register register) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (special referenced-register-matchers subpattern-refs))
+  (declare (special register-matchers subpattern-refs))
   ;; the position of this REGISTER within the whole regex; we start to
   ;; count at 0
   (let ((num (num register))
@@ -130,7 +130,7 @@ such that the call to NEXT-FN after the match would succeed."))
         (declare (function inner-matcher))
         ;; here comes the actual closure for REGISTER; save it is a special
         ;; variable so it can be called by subpattern references
-        (setf (getf (car referenced-register-matchers) num)
+        (setf (getf (car register-matchers) num)
          (lambda (start-pos &optional other-fn)
            (declare (fixnum start-pos))
            (if other-fn
@@ -475,15 +475,15 @@ against CHR-EXPR."
 
 (defmethod create-matcher-aux ((subpattern-reference subpattern-reference) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (special referenced-register-matchers)
+  (declare (special register-matchers)
            (function next-fn))
-  ;; Close over the special variable REFERENCED-REGISTER-MATCHERS in order to
-  ;; reference it during the match phase.
+  ;; Close over the special variable REGISTER-MATCHERS in order to reference it
+  ;; during the match phase.
   (let ((num (num subpattern-reference))
-        (referenced-register-matchers  referenced-register-matchers))
+        (register-matchers register-matchers))
     (declare (fixnum num) (function next-fn))
     (lambda (start-pos)
-      (let ((subpattern-matcher (getf (car referenced-register-matchers) (1- num))))
+      (let ((subpattern-matcher (getf (car register-matchers) (1- num))))
         (funcall (the function subpattern-matcher) start-pos next-fn)))))
 
 (defmethod create-matcher-aux ((branch branch) next-fn)
