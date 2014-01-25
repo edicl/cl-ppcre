@@ -4249,3 +4249,29 @@ foo)/
 
 /(?&N)[]a(?<N>)](abc)/
    abc<abc
+
+/^X(?5)(a)(?:(b)|(q))(c)(d)Y/
+    XYabcdY
+
+/^X(?&regFive)(a)(?:(b)|(q))(c)(?<regFive>d)Y/
+    XYabcdY
+
+/^X(?6)(a)(?:(b)|(q))(c)(d)(Y)/
+    XYabcdY
+
+/^X(?&regSix)(a)(?:(b)|(q))(c)(d)(?<regSix>Y)/
+    XYabcdY
+
+/^X(?7)(a)(?:(b)|(q)(r)(s))(c)(d)(Y)/
+    XYabcdY
+
+/^X(?&regSeven)(a)(?:(b)|(q)(r)(s))(c)(d)(?<regSeven>Y)/
+    XYabcdY
+
+/(?<=b(?1)|zzz)(a)/
+    xbaax
+    xzzzax 
+
+/(?<=b(?&regOne)|zzz)(?<regOne>a)/
+    xbaax
+    xzzzax 
