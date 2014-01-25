@@ -154,8 +154,8 @@ test files."
                     errors))))))))))
 
 (defun has-named-register-p (parse-tree)
-  ;; a named register is present if :NAMED-REGISTER appears at the beginning of
-  ;; the list PARSE-TREE or of any of its sublists
+  ;; a named register is present if :NAMED-REGISTER appears at the
+  ;; beginning of the list PARSE-TREE or of any of its sublists
   (and (consp parse-tree)
        (or (eql (car parse-tree) :named-register)
            (some #'has-named-register-p (cdr parse-tree)))))

@@ -473,10 +473,10 @@ resets the lexer to its old position."
         (fail lexer)))))
 
 (defun parse-register-name-aux (lexer &key subpattern-reference)
-  "Reads and returns the name in a named register group or reference.  It is
-assumed that the starting #\\< character \(or \"\(?&\" string when
-SUBPATTERN-REFERENCE is true) has already been read.  The closing #\> \(or #\\))
-will also be consumed."
+  "Reads and returns the name in a named register group or reference.
+It is assumed that the starting #\\< character \(or \"\(?&\" string
+when SUBPATTERN-REFERENCE is true) has already been read.  The closing
+#\> \(or #\\)) will also be consumed."
   ;; we have to look for an ending > or ) character now
   (let ((end-name (position (if subpattern-reference #\) #\>)
                             (lexer-str lexer)
@@ -722,7 +722,8 @@ will also be consumed."
                             (let ((next-char (next-char lexer)))
                               (when (or (null next-char)
                                         (not (char= (the character next-char) #\))))
-                                ;; closing ) missing or not in the proper position
+                                ;; closing ) missing or not in the
+                                ;; proper position
                                 (signal-syntax-error*
                                  (1- (lexer-pos lexer))
                                  "Numbered subpattern reference has no closing #\\).")))))

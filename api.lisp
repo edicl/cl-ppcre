@@ -133,8 +133,8 @@ modify its first argument \(but only if it's a parse tree)."))
                ;; initialize the counters for CREATE-MATCHER-AUX
                (*rep-num* 0)
                (*zero-length-num* 0)
-               ;; keep track of the matcher functions of registers referenced by
-               ;; subpattern references
+               ;; keep track of the matcher functions of registers
+               ;; referenced by subpattern references
                (register-matchers (cons nil nil))
                ;; create the actual matcher function (which does all the
                ;; work of matching the regular expression) corresponding

@@ -318,12 +318,12 @@ it.  Will also
   - keep track of all named registers seen in the special variable REG-NAMES
   - keep track of the highest backreference seen in the special
     variable MAX-BACK-REF,
-  - keep track of the highest subpattern reference seen in the special variable
-    MAX-SUBPATTERN-REF,
-  - keep track of all numbered subpattern references seen in the special
-    variable NUMBERED-SUBPATTERN-REFS,
-  - keep track of all named subpattern references seen in the special variable
-    NAMED-SUBPATTERN-REFS,
+  - keep track of the highest subpattern reference seen in the special
+    variable MAX-SUBPATTERN-REF,
+  - keep track of all numbered subpattern references seen in the
+    special variable NUMBERED-SUBPATTERN-REFS,
+  - keep track of all named subpattern references seen in the special
+    variable NAMED-SUBPATTERN-REFS,
   - maintain and adher to the currently applicable modifiers in the special
     variable FLAGS, and
   - maybe even wash your car..."
@@ -599,16 +599,16 @@ when NAME is not NIL."
     (setq reg-seen t)
     (incf (the fixnum reg-num))
     (push name reg-names)
-    ;; while inside registers, we cannot indiscriminately accumulate into the
-    ;; special variable STARTS-WITH because recursive subpattern references
-    ;; might cause too much of the string to be skipped or endless recursion, as
-    ;; with:
+    ;; while inside registers, we cannot indiscriminately accumulate
+    ;; into the special variable STARTS-WITH because recursive
+    ;; subpattern references might cause too much of the string to be
+    ;; skipped or endless recursion, as with:
     ;;   (scan "(\\([^()]*(?:(?1)|\\))\\))" "(())")
-    ;; for now, we set ACCUMULATE-START-P to NIL if the regex has one or more
-    ;; subpattern references, but it may be possible to determine which
-    ;; registers are referenced--either now or at the matcher generation
-    ;; phase--and not needlessly throw away information that may be helpful in
-    ;; optimization
+    ;; for now, we set ACCUMULATE-START-P to NIL if the regex has one
+    ;; or more subpattern references, but it may be possible to
+    ;; determine which registers are referenced--either now or at the
+    ;; matcher generation phase--and not needlessly throw away
+    ;; information that may be helpful in optimization
     (when has-subpattern-ref
       (setq accumulate-start-p nil))
     (make-instance 'register
@@ -701,9 +701,9 @@ when NAME is not NIL."
                     accumulate-start-p))
   ;; stop accumulating into STARTS-WITH
   (setq accumulate-start-p nil)
-  ;; subpattern references may refer to registers that come later in the regex,
-  ;; so we don't validate the register name/number until the entire object has
-  ;; been constructed
+  ;; subpattern references may refer to registers that come later in
+  ;; the regex, so we don't validate the register name/number until
+  ;; the entire object has been constructed
   (let* ((reg (second parse-tree))
          (reg-name (and (stringp reg) reg))
          (reg-num (and (null reg-name)
@@ -718,8 +718,8 @@ when NAME is not NIL."
           (setf max-subpattern-ref (max max-subpattern-ref reg-num))
           (pushnew reg-num numbered-subpattern-refs :test #'=)))
     (make-instance 'subpattern-reference
-                   ;; for named references, register numbers will be computed
-                   ;; later
+                   ;; for named references, register numbers will be
+                   ;; computed later
                    :num (or reg-num -1)
                    :name (copy-seq reg-name))))
 
@@ -908,8 +908,8 @@ parse trees which are atoms.")
        ;; find which register corresponds to the given name
        (let* ((reg-name (name converted-tree))
               (this-reg-num nil))
-         ;; when more than one register have the same name, a named subpattern
-         ;; reference refers to the first
+         ;; when more than one register have the same name, a named
+         ;; subpattern reference refers to the first
          (loop for name in reg-names
             for reg-index from 0
             when (string= name reg-name)
@@ -925,8 +925,8 @@ parse trees which are atoms.")
     (branch
      (mapc #'convert-named-subpattern-refs (list (then-regex converted-tree)
                                                  (else-regex converted-tree))))
-    ;; FIXME: convert ETYPECASE -> TYPECASE once all possibilities are known to
-    ;; be accounted for
+    ;; FIXME: convert ETYPECASE -> TYPECASE once all possibilities are
+    ;; known to be accounted for
     ((or str char-class anchor back-reference everything void))))
 
 (defun convert (parse-tree)

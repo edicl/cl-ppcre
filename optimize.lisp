@@ -119,9 +119,9 @@ operation on REGEX."))
               (flatten (regex regex)))
       regex)
     (t
-      ;; otherwise (ANCHOR, BACK-REFERENCE, SUBPATTERN-REFERENCE, CHAR-CLASS,
-      ;; EVERYTHING, LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and
-      ;; WORD-BOUNDARY) do nothing
+      ;; otherwise (ANCHOR, BACK-REFERENCE, SUBPATTERN-REFERENCE,
+      ;; CHAR-CLASS, EVERYTHING, LOOKAHEAD, LOOKBEHIND, STR, VOID,
+      ;; FILTER, and WORD-BOUNDARY) do nothing
       regex)))
 
 (defgeneric gather-strings (regex)
@@ -278,9 +278,9 @@ operation on REGEX."))
               (gather-strings (regex regex)))
       regex)
     (t
-      ;; otherwise (ANCHOR, BACK-REFERENCE, SUBPATTERN-REFERENCE, CHAR-CLASS,
-      ;; EVERYTHING, LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and
-      ;; WORD-BOUNDARY) do nothing
+      ;; otherwise (ANCHOR, BACK-REFERENCE, SUBPATTERN-REFERENCE,
+      ;; CHAR-CLASS, EVERYTHING, LOOKAHEAD, LOOKBEHIND, STR, VOID,
+      ;; FILTER, and WORD-BOUNDARY) do nothing
       regex)))
 
 ;; Note that START-ANCHORED-P will be called after FLATTEN and GATHER-STRINGS.
@@ -356,7 +356,8 @@ zero-length assertion."))
         :zero-length
         nil))
     (t
-      ;; BACK-REFERENCE, SUBPATTERN-REFERENCE, CHAR-CLASS, EVERYTHING, and STR
+      ;; BACK-REFERENCE, SUBPATTERN-REFERENCE, CHAR-CLASS, EVERYTHING,
+      ;; and STR
       nil)))
 
 ;; Note that END-STRING-AUX will be called after FLATTEN and GATHER-STRINGS.
@@ -381,10 +382,11 @@ function called by END-STRING.)"))
                   (eq (case-insensitive-p str) old-case-insensitive-p)))
          ;; set the SKIP property of this STR
          (setf last-str str)
-         ;; only apply the "skip" optimization when there are no subpattern
-         ;; references: otherwise we may skip thinking we're at the end of the
-         ;; string when in fact we're just inside a forward subpattern
-         ;; reference; we could do better here, but it's probably not worth it
+         ;; only apply the "skip" optimization when there are no
+         ;; subpattern references: otherwise we may skip thinking
+         ;; we're at the end of the string when in fact we're just
+         ;; inside a forward subpattern reference; we could do better
+         ;; here, but it's probably not worth it
          (when (null subpattern-refs)
            (setf (skip str) t))
          str)
@@ -507,9 +509,9 @@ into a STR object, otherwise NIL."
     (declare (special continuep last-str))
     (prog1
       (end-string-aux regex)
-      ;; don't set START-OF-END-STRING-P when subpattern references are present:
-      ;; otherwise we may think we're at the end of a string when we're actually
-      ;; in a forward subpattern reference
+      ;; don't set START-OF-END-STRING-P when subpattern references
+      ;; are present: otherwise we may think we're at the end of a
+      ;; string when we're actually in a forward subpattern reference
       (when (and last-str (null subpattern-refs))
         ;; if we've found something set the START-OF-END-STRING-P of
         ;; the leftmost STR collected accordingly and remember the
