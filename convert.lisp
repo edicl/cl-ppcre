@@ -594,10 +594,13 @@ when NAME is not NIL."
                    :name name)))
 
 (defmethod convert-compound-parse-tree ((token (eql :named-register)) parse-tree &key)
-  "The case for \(:NAMED-REGISTER <regex>)."
+  "The case for \(:NAMED-REGISTER <name> <regex>)."
   (declare #.*standard-optimize-settings*)
   ;; call the method above and use the :NAME keyword argument
-  (convert-compound-parse-tree :register parse-tree :name (copy-seq (second parse-tree))))
+  (let ((name (second parse-tree)))
+    (check-type name (or string symbol))
+    (convert-compound-parse-tree :register parse-tree
+                                 :name (copy-seq (string name)))))
 
 (defmethod convert-compound-parse-tree ((token (eql :filter)) parse-tree &key)
   "The case for \(:FILTER <function> &optional <length>)."
@@ -624,8 +627,10 @@ when NAME is not NIL."
   "The case for \(:BACK-REFERENCE <number>|<name>)."
   (declare #.*standard-optimize-settings*)
   (declare (special flags accumulate-start-p reg-num reg-names max-back-ref))
-  (let* ((backref-name (and (stringp (second parse-tree))
-                            (second parse-tree)))
+  ;; allow symbols or strings for back reference names, as with named registers
+  (let* ((backref-name (typecase (second parse-tree)
+                         ((or string symbol) (string (second parse-tree)))
+                         (otherwise nil)))
          (referred-regs
           (when backref-name
             ;; find which register corresponds to the given name
@@ -633,7 +638,7 @@ when NAME is not NIL."
             ;; the same name and collect their respective numbers
             (loop for name in reg-names
                   for reg-index from 0
-                  when (string= name backref-name)
+                  when (equal name backref-name)
                   ;; NOTE: REG-NAMES stores register names in reversed
                   ;; order REG-NUM contains number of (any) registers
                   ;; seen so far; 1- will be done later
@@ -642,7 +647,8 @@ when NAME is not NIL."
          (backref-number (or (first referred-regs) (second parse-tree))))
     (declare (type (or fixnum null) backref-number))
     (when (or (not (typep backref-number 'fixnum))
-              (<= backref-number 0))
+              (<= backref-number 0)
+              (not (= (length parse-tree) 2)))
       (signal-syntax-error "Illegal back-reference: ~S." parse-tree))
     ;; stop accumulating into STARTS-WITH and increase MAX-BACK-REF if
     ;; necessary
