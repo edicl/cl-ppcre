@@ -364,3 +364,75 @@ characters if there's a match."
            (regex-replace-all (create-scanner "\\p{even}") "abcd" "+")
            (regex-replace-all (create-scanner "\\p{true}") "abcd" "+")))
    '("+b+d" "a+c+" "++++")))
+
+(handler-case
+    (progn
+      (scan '(:sequence
+              (:register "f")
+              (:register "o")
+              (:back-reference "NIL"))
+            "foo")
+      nil)
+  (error () t))
+
+(scan '(:sequence
+        (:register "f")
+        (:named-register nil "o")
+        (:back-reference "NIL"))
+      "foo")
+
+(scan '(:sequence
+        (:register "f")
+        (:named-register "NIL" "o")
+        (:back-reference nil))
+      "foo")
+
+(handler-case
+    (progn
+      (scan '(:sequence
+              (:register "f")
+              (:named-register "nil" "o")
+              (:back-reference nil))
+            "foo")
+      nil)
+  (error () t))
+
+(handler-case
+    (progn
+      (scan '(:sequence
+              (:register "f")
+              (:named-register "o" "o")
+              (:back-reference #\o))
+            "foo")
+      nil)
+  (error () t))
+
+(handler-case
+    (progn
+      (scan '(:sequence
+              (:register "f")
+              (:named-register #\o "o")
+              (:back-reference "o"))
+            "foo")
+      nil)
+  (error () t))
+
+(handler-case
+    (progn
+      (scan '(:sequence
+              (:register "f")
+              (:named-register "nil" "o")
+              (:back-reference))
+            "foo")
+      nil)
+  (error () t))
+
+(handler-case
+    (progn
+      (scan '(:sequence
+              (:register "f")
+              (:named-register)
+              (:back-reference "nil"))
+            "foo")
+      nil)
+  (error () t))
