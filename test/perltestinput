@@ -4275,3 +4275,7 @@ foo)/
 /(?<=b(?&regOne)|zzz)(?<regOne>a)/
     xbaax
     xzzzax 
+
+/(.)((o)\1)(?2)/
+    fofof
+    fofog
