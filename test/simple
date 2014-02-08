@@ -364,3 +364,13 @@ characters if there's a match."
            (regex-replace-all (create-scanner "\\p{even}") "abcd" "+")
            (regex-replace-all (create-scanner "\\p{true}") "abcd" "+")))
    '("+b+d" "a+c+" "++++")))
+
+(equalp (multiple-value-list
+         (scan (create-scanner `(:sequence
+                                 "f"
+                                 (:filter ,(lambda (pos) pos))
+                                 (:named-register "reg" "o")
+                                 (:filter ,(lambda (pos) pos))
+                                 (:subpattern-reference "reg")))
+               "foo"))
+        '(0 3 #(1) #(2)))

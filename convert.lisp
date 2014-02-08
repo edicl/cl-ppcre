@@ -902,7 +902,7 @@ parse trees which are atoms.")
   "Convert named subpattern references to numbered references."
   (declare #.*standard-optimize-settings*)
   (declare (special reg-names reg-num numbered-subpattern-refs))
-  (etypecase converted-tree
+  (typecase converted-tree
     (subpattern-reference
      (when (= -1 (num converted-tree))
        ;; find which register corresponds to the given name
@@ -924,10 +924,7 @@ parse trees which are atoms.")
      (convert-named-subpattern-refs (regex converted-tree)))
     (branch
      (mapc #'convert-named-subpattern-refs (list (then-regex converted-tree)
-                                                 (else-regex converted-tree))))
-    ;; FIXME: convert ETYPECASE -> TYPECASE once all possibilities are
-    ;; known to be accounted for
-    ((or str char-class anchor back-reference everything filter word-boundary void))))
+                                                 (else-regex converted-tree))))))
 
 (defun convert (parse-tree)
   "Converts the parse tree PARSE-TREE into an equivalent REGEX object and
