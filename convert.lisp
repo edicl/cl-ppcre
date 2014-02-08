@@ -927,7 +927,7 @@ parse trees which are atoms.")
                                                  (else-regex converted-tree))))
     ;; FIXME: convert ETYPECASE -> TYPECASE once all possibilities are
     ;; known to be accounted for
-    ((or str char-class anchor back-reference everything void))))
+    ((or str char-class anchor back-reference everything filter word-boundary void))))
 
 (defun convert (parse-tree)
   "Converts the parse tree PARSE-TREE into an equivalent REGEX object and
