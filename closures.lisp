@@ -87,16 +87,15 @@ such that the call to NEXT-FN after the match would succeed."))
 (defmethod create-matcher-aux ((register register) next-fn)
   (declare #.*standard-optimize-settings*)
   (declare (special register-matchers subpattern-refs))
-  ;; the position of this REGISTER within the whole regex; we start to
-  ;; count at 0
   (let ((num (num register))
         (containing-registers (containing-registers register))
+        ;; a place to store the next function to call when we arrive
+        ;; here via a subpattern reference
         subpattern-ref-continuations)
     (declare (fixnum num)
              (list subpattern-ref-continuations))
     ;; STORE-END-OF-REG is a thin wrapper around NEXT-FN which will
-    ;; update the corresponding values of *REG-STARTS* and *REG-ENDS*
-    ;; after the inner matcher has succeeded
+    ;; update register offsets after the inner matcher has succeded
     (flet ((store-end-of-reg (start-pos)
              (declare (fixnum start-pos)
                       (function next-fn))
@@ -149,7 +148,7 @@ such that the call to NEXT-FN after the match would succeed."))
            (declare (fixnum start-pos))
            (if other-fn
                ;; the presence of OTHER-FN indicates that this
-               ;; register has been entered by a subpattern reference
+               ;; register has been entered via a subpattern reference
                ;; closure;
                (progn
                  ;; create a new temporary set of register offsets for
