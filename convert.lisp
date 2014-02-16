@@ -587,7 +587,8 @@ called with GREEDYP set to NIL as you would expect."
   "The case for \(:REGISTER <regex>).  Also used for named registers
 when NAME is not NIL."
   (declare #.*standard-optimize-settings*)
-  (declare (special flags reg-num reg-names has-subpattern-ref accumulate-start-p))
+  (declare (special flags reg-num reg-names has-subpattern-ref
+                    accumulate-start-p containing-registers))
   ;; keep the effect of modifiers local to the enclosed regex; also,
   ;; assign the current value of REG-NUM to the corresponding slot of
   ;; the REGISTER object and increase this counter afterwards; for
@@ -599,6 +600,7 @@ when NAME is not NIL."
     (setq reg-seen t)
     (incf (the fixnum reg-num))
     (push name reg-names)
+    (push stored-reg-num containing-registers)
     ;; while inside registers, we cannot indiscriminately accumulate
     ;; into the special variable STARTS-WITH because recursive
     ;; subpattern references might cause too much of the string to be
@@ -611,10 +613,17 @@ when NAME is not NIL."
     ;; information that may be helpful in optimization
     (when has-subpattern-ref
       (setq accumulate-start-p nil))
-    (make-instance 'register
-                   :regex (convert-aux (if name (third parse-tree) (second parse-tree)))
-                   :num stored-reg-num
-                   :name name)))
+    (let (stored-containing-registers regex)
+      (let (containing-registers)
+        (declare (special containing-registers))
+        (setf regex (convert-aux (if name (third parse-tree) (second parse-tree)))
+              stored-containing-registers containing-registers))
+      (setf containing-registers (append stored-containing-registers containing-registers))
+      (make-instance 'register
+                     :regex regex
+                     :num stored-reg-num
+                     :name name
+                     :containing-registers stored-containing-registers))))
 
 (defmethod convert-compound-parse-tree ((token (eql :named-register)) parse-tree &key)
   "The case for \(:NAMED-REGISTER <regex>)."
@@ -946,6 +955,7 @@ by subpattern references in the REGEX."
          (max-back-ref 0)
          (max-subpattern-ref 0)
          (has-subpattern-ref (has-subpattern-ref-p parse-tree))
+         containing-registers
          (converted-parse-tree (convert-aux parse-tree)))
     (declare (special flags reg-num
                       reg-names
@@ -955,7 +965,8 @@ by subpattern references in the REGEX."
                       max-subpattern-ref
                       numbered-subpattern-refs
                       named-subpattern-refs
-                      has-subpattern-ref))
+                      has-subpattern-ref
+                      containing-registers))
     ;; make sure we don't reference registers which aren't there
     (when (> (the fixnum max-back-ref)
              (the fixnum reg-num))
