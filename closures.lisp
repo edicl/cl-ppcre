@@ -160,7 +160,6 @@ such that the call to NEXT-FN after the match would succeed."))
                  (dolist (a (list *reg-starts* *regs-maybe-start* *reg-ends*))
                    (dolist (idx containing-registers)
                      (push nil (svref a idx))))
-                 (setf (car (svref *regs-maybe-start* num)) start-pos)
                  (prog1
                      ;; match the inner regex and the rest of the
                      ;; pattern; restore the original set of register
