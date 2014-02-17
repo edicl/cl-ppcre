@@ -94,47 +94,50 @@ such that the call to NEXT-FN after the match would succeed."))
         subpattern-ref-continuations)
     (declare (fixnum num)
              (list subpattern-ref-continuations))
-    ;; STORE-END-OF-REG is a thin wrapper around NEXT-FN which will
-    ;; update register offsets after the inner matcher has succeded
-    (flet ((store-end-of-reg (start-pos)
-             (declare (fixnum start-pos)
-                      (function next-fn))
-             (if subpattern-ref-continuations
-                 ;; this register was entered through a subpattern
-                 ;; reference; restore the old register offsets, and
-                 ;; attempt to match the rest of the pattern
-                 (let ((saved-starts (mapcar (lambda (idx)
-                                               (pop (svref *reg-starts* idx)))
-                                             subregisters))
-                       (saved-maybe-starts (mapcar (lambda (idx)
-                                                     (pop (svref *regs-maybe-start* idx)))
-                                                   subregisters))
-                       (saved-ends (mapcar (lambda (idx)
-                                             (pop (svref *reg-ends* idx)))
-                                           subregisters))
-                       (next-fn (pop subpattern-ref-continuations)))
-                   (prog1
-                       (funcall (the function next-fn) start-pos)
-                     ;; push the saved register offsets back on so
-                     ;; they can be restored when the stack is
-                     ;; unwound;
-                     (mapc (lambda (idx)
-                             (push (pop saved-starts) (svref *reg-starts* idx)))
-                           subregisters)
-                     (mapc (lambda (idx)
-                             (push (pop saved-maybe-starts) (svref *regs-maybe-start* idx)))
-                           subregisters)
-                     (mapc (lambda (idx)
-                             (push (pop saved-ends) (svref *reg-ends* idx)))
-                           subregisters)
-                     (push next-fn subpattern-ref-continuations)))
-                 ;; this register was not entered through a subpattern
-                 ;; reference; save the start and end positions, and
-                 ;; match the rest of the pattern
-                 (progn
-                   (setf (car (svref *reg-starts* num)) (car (svref *regs-maybe-start* num))
-                         (car (svref *reg-ends* num)) start-pos)
-                   (funcall next-fn start-pos)))))
+    (labels
+        ((pop-offsets (offsets)
+           (declare (simple-vector offsets))
+           ;; FIXME: would LOOP be faster?
+           (mapcar (lambda (idx)
+                     (declare (fixnum idx))
+                     (pop (svref offsets idx)))
+                   subregisters))
+         (push-offsets (offsets saved-offsets)
+           (declare (simple-vector offsets) (list saved-offsets))
+           ;; FIXME: would LOOP be faster?
+           (mapc (lambda (idx)
+                   (declare (fixnum idx))
+                   (push (pop saved-offsets) (svref offsets idx)))
+                 subregisters))
+         ;; STORE-END-OF-REG is a thin wrapper around NEXT-FN which
+         ;; will update register offsets after the inner matcher has
+         ;; succeded
+         (store-end-of-reg (start-pos)
+           (declare (fixnum start-pos)
+                    (function next-fn))
+           (if subpattern-ref-continuations
+               ;; this register was entered through a subpattern
+               ;; reference; restore the old register offsets, and
+               ;; attempt to match the rest of the pattern
+               (let ((saved-starts (pop-offsets *reg-starts*))
+                     (saved-maybe-starts (pop-offsets *regs-maybe-start*))
+                     (saved-ends (pop-offsets *reg-ends*))
+                     (next-fn (pop subpattern-ref-continuations)))
+                 (prog1
+                     (funcall (the function next-fn) start-pos)
+                   ;; push the saved register offsets back on so they
+                   ;; can be restored when the stack is unwound
+                   (push-offsets *reg-starts* saved-starts)
+                   (push-offsets *regs-maybe-start* saved-maybe-starts)
+                   (push-offsets *reg-ends* saved-ends)
+                   (push next-fn subpattern-ref-continuations)))
+               ;; this register was not entered through a subpattern
+               ;; reference; save the start and end positions, and
+               ;; match the rest of the pattern
+               (progn
+                 (setf (car (svref *reg-starts* num)) (car (svref *regs-maybe-start* num))
+                       (car (svref *reg-ends* num)) start-pos)
+                 (funcall next-fn start-pos)))))
       ;; the inner matcher is a closure corresponding to the regex
       ;; wrapped by this REGISTER
       (let ((inner-matcher (create-matcher-aux (regex register)
@@ -158,15 +161,20 @@ such that the call to NEXT-FN after the match would succeed."))
                  (push other-fn subpattern-ref-continuations)
                  (dolist (a (list *reg-starts* *regs-maybe-start* *reg-ends*))
                    (dolist (idx subregisters)
-                     (push nil (svref a idx))))
+                     ;; don't use PUSH-OFFSETS here, since we don't
+                     ;; need to do two assignments every time through
+                     ;; the loop
+                     (push nil (svref (the simple-vector a) (the fixnum idx)))))
                  (prog1
                      ;; match the inner regex and the rest of the
                      ;; pattern; restore the original set of register
                      ;; offsets before returning
                      (funcall inner-matcher start-pos)
                    (dolist (a (list *reg-starts* *regs-maybe-start* *reg-ends*))
+                     ;; don't use POP-OFFSETS here, since we don't
+                     ;; need to accumulate the values into a list
                      (dolist (idx subregisters)
-                       (pop (svref a idx))))
+                       (pop (svref (the simple-vector a) (the fixnum idx)))))
                    (pop subpattern-ref-continuations)))
                (let ((old-*reg-starts* (car (svref *reg-starts* num)))
                      (old-*regs-maybe-start* (car (svref *regs-maybe-start* num)))
