@@ -97,18 +97,12 @@ such that the call to NEXT-FN after the match would succeed."))
     (labels
         ((pop-offsets (offsets)
            (declare (simple-vector offsets))
-           ;; FIXME: would LOOP be faster?
-           (mapcar (lambda (idx)
-                     (declare (fixnum idx))
-                     (pop (svref offsets idx)))
-                   subregisters))
+           (loop for idx in subregisters
+                collect (pop (svref offsets (the fixnum idx)))))
          (push-offsets (offsets saved-offsets)
            (declare (simple-vector offsets) (list saved-offsets))
-           ;; FIXME: would LOOP be faster?
-           (mapc (lambda (idx)
-                   (declare (fixnum idx))
-                   (push (pop saved-offsets) (svref offsets idx)))
-                 subregisters))
+           (loop for idx in subregisters do
+                (push (pop saved-offsets) (svref offsets (the fixnum idx)))))
          ;; STORE-END-OF-REG is a thin wrapper around NEXT-FN which
          ;; will update register offsets after the inner matcher has
          ;; succeded
