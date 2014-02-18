@@ -138,6 +138,7 @@ such that the call to NEXT-FN after the match would succeed."))
                  (setf (car (svref *reg-starts* num)) (car (svref *regs-maybe-start* num))
                        (car (svref *reg-ends* num)) start-pos)
                  (funcall next-fn start-pos)))))
+      (declare (inline pop-offsets push-offsets))
       ;; the inner matcher is a closure corresponding to the regex
       ;; wrapped by this REGISTER
       (let ((inner-matcher (create-matcher-aux (regex register)
