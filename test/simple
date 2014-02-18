@@ -374,3 +374,45 @@ characters if there's a match."
                                  (:subpattern-reference "reg")))
                "foo"))
         '(0 3 #(1) #(2)))
+
+;; The next eight tests correspond to tests 1787, 1788, and 1797-1802 in
+;; perltestdata.  We reproduce them here because Perl itself gets these wrong.
+(equalp (multiple-value-list
+         (scan "(.)(((?5))(\\1))((?4))" "ffff"))
+        '(0 4 #(0 1 1 2 3) #(1 3 2 3 4)))
+
+(let ((*allow-named-registers* t)
+      (regex "(?<regOne>.)(((?&regFive))(?<regFour>\\k<regOne>))(?<regFive>(?&regFour))"))
+  (equalp (multiple-value-list
+           (scan regex "ffff"))
+          '(0 4 #(0 1 1 2 3) #(1 3 2 3 4))))
+
+(equalp (multiple-value-list
+         (scan "(?1)((.)(?3)(\\2))" "ffffff"))
+        '(0 6 #(3 3 5) #(6 4 6)))
+
+(let ((*allow-named-registers* t)
+      (regex "(?&regOne)(?<regOne>(?<regTwo>.)(?&regThree)(?<regThree>\\k<regTwo>))"))
+  (equalp (multiple-value-list
+           (scan regex "ffffff"))
+          '(0 6 #(3 3 5) #(6 4 6))))
+
+(equalp (multiple-value-list
+         (scan "(.)(?2)((.)(?4)(\\1))" "foffoff"))
+        '(0 7 #(0 4 4 6) #(1 7 5 7)))
+
+(let ((*allow-named-registers* t)
+      (regex "(?<regOne>.)(?&regTwo)(?<regTwo>(.)(?&regFour)(?<regFour>\\k<regOne>))"))
+  (equalp (multiple-value-list
+           (scan regex "foffoff"))
+          '(0 7 #(0 4 4 6) #(1 7 5 7))))
+
+(equalp (multiple-value-list
+         (scan "(.)(?2)((\\1)(?4)(\\1))" "fffffff"))
+        '(0 7 #(0 4 4 6) #(1 7 5 7)))
+
+(let ((*allow-named-registers* t)
+      (regex "(?<regOne>.)(?&regTwo)(?<regTwo>(\\k<regOne>)(?&regFour)(?<regFour>\\k<regOne>))"))
+  (equalp (multiple-value-list
+           (scan regex "fffffff"))
+          '(0 7 #(0 4 4 6) #(1 7 5 7))))
