@@ -124,10 +124,10 @@ This is the index into *REGS-START* and *REGS-END*.")
    (name :initarg :name
          :reader name
          :documentation "Name of this register or NIL.")
-   (subregisters :initarg :subregisters
-                 :reader subregisters
-                 :type list
-                 :documentation "A list of registers (by number, zero-based) nested within this register."))
+   (subregister-count :initarg :subregister-count
+                      :reader subregister-count
+                      :type fixnum
+                      :documentation "The number of registers nested within this register."))
   (:documentation "REGISTER objects represent register groups."))
 
 (defmethod print-object ((register register) stream)

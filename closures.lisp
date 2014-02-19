@@ -88,20 +88,20 @@ such that the call to NEXT-FN after the match would succeed."))
   (declare #.*standard-optimize-settings*)
   (declare (special register-matchers subpattern-refs))
   (let ((num (num register))
-        (subregisters (subregisters register))
+        (subregister-count (subregister-count register))
         ;; a place to store the next function to call when we arrive
         ;; here via a subpattern reference
         subpattern-ref-continuations)
-    (declare (fixnum num)
+    (declare (fixnum num subregister-count)
              (list subpattern-ref-continuations))
     (labels
         ((pop-offsets (offsets)
            (declare (simple-vector offsets))
-           (loop for idx in subregisters
+           (loop for idx from (1+ num) upto (+ num subregister-count)
                 collect (pop (svref offsets (the fixnum idx)))))
          (push-offsets (offsets saved-offsets)
            (declare (simple-vector offsets) (list saved-offsets))
-           (loop for idx in subregisters do
+           (loop for idx from (1+ num) upto (+ num subregister-count) do
                 (push (pop saved-offsets) (svref offsets (the fixnum idx)))))
          ;; STORE-END-OF-REG is a thin wrapper around NEXT-FN which
          ;; will update register offsets after the inner matcher has
@@ -155,11 +155,11 @@ such that the call to NEXT-FN after the match would succeed."))
                  ;; reference, as with Perl; save the old ones
                  (push other-fn subpattern-ref-continuations)
                  (dolist (a (list *reg-starts* *regs-maybe-start* *reg-ends*))
-                   (dolist (idx subregisters)
-                     ;; don't use PUSH-OFFSETS here, since we don't
-                     ;; need to do two assignments every time through
-                     ;; the loop
-                     (push nil (svref (the simple-vector a) (the fixnum idx)))))
+                   ;; don't use PUSH-OFFSETS here, since we don't need
+                   ;; to do two assignments every time through the
+                   ;; loop
+                   (loop for idx from (1+ num) upto (+ num subregister-count) do
+                        (push nil (svref (the simple-vector a) (the fixnum idx)))))
                  (prog1
                      ;; match the inner regex and the rest of the
                      ;; pattern; restore the original set of register
@@ -167,9 +167,9 @@ such that the call to NEXT-FN after the match would succeed."))
                      (funcall inner-matcher start-pos)
                    (dolist (a (list *reg-starts* *regs-maybe-start* *reg-ends*))
                      ;; don't use POP-OFFSETS here, since we don't
-                     ;; need to accumulate the values into a list
-                     (dolist (idx subregisters)
-                       (pop (svref (the simple-vector a) (the fixnum idx)))))
+                     ;; need to collect the POPped values
+                     (loop for idx from (1+ num) upto (+ num subregister-count) do
+                          (pop (svref (the simple-vector a) (the fixnum idx)))))
                    (pop subpattern-ref-continuations)))
                (let ((old-*reg-starts* (car (svref *reg-starts* num)))
                      (old-*regs-maybe-start* (car (svref *regs-maybe-start* num)))
