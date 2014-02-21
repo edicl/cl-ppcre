@@ -4338,6 +4338,12 @@ foo)/
     aa
     aaa
 
+/^(.\1?)(?1)$/
+    aba
+
+/^(?<regOne>.\k<regOne>?)(?&regOne)$/
+    aba
+
 /^(.\2?)(.)(?1)$/
     abcb
 
