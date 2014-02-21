@@ -214,8 +214,9 @@ The function accepts most of the regex syntax of Perl 5.8 as described
 in <a href="http://perldoc.perl.org/5.8.8/perlre.html"><code>man
 perlre</code></a> including extended features like non-greedy
 repetitions, positive and negative look-ahead and look-behind
-assertions, &quot;standalone&quot; subexpressions, and conditional
-subpatterns. The following Perl features are (currently) <b>not</b>
+assertions, &quot;standalone&quot; subexpressions, conditional
+subpatterns, and subpattern references, including recursive
+references. The following Perl features are (currently) <b>not</b>
 supported:
 
 <ul>
@@ -257,6 +258,12 @@ supports <a href="#*property-resolver*">named properties</a>
 (<code>\p</code> and <code>\P</code>), but only the long form with
 braces is supported, i.e. <code>\p{Letter}</code>
 and <code>\p{L}</code> will work while <code>\pL</code> won't.
+<p>
+Since version 2.1.0, CL-PPCRE supports subpattern references, which
+allow for easy matching of self-similar or recursive patterns.  To
+refer to a subpattern, use <code>(?N)</code>, where <code>N</code> is
+the register's number; or <code>(?&amp;NAME)</code>,
+where <code>NAME</code> is the register's name.
 <p>
 The keyword arguments are just for your
 convenience. You can always use embedded modifiers like
@@ -405,6 +412,16 @@ seen register continuing to the least recently seen one, until a match
 is found. See <a
 href="#*allow-named-registers*"><code>*ALLOW-NAMED-REGISTERS*</code></a>
 for more information.
+
+<li><code>(:SUBPATTERN-REFERENCE &lt;<i>ref</i>&gt;)</code> is a
+subpattern reference. <code>&lt;<i>ref</i>&gt;</code> is a positive
+integer denoting a register number or a string denoting its name.
+Unlike back-references, a subpattern reference matches
+the <i>pattern</i> contained within the register, not the text matched
+by it. Also unlike back-references, subpattern references can
+meaningfully refer forward to later registers and, more importantly,
+to containing registers, which allows for easy matching of recursive
+or self-similar strings.
 
 <li><code>(:PROPERTY|:INVERTED-PROPERTY &lt;<i>property</i>&gt;)</code> is
 a <a href="#*property-resolver*">named property</a> (or its inverse) with
