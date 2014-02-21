@@ -262,8 +262,8 @@ and <code>\p{L}</code> will work while <code>\pL</code> won't.
 Since version 2.1.0, CL-PPCRE supports subpattern references, which
 allow for easy matching of self-similar or recursive patterns.  To
 refer to a subpattern, use <code>(?N)</code>, where <code>N</code> is
-the register's number; or <code>(?&amp;NAME)</code>,
-where <code>NAME</code> is the register's name.
+the register's number; or <code>(?&amp;<i>name</i>)</code>,
+where <code><i>name</i></code> is the register's name.
 <p>
 The keyword arguments are just for your
 convenience. You can always use embedded modifiers like
@@ -415,13 +415,13 @@ for more information.
 
 <li><code>(:SUBPATTERN-REFERENCE &lt;<i>ref</i>&gt;)</code> is a
 subpattern reference. <code>&lt;<i>ref</i>&gt;</code> is a positive
-integer denoting a register number or a string denoting its name.
-Unlike back-references, a subpattern reference matches
-the <i>pattern</i> contained within the register, not the text matched
-by it. Also unlike back-references, subpattern references can
-meaningfully refer forward to later registers and, more importantly,
-to containing registers, which allows for easy matching of recursive
-or self-similar strings.
+integer denoting a register number or a string <!--- FIXME: Can be a
+symbol --> denoting its name.  Unlike back-references, a subpattern
+reference matches the <i>pattern</i> contained within the register,
+not the text matched by it. Also unlike back-references, subpattern
+references can meaningfully refer forward to later registers and, more
+importantly, to containing registers, which allows for easy matching
+of recursive or self-similar strings.
 
 <li><code>(:PROPERTY|:INVERTED-PROPERTY &lt;<i>property</i>&gt;)</code> is
 a <a href="#*property-resolver*">named property</a> (or its inverse) with
@@ -1320,9 +1320,20 @@ time.</blockquote>
 
 <blockquote><br>
 If this value is <em>true</em> (the default is <code>NIL</code>),
-CL-PPCRE will support <code>(?<i>&lt;name&gt;"&lt;regex&gt;"</i>)</code> and <code>\k<i>&lt;name&gt;</i></code> in regex
-strings to provide named registers and back-references as in <a href="http://www.franz.com/support/documentation/7.0/doc/regexp.htm#regexp-new-capturing-2">AllegroCL</a>. <code><i>name</i></code> is has to start with a letter and can contain only alphanumeric characters or minus sign.  Names of registers are matched case-sensitively.
-The <a href="#create-scanner2">parse tree syntax</a> is not affected by the <code>*ALLOW-NAMED-REGISTERS*</code> switch, <code>:NAMED-REGISTER</code> and <code>:BACK-REFERENCE</code> forms are always resolved as expected. There are also no restrictions on register names in this syntax except that they have to be strings.
+CL-PPCRE will support <code>(?<i>&lt;name&gt;"&lt;regex&gt;"</i>)</code>,
+<code>\k<i>&lt;name&gt;</i></code>, and <code>(?&amp;<i>name</i>)</code> in regex
+strings to provide named registers, back-references, and subpattern references.
+<code><i>name</i></code> has to start with a letter and can contain
+only alphanumeric characters or minus sign.  Names of registers are
+matched case-sensitively.
+The <a href="#create-scanner2">parse tree
+syntax</a> is not affected by the <code>*ALLOW-NAMED-REGISTERS*</code>
+switch: <code>:NAMED-REGISTER</code>, <code>:BACK-REFERENCE</code>,
+and <code>:SUBPATTERN-REFERENCE</code> forms are always resolved as
+expected. There are also no restrictions on register names in this
+syntax except that they have to be strings. <!-- FIXME: Is this last
+sentence true for subpattern references?  The part about "they have to
+be strings" is certainly false for each of the forms. -->
 
 <pre>
 <font color=orange>;; Perl compatible mode (*ALLOW-NAMED-REGISTERS* is NIL)</font>
