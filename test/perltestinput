@@ -4337,3 +4337,9 @@ foo)/
     a
     aa
     aaa
+
+/^(.\2?)(.)(?1)$/
+    abcb
+
+/^(?<regOne>.\k<regTwo>?)(?<regTwo>.)(?&regOne)$/
+    abcb
