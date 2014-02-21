@@ -148,8 +148,11 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
               (*repeat-counters* *repeat-counters*)
               (*last-pos-stores* *last-pos-stores*)
               (*reg-starts* *reg-starts*)
+              (*reg-starts-stacks* *reg-starts-stacks*)
               (*regs-maybe-start* *regs-maybe-start*)
+              (*regs-maybe-start-stacks* *regs-maybe-start-stacks*)
               (*reg-ends* *reg-ends*)
+              (*reg-ends-stacks* *reg-ends-stacks*)
               ;; we might be able to optimize the scanning process by
               ;; (virtually) shifting *START-POS* to the right
               (scan-start-pos *start-pos*)
