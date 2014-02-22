@@ -83,18 +83,17 @@ Will always be coerced to a SIMPLE-STRING.")
 (declaim (fixnum *end-pos*))
 
 (defvar *reg-starts* (make-array 0)
-  "An array which holds the start positions
-of the current register candidates.")
+  "An array holding lists where the car of each list is the offset of
+the start position of the register numbered by that index.")
 (declaim (simple-vector *reg-starts*))
   
 (defvar *regs-maybe-start* (make-array 0)
-  "An array which holds the next start positions
-of the current register candidates.")
+  "Same as *REG-STARTS*, except these values may be spurious.")
 (declaim (simple-vector *regs-maybe-start*))
 
 (defvar *reg-ends* (make-array 0)
-  "An array which holds the end positions
-of the current register candidates.")
+  "An array holding lists where the car of each list is the offset of
+the end position of the register numbered by that index.")
 (declaim (simple-vector *reg-ends*))
 
 (defvar *end-string-pos* nil

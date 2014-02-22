@@ -596,6 +596,7 @@ when NAME is not NIL."
   (let ((flags (copy-list flags))
         (stored-reg-num reg-num))
     (declare (special flags reg-seen))
+    (declare (fixnum stored-reg-num))
     (setq reg-seen t)
     (incf (the fixnum reg-num))
     (push name reg-names)
@@ -614,7 +615,8 @@ when NAME is not NIL."
     (make-instance 'register
                    :regex (convert-aux (if name (third parse-tree) (second parse-tree)))
                    :num stored-reg-num
-                   :name name)))
+                   :name name
+                   :subregister-count (- (the fixnum reg-num) stored-reg-num 1))))
 
 (defmethod convert-compound-parse-tree ((token (eql :named-register)) parse-tree &key)
   "The case for \(:NAMED-REGISTER <regex>)."

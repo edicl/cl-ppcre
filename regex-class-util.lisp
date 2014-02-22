@@ -146,7 +146,8 @@ which are not of type STR."))
   (make-instance 'register
                  :regex (copy-regex (regex register))
                  :num (num register)
-                 :name (name register)))
+                 :name (name register)
+                 :subregister-count (subregister-count register)))
 
 (defmethod copy-regex ((standalone standalone))
   (declare #.*standard-optimize-settings*)
