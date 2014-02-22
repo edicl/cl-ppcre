@@ -148,8 +148,11 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
               (*repeat-counters* *repeat-counters*)
               (*last-pos-stores* *last-pos-stores*)
               (*reg-starts* *reg-starts*)
+              (*reg-starts-stacks* *reg-starts-stacks*)
               (*regs-maybe-start* *regs-maybe-start*)
+              (*regs-maybe-start-stacks* *regs-maybe-start-stacks*)
               (*reg-ends* *reg-ends*)
+              (*reg-ends-stacks* *reg-ends-stacks*)
               ;; we might be able to optimize the scanning process by
               ;; (virtually) shifting *START-POS* to the right
               (scan-start-pos *start-pos*)
@@ -159,6 +162,7 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
               ;; we don't need to try further than MAX-END-POS
               (max-end-pos (- *end-pos* min-len)))
          (declare (fixnum scan-start-pos) (function match-fn))
+         (declare (special subpattern-refs))
          ;; definition of ADVANCE-FN will be inserted here by macrology
          (labels ((advance-fn-definition))
            (declare (inline advance-fn))
@@ -174,11 +178,14 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
              (setq *last-pos-stores* (make-array zero-length-num
                                                  :initial-element nil)))
            (when (plusp reg-num)
-             (flet ((list-nil () (list nil)))
-               ;; we have registers in our regular expression
-               (setq *reg-starts* (map-into (make-array reg-num) #'list-nil)
-                     *regs-maybe-start* (map-into (make-array reg-num) #'list-nil)
-                     *reg-ends* (map-into (make-array reg-num) #'list-nil))))
+             (setq *reg-starts* (make-array reg-num :initial-element nil)
+                   *regs-maybe-start* (make-array reg-num :initial-element nil)
+                   *reg-ends* (make-array reg-num :initial-element nil))
+             (when subpattern-refs
+               ;; we have subpattern references
+               (setq *reg-starts-stacks* (make-array reg-num :initial-element nil)
+                     *regs-maybe-start-stacks* (make-array reg-num :initial-element nil)
+                     *reg-ends-stacks* (make-array reg-num :initial-element nil))))
            (when end-anchored-p
              ;; the regular expression has a constant end string which
              ;; is anchored at the very end of the target string
@@ -283,8 +290,8 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
                    (when next-pos
                      (values (if next-pos *start-pos* nil)
                              next-pos
-                             (map-into *reg-starts* #'car *reg-starts*)
-                             (map-into *reg-ends* #'car *reg-ends*)))))
+                             *reg-starts*
+                             *reg-ends*))))
                (t
                  (loop for pos = (if starts-with-everything
                                    ;; don't jump to the next
@@ -301,8 +308,8 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
                             (when next-pos
                               (return-from scan (values pos
                                                         next-pos
-                                                        (map-into *reg-starts* #'car *reg-starts*)
-                                                        (map-into *reg-ends* #'car *reg-ends*))))
+                                                        *reg-starts*
+                                                        *reg-ends*)))
                             ;; not yet found, increment POS
                             #-cormanlisp (incf (the fixnum pos))
                             #+cormanlisp (incf pos)))))))))
