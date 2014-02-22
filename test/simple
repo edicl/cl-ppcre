@@ -375,8 +375,9 @@ characters if there's a match."
                "foo"))
         '(0 3 #(1) #(2)))
 
-;; The next eight tests correspond to tests 1787, 1788, and 1797-1802 in
-;; perltestdata.  We reproduce them here because Perl itself gets these wrong.
+;; The next twelve tests correspond to tests 1787, 1788, 1797-1802, and
+;; 1809-1812 in perltestdata.  We reproduce them here because Perl itself gets
+;; these wrong.
 (equalp (multiple-value-list
          (scan "(.)(((?5))(\\1))((?4))" "ffff"))
         '(0 4 #(0 1 1 2 3) #(1 3 2 3 4)))
@@ -416,3 +417,23 @@ characters if there's a match."
   (equalp (multiple-value-list
            (scan regex "fffffff"))
           '(0 7 #(0 4 4 6) #(1 7 5 7))))
+
+(equalp (multiple-value-list
+         (scan "^(.\\1?)(?1)$" "aba"))
+        '(0 3 #(0) #(1)))
+
+(let ((*allow-named-registers* t)
+      (regex "^(?<regOne>.\\k<regOne>?)(?&regOne)$"))
+  (equalp (multiple-value-list
+           (scan regex "aba"))
+          '(0 3 #(0) #(1))))
+
+(equalp (multiple-value-list
+         (scan "^(.\\2?)(.)(?1)$" "abcb"))
+        '(0 4 #(0 1) #(1 2)))
+
+;; (let ((*allow-named-registers* t)
+;;       (regex "^(?<regOne>.\\k<regTwo>?)(?<regTwo>.)(?&regOne)$"))
+;;   (equalp (multiple-value-list
+;;            (scan regex "abcb"))
+;;           '(0 4 #(0 1) #(1 2))))
