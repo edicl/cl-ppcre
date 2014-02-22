@@ -459,8 +459,8 @@ against CHR-EXPR."
       ;; the case-insensitive version
       (lambda (start-pos)
         (declare (fixnum start-pos))
-        (let ((reg-start (car (svref *reg-starts* num)))
-              (reg-end (car (svref *reg-ends* num))))
+        (let ((reg-start (svref *reg-starts* num))
+              (reg-end (svref *reg-ends* num)))
           ;; only bother to check if the corresponding REGISTER as
           ;; matched successfully already
           (and reg-start
@@ -475,8 +475,8 @@ against CHR-EXPR."
       ;; the case-sensitive version
       (lambda (start-pos)
         (declare (fixnum start-pos))
-        (let ((reg-start (car (svref *reg-starts* num)))
-              (reg-end (car (svref *reg-ends* num))))
+        (let ((reg-start (svref *reg-starts* num))
+              (reg-end (svref *reg-ends* num)))
           ;; only bother to check if the corresponding REGISTER as
           ;; matched successfully already
           (and reg-start
@@ -512,7 +512,7 @@ against CHR-EXPR."
             (lambda (start-pos)
               (declare (fixnum test))
               (if (and (< test (length *reg-starts*))
-                       (car (svref *reg-starts* test)))
+                       (svref *reg-starts* test))
                 (funcall then-matcher start-pos)
                 (funcall else-matcher start-pos))))
           (t
