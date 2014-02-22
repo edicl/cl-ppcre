@@ -98,13 +98,17 @@ such that the call to NEXT-FN after the match would succeed."))
         ((pop-offsets (offsets offsets-stacks)
            (declare (simple-vector offsets offsets-stacks))
            (loop for idx from (1+ num) upto (+ num subregister-count)
-                collect (setf (svref offsets (the fixnum idx))
-                              (pop (svref offsets-stacks (the fixnum idx))))))
+              collect (let ()
+                        (declare (fixnum idx))
+                        (setf (svref offsets idx)
+                              (pop (svref offsets-stacks idx))))))
          (push-offsets (offsets saved-offsets offsets-stacks)
            (declare (simple-vector offsets offsets-stacks) (list saved-offsets))
            (loop for idx from (1+ num) upto (+ num subregister-count) do
-                (push (svref offsets (the fixnum idx)) (svref offsets-stacks (the fixnum idx)))
-                (setf (svref offsets (the fixnum idx)) (pop saved-offsets))))
+                (let ()
+                  (declare (fixnum idx))
+                  (push (svref offsets idx) (svref offsets-stacks idx))
+                  (setf (svref offsets idx) (pop saved-offsets)))))
          ;; STORE-END-OF-REG is a thin wrapper around NEXT-FN which
          ;; will update register offsets after the inner matcher has
          ;; succeded
