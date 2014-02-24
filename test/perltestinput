@@ -4349,3 +4349,21 @@ foo)/
 
 /^(?<regOne>.\k<regTwo>?)(?<regTwo>.)(?&regOne)$/
     abcb
+
+/^(?3)?((.))(\2(?1)\2)$/
+    aaba
+
+/^(?&regThree)?(?<regOne>(?<regTwo>.))(?<regThree>\k<regTwo>(?&regOne)\k<regTwo>)$/
+    aaba
+
+/^(\3(?2)\3)?((.))(?1)$/
+    aaba
+
+/^(?<regOne>\k<regThree>(?&regTwo)\k<regThree>)?(?<regTwo>(?<regThree>.))(?&regOne)$/
+    aaba
+
+/^(a|\3(?1)\2|(?2))((b|c)(?4)?)(?1)(d(?1))$/
+    abbcdcabbda
+
+/^(?<regOne>a|\k<regThree>(?&regOne)\k<regTwo>|(?&regTwo))(?<regTwo>(?<regThree>b|c)(?&regFour)?)(?&regOne)(?<regFour>d(?&regOne))$/
+    abbcdcabbda
