@@ -97,14 +97,14 @@ such that the call to NEXT-FN after the match would succeed."))
     (labels
         ((pop-offsets (offsets offsets-stacks)
            (declare (simple-vector offsets offsets-stacks))
-           (loop for idx from (1+ num) upto (+ num subregister-count)
+           (loop for idx from num upto (+ num subregister-count)
               collect (let ()
                         (declare (fixnum idx))
                         (setf (svref offsets idx)
                               (pop (svref offsets-stacks idx))))))
          (push-offsets (offsets saved-offsets offsets-stacks)
            (declare (simple-vector offsets offsets-stacks) (list saved-offsets))
-           (loop for idx from (1+ num) upto (+ num subregister-count) do
+           (loop for idx from num upto (+ num subregister-count) do
                 (let ()
                   (declare (fixnum idx))
                   (push (svref offsets idx) (svref offsets-stacks idx))

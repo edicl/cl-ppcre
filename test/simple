@@ -422,15 +422,11 @@ characters if there's a match."
            (scan regex "fffffff"))
           '(0 7 #(0 4 4 6) #(1 7 5 7))))
 
-(equalp (multiple-value-list
-         (scan "^(.\\1?)(?1)$" "aba"))
-        '(0 3 #(0) #(1)))
+(null (scan "^(.\\1?)(?1)$" "aba"))
 
 (let ((*allow-named-registers* t)
       (regex "^(?<regOne>.\\k<regOne>?)(?&regOne)$"))
-  (equalp (multiple-value-list
-           (scan regex "aba"))
-          '(0 3 #(0) #(1))))
+  (null (scan regex "aba")))
 
 (equalp (multiple-value-list
          (scan "^(.\\2?)(.)(?1)$" "abcb"))
@@ -454,13 +450,9 @@ characters if there's a match."
 ;;            (scan regex "aaba"))
 ;;           '(0 4 #(nil 0 0) #(nil 1 1))))
 
-(equalp (multiple-value-list
-         (scan "^(a|\\3(?1)\\2|(?2))((b|c)(?4)?)(?1)(d(?1))$" "abbcdcabbda"))
-        '(0 11 #(0 1 1 9) #(1 2 2 11)))
+(null (scan "^(a|\\3(?1)\\2|(?2))((b|c)(?4)?)(?1)(d(?1))$" "abbcdcabbda"))
 
 ;; Cf. #17
 ;; (let ((*allow-named-registers* t)
 ;;       (regex "^(?<regOne>a|\\k<regThree>(?&regOne)\\k<regTwo>|(?&regTwo))(?<regTwo>(?<regThree>b|c)(?&regFour)?)(?&regOne)(?<regFour>d(?&regOne))$"))
-;;   (equalp (multiple-value-list
-;;            (scan regex "abbcdcabbda"))
-;;           '(0 11 #(0 1 1 9) #(1 2 2 11))))
+;;   (null (scan regex "abbcdcabbda")))
