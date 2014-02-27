@@ -686,8 +686,6 @@ when NAME is not NIL."
         ;; several registers share the same name we will try to match
         ;; any of them, starting with the most recent first
         ;; alternation is used to accomplish matching
-        ;;
-        ;; FIXME: Does Perl behave like this?
         (make-instance 'alternation
                        :choices (loop
                                  for reg-index in referred-regs
