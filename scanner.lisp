@@ -142,7 +142,7 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
               ;; that this value will _never_ be decremented - this
               ;; is crucial to the scanning process
               (*end-string-pos* (1- *start-pos*))
-              ;; the next five will shadow the variables defined by
+              ;; the next eight will shadow the variables defined by
               ;; DEFPARAMETER; at this point, we don't know if we'll
               ;; actually use them, though
               (*repeat-counters* *repeat-counters*)
