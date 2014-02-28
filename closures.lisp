@@ -129,11 +129,11 @@ such that the call to NEXT-FN after the match would succeed."))
            (declare (fixnum start-pos)
                     (function next-fn))
            (if subpattern-ref-continuations
-               ;; this register was entered through a subpattern
-               ;; reference; restore the registers state as it was
-               ;; upon entering the subpattern reference, but save the
-               ;; intermediary state for when we have to backtrack or
-               ;; unwind
+               ;; we're returning from a register that was entered
+               ;; through a subpattern reference; restore the
+               ;; registers state as it was upon entering the
+               ;; subpattern reference, but save the intermediary
+               ;; state for when we have to backtrack or unwind
                (multiple-value-bind (saved-starts saved-maybe-starts saved-ends)
                    (pop-registers-state)
                  (let ((next-fn (pop subpattern-ref-continuations)))
@@ -142,9 +142,9 @@ such that the call to NEXT-FN after the match would succeed."))
                      ;; backtrack/unwind cleanly
                      (push-registers-state saved-starts saved-maybe-starts saved-ends)
                      (push next-fn subpattern-ref-continuations))))
-               ;; this register was not entered through a subpattern
-               ;; reference; save the start and end positions, and
-               ;; match the rest of the pattern
+               ;; we're returning from a register that was entered
+               ;; directly save the start and end positions, and match
+               ;; the rest of the pattern
                (progn
                  (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
                        (svref *reg-ends* num) start-pos)
