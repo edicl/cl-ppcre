@@ -86,7 +86,7 @@ such that the call to NEXT-FN after the match would succeed."))
 
 (defmethod create-matcher-aux ((register register) next-fn)
   (declare #.*standard-optimize-settings*)
-  (declare (special register-matchers subpattern-refs))
+  (declare (special register-matchers))
   (let ((num (num register))
         (subregister-count (subregister-count register))
         ;; a place to store the next function to call when we arrive
