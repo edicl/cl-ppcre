@@ -616,7 +616,7 @@ when NAME is not NIL."
                    :regex (convert-aux (if name (third parse-tree) (second parse-tree)))
                    :num stored-reg-num
                    :name name
-                   :subregister-count (- (the fixnum reg-num) stored-reg-num 1))))
+                   :inner-register-count (- (the fixnum reg-num) stored-reg-num 1))))
 
 (defmethod convert-compound-parse-tree ((token (eql :named-register)) parse-tree &key)
   "The case for \(:NAMED-REGISTER <regex>)."

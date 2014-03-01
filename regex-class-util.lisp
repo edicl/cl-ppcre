@@ -147,7 +147,7 @@ which are not of type STR."))
                  :regex (copy-regex (regex register))
                  :num (num register)
                  :name (name register)
-                 :subregister-count (subregister-count register)))
+                 :inner-register-count (inner-register-count register)))
 
 (defmethod copy-regex ((standalone standalone))
   (declare #.*standard-optimize-settings*)

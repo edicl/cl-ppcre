@@ -88,18 +88,18 @@ such that the call to NEXT-FN after the match would succeed."))
   (declare #.*standard-optimize-settings*)
   (declare (special register-matchers))
   (let ((num (num register))
-        (subregister-count (subregister-count register))
+        (inner-register-count (inner-register-count register))
         ;; a place to store the next function to call when we arrive
         ;; here via a subpattern reference
         subpattern-ref-continuations)
-    (declare (fixnum num subregister-count)
+    (declare (fixnum num inner-register-count)
              (list subpattern-ref-continuations))
     (labels
         ((push-registers-state (new-starts new-maybe-starts new-ends)
            (declare (list new-starts new-maybe-starts new-ends))
            ;; only push the register states for this register and registers
            ;; local to it
-           (loop for idx from num upto (+ num subregister-count) do
+           (loop for idx from num upto (+ num inner-register-count) do
                 (locally (declare (fixnum idx))
                   (push (svref *reg-ends* idx) (svref *reg-ends-stacks* idx))
                   (setf (svref *reg-ends* idx) (pop new-ends))
@@ -111,7 +111,7 @@ such that the call to NEXT-FN after the match would succeed."))
            ;; return the state that was destroyed by this restore
            (let (old-starts old-maybe-starts old-ends)
              (declare (list old-starts old-maybe-starts old-ends))
-             (loop for idx from (+ num subregister-count) downto num do
+             (loop for idx from (+ num inner-register-count) downto num do
                   (locally (declare (fixnum idx))
                     (push (svref *reg-ends* idx) old-ends)
                     (setf (svref *reg-ends* idx) (pop (svref *reg-ends-stacks* idx)))
