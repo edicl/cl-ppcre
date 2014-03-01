@@ -667,37 +667,38 @@ when SUBPATTERN-REFERENCE is true) has already been read.  The closing
                           ;; might be a look-behind assertion or a named group, so
                           ;; check next character
                           (let ((next-char (next-char-non-extended lexer)))
-                            (if (alpha-char-p next-char)
-                                (progn
-                                  ;; we have encountered a named group
-                                  ;; are we supporting register naming?
-                                  (unless *allow-named-registers*
-                                    (signal-syntax-error* (1- (lexer-pos lexer))
-                                                          "Character '~A' may not follow '(?<'."
-                                                          next-char))
-                                  ;; put the letter back
-                                  (decf (lexer-pos lexer))
-                                  ;; named group
-                                  :open-paren-less-letter)
-                                (case next-char
-                                  ((#\=)
-                                   ;; positive look-behind
-                                   :open-paren-less-equal)
-                                  ((#\!)
-                                   ;; negative look-behind
-                                   :open-paren-less-exclamation)
-                                  ((#\))
-                                   ;; Perl allows "(?<)" and treats
-                                   ;; it like a null string
-                                   :void)
-                                  ((nil)
-                                   ;; syntax error
-                                   (signal-syntax-error "End of string following '(?<'."))
-                                  (t
-                                   ;; also syntax error
-                                   (signal-syntax-error* (1- (lexer-pos lexer))
-                                                         "Character '~A' may not follow '(?<'."
-                                                         next-char))))))
+                            (cond
+                              ((alpha-char-p next-char)
+                               ;; we have encountered a named group
+                               ;; are we supporting register naming?
+                               (unless *allow-named-registers*
+                                 (signal-syntax-error* (1- (lexer-pos lexer))
+                                                       "Character '~A' may not follow '(?<'."
+                                                       next-char))
+                               ;; put the letter back
+                               (decf (lexer-pos lexer))
+                               ;; named group
+                               :open-paren-less-letter)
+                              (t
+                               (case next-char
+                                 ((#\=)
+                                  ;; positive look-behind
+                                  :open-paren-less-equal)
+                                 ((#\!)
+                                  ;; negative look-behind
+                                  :open-paren-less-exclamation)
+                                 ((#\))
+                                  ;; Perl allows "(?<)" and treats it
+                                  ;; like a null string
+                                  :void)
+                                 ((nil)
+                                  ;; syntax error
+                                  (signal-syntax-error "End of string following '(?<'."))
+                                 (t
+                                  ;; also syntax error
+                                  (signal-syntax-error* (1- (lexer-pos lexer))
+                                                        "Character '~A' may not follow '(?<'."
+                                                        next-char)))))))
                          ((#\&)
                           ;; subpattern reference by register name
                           (unless *allow-named-registers*
