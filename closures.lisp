@@ -503,8 +503,9 @@ against CHR-EXPR."
         (register-matchers register-matchers))
     (declare (fixnum num) (function next-fn))
     (lambda (start-pos)
-      (let ((subpattern-matcher (getf (car register-matchers) (1- num))))
-        (funcall (the function subpattern-matcher) start-pos next-fn)))))
+      (funcall (the function (getf (car register-matchers) (1- num)))
+               start-pos
+               next-fn))))
 
 (defmethod create-matcher-aux ((branch branch) next-fn)
   (declare #.*standard-optimize-settings*)
