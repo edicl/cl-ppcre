@@ -160,17 +160,17 @@ such that the call to NEXT-FN after the match would succeed."))
         ;; special variable so it can be called by subpattern
         ;; references
         (setf (getf (car register-matchers) num)
-              (lambda (start-pos &optional other-fn)
+              (lambda (start-pos &optional cont)
                 (declare (fixnum start-pos))
                 (cond
-                  (other-fn
-                   ;; the presence of OTHER-FN indicates that this
+                  (cont
+                   ;; the presence of CONT indicates that this
                    ;; register has been entered via a subpattern
                    ;; reference closure; save the registers state,
                    ;; creating fresh new "bindings" for the local
                    ;; register offsets; restore the state before
                    ;; returning to the caller
-                   (push other-fn subpattern-ref-continuations)
+                   (push cont subpattern-ref-continuations)
                    (push-registers-state nil nil nil)
                    (prog1
                        (funcall inner-matcher start-pos)
