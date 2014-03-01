@@ -718,7 +718,7 @@ when SUBPATTERN-REFERENCE is true) has already been read.  The closing
                           ;; put the digit back
                           (decf (lexer-pos lexer))
                           (prog1
-                            (list :subpattern-reference (get-number lexer :no-whitespace-p t))
+                              (list :subpattern-reference (get-number lexer :no-whitespace-p t))
                             (let ((next-char (next-char lexer)))
                               (when (or (null next-char)
                                         (not (char= (the character next-char) #\))))
