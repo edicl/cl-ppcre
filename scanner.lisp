@@ -162,7 +162,6 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
               ;; we don't need to try further than MAX-END-POS
               (max-end-pos (- *end-pos* min-len)))
          (declare (fixnum scan-start-pos) (function match-fn))
-         (declare (special subpattern-refs))
          ;; definition of ADVANCE-FN will be inserted here by macrology
          (labels ((advance-fn-definition))
            (declare (inline advance-fn))
@@ -330,10 +329,12 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
   "Auxiliary function to create and return a scanner \(which is
 actually a closure).  Used by CREATE-SCANNER."
   (declare #.*standard-optimize-settings*)
-  (declare (fixnum min-len zero-length-num rep-num reg-num))
+  (declare (fixnum min-len zero-length-num rep-num reg-num subpattern-refs))
   (let ((starts-with-len (if (typep starts-with 'str)
                            (len starts-with)))
-        (starts-with-everything (typep starts-with 'everything)))
+        (starts-with-everything (typep starts-with 'everything))
+        ;; make lexical copy of SUBPATTERN-REFS for closing over
+        (subpattern-refs subpattern-refs))
     (cond
       ;; this COND statement dispatches on the different versions we
       ;; have for ADVANCE-FN and creates different closures for each;
