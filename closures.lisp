@@ -128,27 +128,28 @@ such that the call to NEXT-FN after the match would succeed."))
          (store-end-of-reg (start-pos)
            (declare (fixnum start-pos)
                     (function next-fn))
-           (if subpattern-ref-continuations
-               ;; we're returning from a register that was entered
-               ;; through a subpattern reference; restore the
-               ;; registers state as it was upon entering the
-               ;; subpattern reference, but save the intermediary
-               ;; state for when we have to backtrack or unwind
-               (multiple-value-bind (saved-starts saved-maybe-starts saved-ends)
-                   (pop-registers-state)
-                 (let ((next-fn (pop subpattern-ref-continuations)))
-                   (prog1 (funcall (the function next-fn) start-pos)
-                     ;; un-restore the registers state so we
-                     ;; backtrack/unwind cleanly
-                     (push-registers-state saved-starts saved-maybe-starts saved-ends)
-                     (push next-fn subpattern-ref-continuations))))
-               ;; we're returning from a register that was entered
-               ;; directly save the start and end positions, and match
-               ;; the rest of the pattern
-               (progn
-                 (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
-                       (svref *reg-ends* num) start-pos)
-                 (funcall next-fn start-pos)))))
+           (cond
+             (subpattern-ref-continuations
+              ;; we're returning from a register that was entered
+              ;; through a subpattern reference; restore the registers
+              ;; state as it was upon entering the subpattern
+              ;; reference, but save the intermediary state for when
+              ;; we have to backtrack or unwind
+              (multiple-value-bind (saved-starts saved-maybe-starts saved-ends)
+                  (pop-registers-state)
+                (let ((next-fn (pop subpattern-ref-continuations)))
+                  (prog1 (funcall (the function next-fn) start-pos)
+                    ;; un-restore the registers state so we
+                    ;; backtrack/unwind cleanly
+                    (push-registers-state saved-starts saved-maybe-starts saved-ends)
+                    (push next-fn subpattern-ref-continuations)))))
+             (t
+             ;; we're returning from a register that was entered
+             ;; directly save the start and end positions, and match
+             ;; the rest of the pattern
+              (setf (svref *reg-starts* num) (svref *regs-maybe-start* num)
+                    (svref *reg-ends* num) start-pos)
+              (funcall next-fn start-pos)))))
       (declare (inline push-registers-state pop-registers-state))
       ;; the inner matcher is a closure corresponding to the regex
       ;; wrapped by this REGISTER
@@ -161,33 +162,34 @@ such that the call to NEXT-FN after the match would succeed."))
         (setf (getf (car register-matchers) num)
               (lambda (start-pos &optional other-fn)
                 (declare (fixnum start-pos))
-                (if other-fn
-                    ;; the presence of OTHER-FN indicates that this
-                    ;; register has been entered via a subpattern
-                    ;; reference closure; save the registers state,
-                    ;; creating fresh new "bindings" for the local
-                    ;; register offsets; restore the state before
-                    ;; returning to the caller
-                    (progn
-                      (push other-fn subpattern-ref-continuations)
-                      (push-registers-state nil nil nil)
-                      (prog1
-                          (funcall inner-matcher start-pos)
-                        (pop-registers-state)
-                        (pop subpattern-ref-continuations)))
-                    (let ((old-*reg-starts* (svref *reg-starts* num))
-                          (old-*regs-maybe-start* (svref *regs-maybe-start* num))
-                          (old-*reg-ends* (svref *reg-ends* num)))
-                      ;; we cannot use *REG-STARTS* here because Perl
-                      ;; allows regular expressions like /(a|\1x)*/
-                      (setf (svref *regs-maybe-start* num) start-pos)
-                      (let ((next-pos (funcall inner-matcher start-pos)))
-                        (unless next-pos
-                          ;; restore old values on failure
-                          (setf (svref *reg-starts* num) old-*reg-starts*
-                                (svref *regs-maybe-start* num) old-*regs-maybe-start*
-                                (svref *reg-ends* num) old-*reg-ends*))
-                        next-pos)))))))))
+                (cond
+                  (other-fn
+                   ;; the presence of OTHER-FN indicates that this
+                   ;; register has been entered via a subpattern
+                   ;; reference closure; save the registers state,
+                   ;; creating fresh new "bindings" for the local
+                   ;; register offsets; restore the state before
+                   ;; returning to the caller
+                   (push other-fn subpattern-ref-continuations)
+                   (push-registers-state nil nil nil)
+                   (prog1
+                       (funcall inner-matcher start-pos)
+                     (pop-registers-state)
+                     (pop subpattern-ref-continuations)))
+                  (t
+                   (let ((old-*reg-starts* (svref *reg-starts* num))
+                         (old-*regs-maybe-start* (svref *regs-maybe-start* num))
+                         (old-*reg-ends* (svref *reg-ends* num)))
+                     ;; we cannot use *REG-STARTS* here because Perl
+                     ;; allows regular expressions like /(a|\1x)*/
+                     (setf (svref *regs-maybe-start* num) start-pos)
+                     (let ((next-pos (funcall inner-matcher start-pos)))
+                       (unless next-pos
+                         ;; restore old values on failure
+                         (setf (svref *reg-starts* num) old-*reg-starts*
+                               (svref *regs-maybe-start* num) old-*regs-maybe-start*
+                               (svref *reg-ends* num) old-*reg-ends*))
+                       next-pos))))))))))
 
 (defmethod create-matcher-aux ((lookahead lookahead) next-fn)
   (declare #.*standard-optimize-settings*)
