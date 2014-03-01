@@ -100,8 +100,7 @@ such that the call to NEXT-FN after the match would succeed."))
            ;; only push the register states for this register and registers
            ;; local to it
            (loop for idx from num upto (+ num subregister-count) do
-                (let ()
-                  (declare (fixnum idx))
+                (locally (declare (fixnum idx))
                   (push (svref *reg-ends* idx) (svref *reg-ends-stacks* idx))
                   (setf (svref *reg-ends* idx) (pop new-ends))
                   (push (svref *regs-maybe-start* idx) (svref *regs-maybe-start-stacks* idx))
@@ -113,8 +112,7 @@ such that the call to NEXT-FN after the match would succeed."))
            (let (old-starts old-maybe-starts old-ends)
              (declare (list old-starts old-maybe-starts old-ends))
              (loop for idx from (+ num subregister-count) downto num do
-                  (let ()
-                    (declare (fixnum idx))
+                  (locally (declare (fixnum idx))
                     (push (svref *reg-ends* idx) old-ends)
                     (setf (svref *reg-ends* idx) (pop (svref *reg-ends-stacks* idx)))
                     (push (svref *regs-maybe-start* idx) old-maybe-starts)
