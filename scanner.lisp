@@ -329,7 +329,8 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
   "Auxiliary function to create and return a scanner \(which is
 actually a closure).  Used by CREATE-SCANNER."
   (declare #.*standard-optimize-settings*)
-  (declare (fixnum min-len zero-length-num rep-num reg-num subpattern-refs))
+  (declare (fixnum min-len zero-length-num rep-num reg-num))
+  (declare (special subpattern-refs))
   (let ((starts-with-len (if (typep starts-with 'str)
                            (len starts-with)))
         (starts-with-everything (typep starts-with 'everything))
