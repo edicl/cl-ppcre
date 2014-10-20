@@ -39,7 +39,7 @@
   (:documentation "Accepts a regular expression - either as a
 parse-tree or as a string - and returns a scan closure which will scan
 strings for this regular expression and a list mapping registers to
-their names \(NIL stands for unnamed ones).  The \"mode\" keyboard
+their names \(NIL stands for unnamed ones).  The \"mode\" keyword
 arguments are equivalent to the imsx modifiers in Perl.  If
 DESTRUCTIVE is not NIL, the function is allowed to destructively
 modify its first argument \(but only if it's a parse tree)."))
