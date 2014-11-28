@@ -1,3 +1,9 @@
+Version 2.0.9
+2014-11-28
+Merge branch 'master' of github.com:edicl/cl-ppcre (Hans Huebner)
+Merge pull request #20 from billitch/master (Hans Hübner)
+Typo in CREATE-SCANNER documentation. (Thomas de Grivel)
+
 Version 2.0.8
 2014-11-28
 Update support info (Hans Huebner)
