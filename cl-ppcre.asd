@@ -37,7 +37,7 @@
 (in-package :cl-ppcre-asd)
 
 (defsystem :cl-ppcre
-  :version "2.0.7"
+  :version "2.0.8"
   :description "Perl-compatible regular expression library"
   :serial t
   :components ((:file "packages")
