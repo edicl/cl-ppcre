@@ -56,6 +56,7 @@ their associated character classes."
     ((#\S)
       :non-whitespace-char-class)))
 
+(declaim (inline make-lexer-internal))
 (defstruct (lexer (:constructor make-lexer-internal))
   "LEXER structures are used to hold the regex string which is
 currently lexed and to keep track of the lexer's state."
@@ -66,8 +67,7 @@ currently lexed and to keep track of the lexer's state."
   (last-pos nil :type list))
 
 (defun make-lexer (string)
-  (declare (inline make-lexer-internal)
-           #-:genera (string string))
+  (declare #-:genera (string string))
   (make-lexer-internal :str (maybe-coerce-to-simple-string string)
                        :len (length string)))
 
@@ -347,7 +347,7 @@ we're inside a range or not."
                              (when (looking-at-p lexer #\-)
                                (push #\- list)
                                (incf (lexer-pos lexer)))
-                             (setq hyphen-seen nil))))                        
+                             (setq hyphen-seen nil))))
                      ((#\E)
                       ;; if \Q quoting is on we ignore \E,
                       ;; otherwise it's just a plain #\E
@@ -496,6 +496,15 @@ closing #\> will also be consumed."
       ;; advance lexer beyond "<name>" part
       (setf (lexer-pos lexer) (1+ end-name))
       name)))
+
+(declaim (inline unget-token))
+(defun unget-token (lexer)
+  (declare #.*standard-optimize-settings*)
+  "Moves the lexer back to the last position stored in the LAST-POS stack."
+  (if (lexer-last-pos lexer)
+    (setf (lexer-pos lexer)
+            (pop (lexer-last-pos lexer)))
+    (error "No token to unget \(this should not happen)")))
 
 (defun get-token (lexer)
   (declare #.*standard-optimize-settings*)
@@ -711,15 +720,6 @@ closing #\> will also be consumed."
           (t
            (pop (lexer-last-pos lexer))
            nil))))
-
-(declaim (inline unget-token))
-(defun unget-token (lexer)
-  (declare #.*standard-optimize-settings*)
-  "Moves the lexer back to the last position stored in the LAST-POS stack."
-  (if (lexer-last-pos lexer)
-    (setf (lexer-pos lexer)
-            (pop (lexer-last-pos lexer)))
-    (error "No token to unget \(this should not happen)")))
 
 (declaim (inline start-of-subexpr-p))
 (defun start-of-subexpr-p (lexer)
