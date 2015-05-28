@@ -1,3 +1,8 @@
+Version 2.0.10
+2015-05-28
+Add :author/:license/:description fields to .asd files (Hans Huebner)
+Move inlined definitions before they are used. (Stas Boukarev)
+
 Version 2.0.9
 2014-11-28
 Merge branch 'master' of github.com:edicl/cl-ppcre (Hans Huebner)

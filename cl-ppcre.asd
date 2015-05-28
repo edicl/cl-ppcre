@@ -37,7 +37,7 @@
 (in-package :cl-ppcre-asd)
 
 (defsystem :cl-ppcre
-  :version "2.0.9"
+  :version "2.0.10"
   :description "Perl-compatible regular expression library"
   :author "Dr. Edi Weitz"
   :license "BSD"
