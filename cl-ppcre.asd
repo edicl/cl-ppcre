@@ -39,6 +39,8 @@
 (defsystem :cl-ppcre
   :version "2.0.9"
   :description "Perl-compatible regular expression library"
+  :author "Dr. Edi Weitz"
+  :license "BSD"
   :serial t
   :components ((:file "packages")
                (:file "specials")
@@ -68,6 +70,9 @@
                (:file "api")))
 
 (defsystem :cl-ppcre-test
+  :description "Perl-compatible regular expression library tests"
+  :author "Dr. Edi Weitz"
+  :license "BSD"
   :depends-on (:cl-ppcre :flexi-streams)
   :components ((:module "test"
                         :serial t

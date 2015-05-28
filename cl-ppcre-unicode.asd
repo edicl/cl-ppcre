@@ -37,6 +37,9 @@
 (in-package :cl-ppcre-unicode-asd)
 
 (defsystem :cl-ppcre-unicode
+  :description "Perl-compatible regular expression library (Unicode)"
+  :author "Dr. Edi Weitz"
+  :license "BSD"
   :components ((:module "cl-ppcre-unicode"
                         :serial t
                         :components ((:file "packages")
@@ -44,6 +47,9 @@
   :depends-on (:cl-ppcre :cl-unicode))
 
 (defsystem :cl-ppcre-unicode-test
+  :description "Perl-compatible regular expression library tests (Unicode)"
+  :author "Dr. Edi Weitz"
+  :license "BSD"
   :depends-on (:cl-ppcre-unicode :cl-ppcre-test)
   :components ((:module "test"
                         :serial t
