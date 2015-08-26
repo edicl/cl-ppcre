@@ -62,7 +62,9 @@ scanners if you don't need the \(full) Unicode support of
 implementations like AllegroCL, CLISP, LispWorks, or SBCL.")
 (declaim (fixnum *regex-char-code-limit*))
   
-(defvar *string* ""
+(defvar *string* (make-sequence #+:lispworks 'lw:simple-text-string
+                                #-:lispworks 'simple-string
+                                0)
   "The string which is currently scanned by SCAN.
 Will always be coerced to a SIMPLE-STRING.")
 #+:lispworks

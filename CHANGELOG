@@ -1,3 +1,7 @@
+Version 2.0.11
+2015-08-26
+Fix for type checks in LispWorks 7 (Martin Simmons)
+
 Version 2.0.10
 2015-05-28
 Add :author/:license/:description fields to .asd files (Hans Huebner)
@@ -6,7 +10,7 @@ Move inlined definitions before they are used. (Stas Boukarev)
 Version 2.0.9
 2014-11-28
 Merge branch 'master' of github.com:edicl/cl-ppcre (Hans Huebner)
-Merge pull request #20 from billitch/master (Hans HÃ¼bner)
+Merge pull request #20 from billitch/master (Hans Huebner)
 Typo in CREATE-SCANNER documentation. (Thomas de Grivel)
 
 Version 2.0.8
@@ -15,7 +19,7 @@ Update support info (Hans Huebner)
 
 Version 2.0.7
 2014-01-23
-doc: Update repository location, remove the darcs mirror. (Stas Boukarev)
+Doc: Update repository location, remove the darcs mirror. (Stas Boukarev)
 
 Version 2.0.6
 2015-01-05
@@ -49,17 +53,17 @@ Version 2.0.0
 Added named properties (\p{foo})
 Added Unicode support
 Introduced test functions for character classes
-Added optional test function optimization	
+Added optional test function optimization
 Cleaned up test suite, removed performance cruft
 Removed the various alternative system definitions (too much maintenance work)
 Exported PARSE-STRING
 Changed default value of *USE-BMH-MATCHERS*
-General cleanup	
+General cleanup
 Lots of documentation additions
 
 Version 1.4.1
 2008-07-03
-Skip non-characters in CREATE-RANGES-FROM-SET	
+Skip non-characters in CREATE-RANGES-FROM-SET
 
 Version 1.4.0
 2008-07-03
@@ -91,7 +95,7 @@ Fixed behaviour of look-behind in repeated scans (caught by RegexCoach user Hans
 Version 1.2.18
 2006-10-12
 Changed default element type for LispWorks
-Fixed documentation for REGEX-REPLACE-ALL	
+Fixed documentation for REGEX-REPLACE-ALL
 
 Version 1.2.17
 2006-10-11
@@ -109,7 +113,7 @@ Added :REGEX tag to parse tree syntax (thanks to Frédéric Jolliton)
 Version 1.2.14
 2006-05-24
 Added missing </code> tag in docs (thanks to Wojciech Kaczmarek)
-Fixed IMPORT statement for LW	
+Fixed IMPORT statement for LW
 
 Version 1.2.13
 2005-12-06
