@@ -3954,3 +3954,416 @@
 /((a{0,5}){0,5})*c/
     aaaaaaaaaac
     aaaaaaaaaa
+
+/^(?=(?1))?[az]([abc])d/
+    abd 
+    zcdxx 
+
+/^(?=(?&regOne))?[az](?<regOne>[abc])d/
+    abd 
+    zcdxx 
+
+/(?:(abc)|(xyz))(?1)/
+    abcabc
+    xyzabc 
+    xyzxyz 
+
+/(?:(?<regOne>abc)|(xyz))(?&regOne)/
+    abcabc
+    xyzabc 
+    xyzxyz 
+
+/^X(?5)(a)(?:(b)|(q))(c)(d)(Y)/
+    XYabcdY
+
+/^X(?&regFive)(a)(?:(b)|(q))(c)(?<regFive>d)(Y)/
+    XYabcdY
+
+/^X(?7)(a)(?:(b|(r)(s))|(q))(c)(d)(Y)/
+    XYabcdY
+
+/^X(?&regSeven)(a)(?:(b|(r)(s))|(q))(c)(?<regSeven>d)(Y)/
+    XYabcdY
+
+/^X(?7)(a)(?:(b|(?:(r)|(t))(s))|(q))(c)(d)(Y)/
+    XYabcdY
+
+/^X(?&regSeven)(a)(?:(b|(?:(r)|(t))(s))|(q))(?<regSeven>c)(d)(Y)/
+    XYabcdY
+
+/^([^()]|\((?1)*\))*$/
+    abc
+    a(b)c
+    a(b(c))d
+    a(b(c)d
+
+/^(?<regOne>[^()]|\((?&regOne)*\))*$/
+    abc
+    a(b)c
+    a(b(c))d
+    a(b(c)d
+
+/^>abc>([^()]|\((?1)*\))*<xyz<$/
+   >abc>123<xyz<
+   >abc>1(2)3<xyz<
+   >abc>(1(2)3)<xyz<
+
+/^>abc>(?<regOne>[^()]|\((?&regOne)*\))*<xyz<$/
+   >abc>123<xyz<
+   >abc>1(2)3<xyz<
+   >abc>(1(2)3)<xyz<
+
+/^(?:((.)(?1)\2|)|((.)(?3)\4|.))$/i
+    1221
+    Satanoscillatemymetallicsonatas
+    AmanaplanacanalPanama
+    AblewasIereIsawElba
+    Thequickbrownfox
+
+/^(?:(?<regOne>(.)(?&regOne)\2|)|(?<regThree>(.)(?&regThree)\4|.))$/i
+    1221
+    Satanoscillatemymetallicsonatas
+    AmanaplanacanalPanama
+    AblewasIereIsawElba
+    Thequickbrownfox
+
+/^(\d+|\((?1)([+*-])(?1)\)|-(?1))$/
+    12
+    (((2+2)*-3)-7)
+    -12
+    ((2+2)*-3)-7)
+
+/^(?<regOne>\d+|\((?&regOne)([+*-])(?&regOne)\)|-(?&regOne))$/
+    12
+    (((2+2)*-3)-7)
+    -12
+    ((2+2)*-3)-7)
+
+/^(x(y|(?1){2})z)/
+    xyz
+    xxyzxyzz
+    xxyzz
+    xxyzxyzxyzz
+
+/^(?<regOne>x(y|(?&regOne){2})z)/
+    xyz
+    xxyzxyzz
+    xxyzz
+    xxyzxyzxyzz
+
+/(?<foo>f)(?<foo>o)(?&foo)/
+    foo
+    fof
+
+/(?1)(f)(o)/
+    ffo
+
+/(?&foo)(?<foo>f)(?<foo>o)/
+    ffo
+
+/(?2)(f)(o)/
+    ofo
+
+/(?&foo)(f)(?<foo>o)/
+    ofo
+
+/(foo)(? 1)/
+    foofoo
+
+/(?<foo>foo)(?& foo)/
+    foofoo
+
+/(foo)(?1 )/
+    foofoo
+
+/(?<foo>foo)(?&foo )/
+    foofoo
+
+/(foo)(? 1 )/
+    foofoo
+
+/(?<foo>foo)(?& foo )/
+    foofoo
+
+/(foo)(?
+1)/
+    foofoo
+
+/(?<foo>foo)(?&
+foo)/
+    foofoo
+
+/(foo)(?1
+)/
+    foofoo
+
+/(?<foo>foo)(?&foo
+)/
+    foofoo
+
+/(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(foo)(?11)/
+    0123456789foofoo
+    0123456789foofor
+
+/(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(foo)(?131)/
+    0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789foofoo
+    0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789foofor
+
+/(\([^()]*(?:(?1)|\))\))/
+    (())
+
+/(o(?1)?)(?1)/
+    o
+    oo
+    ooo
+
+/(?<regOne>o(?&regOne)?)(?&regOne)/
+    o
+    oo
+    ooo
+
+/(?1)(o(?1)?)/
+    o
+    oo
+    ooo
+
+/(?&regOne)(?<regOne>o(?&regOne)?)/
+    o
+    oo
+    ooo
+
+/^\W*(?:((.)\W*(?1)\W*\2|)|((.)\W*(?3)\W*\4|\W*.\W*))\W*$/i
+    1221
+    Satan, oscillate my metallic sonatas!
+    A man, a plan, a canal: Panama!
+    Able was I ere I saw Elba.
+    The quick brown fox
+
+/^\W*(?:(?<one>(?<two>.)\W*(?&one)\W*\k<two>|)|(?<three>(?<four>.)\W*(?&three)\W*\k<four>|\W*.\W*))\W*$/i
+    1221
+    Satan, oscillate my metallic sonatas!
+    A man, a plan, a canal: Panama!
+    Able was I ere I saw Elba.
+    The quick brown fox
+
+/(a|b)(d|e)(?1){2}/
+    bdaa
+    bdab
+    bddd
+
+/(?<abc>a|b)(?<abc>d|e)(?&abc){2}/
+    bdaa
+    bdab
+    bddd
+
+/(?1)X(P)/i
+    abcPXP123
+
+/(?&abc)X(?<abc>P)/i
+    abcPXP123
+
+/(?:a(?1)b)*(x)/
+    123axbaxbaxbx456
+    123axbaxbaxb456
+
+/(?:a(?&abc)b)*(?<abc>x)/
+    123axbaxbaxbx456
+    123axbaxbaxb456
+
+/(?:a(?1)b){1,5}(x)/
+    123axbaxbaxbx456
+
+/(?:a(?&abc)b){1,5}(?<abc>x)/
+    123axbaxbaxbx456
+
+/(?:a(?1)b){2,5}(x)/
+    123axbaxbaxbx456
+
+/(?:a(?&abc)b){2,5}(?<abc>x)/
+    123axbaxbaxbx456
+
+/(?:a(?1)b){2,}(x)/
+    123axbaxbaxbx456
+
+/(?:a(?&abc)b){2,}(?<abc>x)/
+    123axbaxbaxbx456
+
+/(abc)(?i:(?1))/
+   defabcabcxyz
+   DEFabcABCXYZ
+
+/(?<regOne>abc)(?i:(?&regOne))/
+   defabcabcxyz
+   DEFabcABCXYZ
+
+/(abc)(?:(?i)(?1))/
+   defabcabcxyz
+   DEFabcABCXYZ
+
+/(?<regOne>abc)(?:(?i)(?&regOne))/
+   defabcabcxyz
+   DEFabcABCXYZ
+
+/(?2)[]a()b](abc)/
+    abcbabc
+
+/(?&regTwo)[]a()b](?<regTwo>)/
+    abcbabc
+
+/(?2)[^]a()b](abc)/
+    abcbabc
+
+/(?&regTwo)[^]a()b](?<regTwo>abc)/
+    abcbabc
+
+/(?1)[]a()b](abc)/
+    abcbabc
+    abcXabc
+
+/(?&regOne)[]a()b](?<regOne>abc)/
+    abcbabc
+    abcXabc
+
+/(?1)[^]a()b](abc)/
+    abcXabc
+    abcbabc
+
+/(?&regOne)[^]a()b](?<regOne>abc)/
+    abcXabc
+    abcbabc
+
+/(?2)[]a()b](abc)(xyz)/
+    xyzbabcxyz
+
+/(?&regTwo)[]a()b](?<regTwo>abc)(xyz)/
+    xyzbabcxyz
+
+/(?1)[]a()](?<M>abc)/
+   abc<abc
+
+/(?&N)[]a(?<N>)](?<M>abc)/
+   abc<abc
+
+/(?1)[]a()](abc)/
+   abc<abc
+
+/(?&N)[]a(?<N>)](abc)/
+   abc<abc
+
+/^X(?5)(a)(?:(b)|(q))(c)(d)Y/
+    XYabcdY
+
+/^X(?&regFive)(a)(?:(b)|(q))(c)(?<regFive>d)Y/
+    XYabcdY
+
+/^X(?6)(a)(?:(b)|(q))(c)(d)(Y)/
+    XYabcdY
+
+/^X(?&regSix)(a)(?:(b)|(q))(c)(d)(?<regSix>Y)/
+    XYabcdY
+
+/^X(?7)(a)(?:(b)|(q)(r)(s))(c)(d)(Y)/
+    XYabcdY
+
+/^X(?&regSeven)(a)(?:(b)|(q)(r)(s))(c)(d)(?<regSeven>Y)/
+    XYabcdY
+
+/(?<=b(?1)|zzz)(a)/
+    xbaax
+    xzzzax 
+
+/(?<=b(?&regOne)|zzz)(?<regOne>a)/
+    xbaax
+    xzzzax 
+
+/(.)((o)\1)(?2)/
+    fofof
+    fofog
+
+/(?<regOne>.)(?<regTwo>(o)\k<regOne>)(?&regTwo)/
+    fofof
+    fofog
+
+/(.)(((?5))(\1))((?4))/
+    ffff
+
+/(?<regOne>.)(((?&regFive))(?<regFour>\k<regOne>))(?<regFive>(?&regFour))/
+    ffff
+
+/(.)(((?5))(\3))((?4))/
+    fooo
+
+/(.)((?<regThree>(?&regFive))(?<regFour>\k<regThree>))(?<regFive>(?&regFour))/
+    fooo
+
+/(?1)((.)\2)?/
+    oo
+    aa
+
+/(?&regOne)(?<regOne>(?<regTwo>.)\k<regTwo>)?/
+    oo
+    aa
+
+/(?1)((.)\2)/
+    ffff
+
+/(?&regOne)(?<regOne>(?<regTwo>.)\k<regTwo>)/
+    ffff
+
+/(?1)((.)(?3)(\2))/
+    ffffff
+
+/(?&regOne)(?<regOne>(?<regTwo>.)(?&regThree)(?<regThree>\k<regTwo>))/
+    ffffff
+
+/(.)(?2)((.)(?4)(\1))/
+    foffoff
+
+/(?<regOne>.)(?&regTwo)(?<regTwo>(.)(?&regFour)(?<regFour>\k<regOne>))/
+    foffoff
+
+/(.)(?2)((\1)(?4)(\1))/
+    fffffff
+
+/(?<regOne>.)(?&regTwo)(?<regTwo>(\k<regOne>)(?&regFour)(?<regFour>\k<regOne>))/
+    fffffff
+
+/(a(?1)?)/
+    a
+    aa
+    aaa
+
+/(?<regOne>a(?&regOne)?)/
+    a
+    aa
+    aaa
+
+/^(.\1?)(?1)$/
+    aba
+
+/^(?<regOne>.\k<regOne>?)(?&regOne)$/
+    aba
+
+/^(.\2?)(.)(?1)$/
+    abcb
+
+/^(?<regOne>.\k<regTwo>?)(?<regTwo>.)(?&regOne)$/
+    abcb
+
+/^(?3)?((.))(\2(?1)\2)$/
+    aaba
+
+/^(?&regThree)?(?<regOne>(?<regTwo>.))(?<regThree>\k<regTwo>(?&regOne)\k<regTwo>)$/
+    aaba
+
+/^(\3(?2)\3)?((.))(?1)$/
+    aaba
+
+/^(?<regOne>\k<regThree>(?&regTwo)\k<regThree>)?(?<regTwo>(?<regThree>.))(?&regOne)$/
+    aaba
+
+/^(a|\3(?1)\2|(?2))((b|c)(?4)?)(?1)(d(?1))$/
+    abbcdcabbda
+
+/^(?<regOne>a|\k<regThree>(?&regOne)\k<regTwo>|(?&regTwo))(?<regTwo>(?<regThree>b|c)(?&regFour)?)(?&regOne)(?<regFour>d(?&regOne))$/
+    abbcdcabbda

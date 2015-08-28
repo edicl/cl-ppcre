@@ -300,6 +300,12 @@ NIL or a STR object of the same case mode. Always returns NIL."
         (setq accumulate-start-p nil))))
   nil)
 
+(defun has-subpattern-ref-p (parse-tree)
+  (declare #.*standard-optimize-settings*)
+  (and (consp parse-tree)
+       (or (eql (car parse-tree) :subpattern-reference)
+           (some #'has-subpattern-ref-p (cdr parse-tree)))))
+
 (declaim (inline convert-aux))
 (defun convert-aux (parse-tree)
   "Converts the parse tree PARSE-TREE into a REGEX object and returns
@@ -312,6 +318,12 @@ it.  Will also
   - keep track of all named registers seen in the special variable REG-NAMES
   - keep track of the highest backreference seen in the special
     variable MAX-BACK-REF,
+  - keep track of the highest subpattern reference seen in the special
+    variable MAX-SUBPATTERN-REF,
+  - keep track of all numbered subpattern references seen in the
+    special variable NUMBERED-SUBPATTERN-REFS,
+  - keep track of all named subpattern references seen in the special
+    variable NAMED-SUBPATTERN-REFS,
   - maintain and adher to the currently applicable modifiers in the special
     variable FLAGS, and
   - maybe even wash your car..."
@@ -575,7 +587,7 @@ called with GREEDYP set to NIL as you would expect."
   "The case for \(:REGISTER <regex>).  Also used for named registers
 when NAME is not NIL."
   (declare #.*standard-optimize-settings*)
-  (declare (special flags reg-num reg-names))
+  (declare (special flags reg-num reg-names has-subpattern-ref accumulate-start-p))
   ;; keep the effect of modifiers local to the enclosed regex; also,
   ;; assign the current value of REG-NUM to the corresponding slot of
   ;; the REGISTER object and increase this counter afterwards; for
@@ -583,15 +595,28 @@ when NAME is not NIL."
   ;; slot of the REGISTER object too
   (let ((flags (copy-list flags))
         (stored-reg-num reg-num))
-    (declare (special flags reg-seen named-reg-seen))
+    (declare (special flags reg-seen))
+    (declare (fixnum stored-reg-num))
     (setq reg-seen t)
-    (when name (setq named-reg-seen t))
     (incf (the fixnum reg-num))
     (push name reg-names)
+    ;; while inside registers, we cannot indiscriminately accumulate
+    ;; into the special variable STARTS-WITH because recursive
+    ;; subpattern references might cause too much of the string to be
+    ;; skipped or endless recursion, as with:
+    ;;   (scan "(\\([^()]*(?:(?1)|\\))\\))" "(())")
+    ;; for now, we set ACCUMULATE-START-P to NIL if the regex has one
+    ;; or more subpattern references, but it may be possible to
+    ;; determine which registers are referenced--either now or at the
+    ;; matcher generation phase--and not needlessly throw away
+    ;; information that may be helpful in optimization
+    (when has-subpattern-ref
+      (setq accumulate-start-p nil))
     (make-instance 'register
                    :regex (convert-aux (if name (third parse-tree) (second parse-tree)))
                    :num stored-reg-num
-                   :name name)))
+                   :name name
+                   :inner-register-count (- (the fixnum reg-num) stored-reg-num 1))))
 
 (defmethod convert-compound-parse-tree ((token (eql :named-register)) parse-tree &key)
   "The case for \(:NAMED-REGISTER <regex>)."
@@ -668,6 +693,37 @@ when NAME is not NIL."
        ;; simple case - backref corresponds to only one register
        (t
         (make-back-ref backref-number))))))
+
+(defmethod convert-compound-parse-tree ((token (eql :subpattern-reference)) parse-tree &key)
+  "The case for parse trees like \(:SUBPATTERN-REFERENCE <number>|<name>)."
+  (declare #.*standard-optimize-settings*)
+  (declare (special max-subpattern-ref
+                    numbered-subpattern-refs
+                    named-subpattern-refs
+                    accumulate-start-p))
+  ;; stop accumulating into STARTS-WITH
+  (setq accumulate-start-p nil)
+  ;; subpattern references may refer to registers that come later in
+  ;; the regex, so we don't validate the register name/number until
+  ;; the entire object has been constructed
+  (let* ((reg (second parse-tree))
+         (reg-name (and (stringp reg) reg))
+         (reg-num (and (null reg-name)
+                       (typep reg 'fixnum)
+                       (plusp reg)
+                       reg)))
+    (when (not (or reg-name reg-num))
+      (signal-syntax-error "Illegal subpattern reference: ~S." parse-tree))
+    (if reg-name
+        (pushnew reg-name named-subpattern-refs :test #'string=)
+        (progn
+          (setf max-subpattern-ref (max max-subpattern-ref reg-num))
+          (pushnew reg-num numbered-subpattern-refs :test #'=)))
+    (make-instance 'subpattern-reference
+                   ;; for named references, register numbers will be
+                   ;; computed later
+                   :num (or reg-num -1)
+                   :name (copy-seq reg-name))))
 
 (defmethod convert-compound-parse-tree ((token (eql :regex)) parse-tree &key)
   "The case for \(:REGEX <string>)."
@@ -844,29 +900,80 @@ parse trees which are atoms.")
       (convert-aux (copy-tree translation))
       (signal-syntax-error "Unknown token ~A in parse tree." parse-tree))))
 
+(defun convert-named-subpattern-refs (converted-tree)
+  "Convert named subpattern references to numbered references."
+  (declare #.*standard-optimize-settings*)
+  (declare (special reg-names reg-num numbered-subpattern-refs))
+  (typecase converted-tree
+    (subpattern-reference
+     (when (= -1 (num converted-tree))
+       ;; find which register corresponds to the given name
+       (let* ((reg-name (name converted-tree))
+              (this-reg-num nil))
+         ;; when more than one register have the same name, a named
+         ;; subpattern reference refers to the first
+         (loop for name in reg-names
+            for reg-index from 0
+            when (string= name reg-name)
+            do (setf this-reg-num (- reg-num reg-index)))
+         (pushnew this-reg-num numbered-subpattern-refs :test #'=)
+         (setf (num converted-tree) this-reg-num))))
+    (seq
+     (mapc #'convert-named-subpattern-refs (elements converted-tree)))
+    (alternation
+     (mapc #'convert-named-subpattern-refs (choices converted-tree)))
+    ((or lookahead lookbehind repetition register standalone)
+     (convert-named-subpattern-refs (regex converted-tree)))
+    (branch
+     (mapc #'convert-named-subpattern-refs (list (then-regex converted-tree)
+                                                 (else-regex converted-tree))))))
+
 (defun convert (parse-tree)
-  "Converts the parse tree PARSE-TREE into an equivalent REGEX object
-and returns three values: the REGEX object, the number of registers
-seen and an object the regex starts with which is either a STR object
-or an EVERYTHING object \(if the regex starts with something like
-\".*\") or NIL."
+  "Converts the parse tree PARSE-TREE into an equivalent REGEX object and
+returns five values: the REGEX object; the number of registers seen; an object
+the regex starts with, which is either a STR object or an EVERYTHING object \(if
+the regex starts with something like \".*\") or NIL; a list of named registers
+defined in the REGEX; and a list of numbers denoting the registers referred to
+by subpattern references in the REGEX."
   (declare #.*standard-optimize-settings*)
   ;; this function basically just initializes the special variables
   ;; and then calls CONVERT-AUX to do all the work
   (let* ((flags (list nil nil nil))
          (reg-num 0)
          reg-names
-         named-reg-seen
+         numbered-subpattern-refs
+         named-subpattern-refs
          (accumulate-start-p t)
          starts-with
          (max-back-ref 0)
+         (max-subpattern-ref 0)
+         (has-subpattern-ref (has-subpattern-ref-p parse-tree))
          (converted-parse-tree (convert-aux parse-tree)))
-    (declare (special flags reg-num reg-names named-reg-seen
-                      accumulate-start-p starts-with max-back-ref))
+    (declare (special flags reg-num
+                      reg-names
+                      accumulate-start-p
+                      starts-with
+                      max-back-ref
+                      max-subpattern-ref
+                      numbered-subpattern-refs
+                      named-subpattern-refs
+                      has-subpattern-ref))
     ;; make sure we don't reference registers which aren't there
     (when (> (the fixnum max-back-ref)
              (the fixnum reg-num))
       (signal-syntax-error "Backreference to register ~A which has not been defined." max-back-ref))
+    (when (> (the fixnum max-subpattern-ref)
+             (the fixnum reg-num))
+      (signal-syntax-error "Subpattern reference to register ~A which has not been defined."
+                           max-subpattern-ref))
+    (when named-subpattern-refs
+      (let ((nonexistent-regs
+             (set-difference named-subpattern-refs reg-names :test #'string=)))
+        (when nonexistent-regs
+          (signal-syntax-error
+           "Subpattern reference to named register \"~A\" which has not been defined."
+           (car nonexistent-regs))))
+      (convert-named-subpattern-refs converted-parse-tree))
     (when (typep starts-with 'str)
       (setf (slot-value starts-with 'str)
               (coerce (slot-value starts-with 'str)
@@ -875,5 +982,7 @@ or an EVERYTHING object \(if the regex starts with something like
     (values converted-parse-tree reg-num starts-with
             ;; we can't simply use *ALLOW-NAMED-REGISTERS*
             ;; since parse-tree syntax ignores it
-            (when named-reg-seen
-              (nreverse reg-names)))))
+            (when (some #'identity reg-names)
+              (nreverse reg-names))
+            (when numbered-subpattern-refs
+              (nreverse numbered-subpattern-refs)))))

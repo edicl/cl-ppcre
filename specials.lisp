@@ -88,16 +88,34 @@ Will always be coerced to a SIMPLE-STRING.")
   "An array which holds the start positions
 of the current register candidates.")
 (declaim (simple-vector *reg-starts*))
+
+(defvar *reg-starts-stacks* (make-array 0)
+  "A book-keeping array holding stacks of register start positions for
+saving and restoring them upon entering and exiting subpattern
+references.")
+(declaim (simple-vector *reg-starts-stacks*))
   
 (defvar *regs-maybe-start* (make-array 0)
   "An array which holds the next start positions
 of the current register candidates.")
 (declaim (simple-vector *regs-maybe-start*))
 
+(defvar *regs-maybe-start-stacks* (make-array 0)
+  "A book-keeping array holding stacks of tentative register start
+positions for saving and restoring them upon entering and exiting
+subpattern references.")
+(declaim (simple-vector *regs-maybe-start-stacks*))
+
 (defvar *reg-ends* (make-array 0)
   "An array which holds the end positions
 of the current register candidates.")
 (declaim (simple-vector *reg-ends*))
+
+(defvar *reg-ends-stacks* (make-array 0)
+  "A book-keeping array holding stacks of register end positions for
+saving and restoring them upon entering and exiting subpattern
+references.")
+(declaim (simple-vector *reg-ends-stacks*))
 
 (defvar *end-string-pos* nil
   "Start of the next possible end-string candidate.")

@@ -472,18 +472,22 @@ resets the lexer to its old position."
       (otherwise
         (fail lexer)))))
 
-(defun parse-register-name-aux (lexer)
-  "Reads and returns the name in a named register group.  It is
-assumed that the starting #\< character has already been read.  The
-closing #\> will also be consumed."
-  ;; we have to look for an ending > character now
-  (let ((end-name (position #\>
+(defun parse-register-name-aux (lexer &key subpattern-reference)
+  "Reads and returns the name in a named register group or reference.
+It is assumed that the starting #\\< character \(or \"\(?&\" string
+when SUBPATTERN-REFERENCE is true) has already been read.  The closing
+#\> \(or #\\)) will also be consumed."
+  ;; we have to look for an ending > or ) character now
+  (let ((end-name (position (if subpattern-reference #\) #\>)
                             (lexer-str lexer)
                             :start (lexer-pos lexer)
                             :test #'char=)))
     (unless end-name
-      ;; there has to be > somewhere, syntax error otherwise
-      (signal-syntax-error* (1- (lexer-pos lexer)) "Opening #\< in named group has no closing #\>."))
+      ;; there has to be > or ) somewhere, syntax error otherwise
+      (signal-syntax-error* (1- (lexer-pos lexer))
+                            (if subpattern-reference
+                                "Opening \"(?&\" in named group has no closing #\\)."
+                                "Opening #\\< in named group has no closing #\\>.")))
     (let ((name (subseq (lexer-str lexer)
                         (lexer-pos lexer)
                         end-name)))
@@ -492,8 +496,8 @@ closing #\> will also be consumed."
                              (char= #\- char)))
                      name)
         ;; register name can contain only alphanumeric characters or #\-
-        (signal-syntax-error* (lexer-pos lexer) "Invalid character in named register group."))
-      ;; advance lexer beyond "<name>" part
+        (signal-syntax-error* (lexer-pos lexer) "Invalid character in register name."))
+      ;; advance lexer beyond "<name>" (or "(?&name)") part
       (setf (lexer-pos lexer) (1+ end-name))
       name)))
 
@@ -672,37 +676,67 @@ closing #\> will also be consumed."
                           ;; might be a look-behind assertion or a named group, so
                           ;; check next character
                           (let ((next-char (next-char-non-extended lexer)))
+                            (cond
+                              ((alpha-char-p next-char)
+                               ;; we have encountered a named group
+                               ;; are we supporting register naming?
+                               (unless *allow-named-registers*
+                                 (signal-syntax-error* (1- (lexer-pos lexer))
+                                                       "Character '~A' may not follow '(?<'."
+                                                       next-char))
+                               ;; put the letter back
+                               (decf (lexer-pos lexer))
+                               ;; named group
+                               :open-paren-less-letter)
+                              (t
+                               (case next-char
+                                 ((#\=)
+                                  ;; positive look-behind
+                                  :open-paren-less-equal)
+                                 ((#\!)
+                                  ;; negative look-behind
+                                  :open-paren-less-exclamation)
+                                 ((#\))
+                                  ;; Perl allows "(?<)" and treats it
+                                  ;; like a null string
+                                  :void)
+                                 ((nil)
+                                  ;; syntax error
+                                  (signal-syntax-error "End of string following '(?<'."))
+                                 (t
+                                  ;; also syntax error
+                                  (signal-syntax-error* (1- (lexer-pos lexer))
+                                                        "Character '~A' may not follow '(?<'."
+                                                        next-char)))))))
+                         ((#\&)
+                          ;; subpattern reference by register name
+                          (unless *allow-named-registers*
+                            (signal-syntax-error* (1- (lexer-pos lexer))
+                                                  "Character '~A' may not follow '(?'."
+                                                  next-char))
+                          (let ((next-char (next-char lexer)))
                             (if (alpha-char-p next-char)
                                 (progn
-                                  ;; we have encountered a named group
-                                  ;; are we supporting register naming?
-                                  (unless *allow-named-registers*
-                                    (signal-syntax-error* (1- (lexer-pos lexer))
-                                                          "Character '~A' may not follow '(?<'."
-                                                          next-char))
                                   ;; put the letter back
                                   (decf (lexer-pos lexer))
-                                  ;; named group
-                                  :open-paren-less-letter)
-                                (case next-char
-                                  ((#\=)
-                                   ;; positive look-behind
-                                   :open-paren-less-equal)
-                                  ((#\!)
-                                   ;; negative look-behind
-                                   :open-paren-less-exclamation)
-                                  ((#\))
-                                   ;; Perl allows "(?<)" and treats
-                                   ;; it like a null string
-                                   :void)
-                                  ((nil)
-                                   ;; syntax error
-                                   (signal-syntax-error "End of string following '(?<'."))
-                                  (t
-                                   ;; also syntax error
-                                   (signal-syntax-error* (1- (lexer-pos lexer))
-                                                         "Character '~A' may not follow '(?<'."
-                                                         next-char ))))))
+                                  (list :subpattern-reference
+                                        (parse-register-name-aux lexer :subpattern-reference t)))
+                                (signal-syntax-error* (1- (lexer-pos lexer))
+                                                      "Character '~A' may not follow '(?&'."
+                                                      next-char))))
+                         ((#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                          ;; put the digit back
+                          (decf (lexer-pos lexer))
+                          (prog1
+                              (list :subpattern-reference (get-number lexer :no-whitespace-p t))
+                            (let ((next-char (next-char lexer)))
+                              (when (or (null next-char)
+                                        (not (char= (the character next-char) #\))))
+                                ;; closing ) missing or not in the
+                                ;; proper position
+                                (signal-syntax-error*
+                                 (1- (lexer-pos lexer))
+                                 "Numbered subpattern reference has no closing #\\).")))))
                          (otherwise
                           (signal-syntax-error* (1- (lexer-pos lexer))
                                                 "Character '~A' may not follow '(?'."

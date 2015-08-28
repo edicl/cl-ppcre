@@ -119,9 +119,9 @@ operation on REGEX."))
               (flatten (regex regex)))
       regex)
     (t
-      ;; otherwise (ANCHOR, BACK-REFERENCE, CHAR-CLASS, EVERYTHING,
-      ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY)
-      ;; do nothing
+      ;; otherwise (ANCHOR, BACK-REFERENCE, SUBPATTERN-REFERENCE,
+      ;; CHAR-CLASS, EVERYTHING, LOOKAHEAD, LOOKBEHIND, STR, VOID,
+      ;; FILTER, and WORD-BOUNDARY) do nothing
       regex)))
 
 (defgeneric gather-strings (regex)
@@ -278,9 +278,9 @@ operation on REGEX."))
               (gather-strings (regex regex)))
       regex)
     (t
-      ;; otherwise (ANCHOR, BACK-REFERENCE, CHAR-CLASS, EVERYTHING,
-      ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY)
-      ;; do nothing
+      ;; otherwise (ANCHOR, BACK-REFERENCE, SUBPATTERN-REFERENCE,
+      ;; CHAR-CLASS, EVERYTHING, LOOKAHEAD, LOOKBEHIND, STR, VOID,
+      ;; FILTER, and WORD-BOUNDARY) do nothing
       regex)))
 
 ;; Note that START-ANCHORED-P will be called after FLATTEN and GATHER-STRINGS.
@@ -356,7 +356,8 @@ zero-length assertion."))
         :zero-length
         nil))
     (t
-      ;; BACK-REFERENCE, CHAR-CLASS, EVERYTHING, and STR
+      ;; BACK-REFERENCE, SUBPATTERN-REFERENCE, CHAR-CLASS, EVERYTHING,
+      ;; and STR
       nil)))
 
 ;; Note that END-STRING-AUX will be called after FLATTEN and GATHER-STRINGS.
@@ -372,17 +373,23 @@ function called by END-STRING.)"))
 (defmethod end-string-aux ((str str)
                            &optional (old-case-insensitive-p :void))
   (declare #.*standard-optimize-settings*)
-  (declare (special last-str))
+  (declare (special last-str subpattern-refs))
   (cond ((and (not (skip str))          ; avoid constituents of STARTS-WITH
               ;; only use STR if nothing has been collected yet or if
               ;; the collected string has the same value for
               ;; CASE-INSENSITIVE-P
               (or (eq old-case-insensitive-p :void)
                   (eq (case-insensitive-p str) old-case-insensitive-p)))
-          (setf last-str str
-                ;; set the SKIP property of this STR
-                (skip str) t)
-          str)
+         ;; set the SKIP property of this STR
+         (setf last-str str)
+         ;; only apply the "skip" optimization when there are no
+         ;; subpattern references: otherwise we may skip thinking
+         ;; we're at the end of the string when in fact we're just
+         ;; inside a forward subpattern reference; we could do better
+         ;; here, but it's probably not worth it
+         (when (null subpattern-refs)
+           (setf (skip str) t))
+         str)
         (t nil)))
 
 (defmethod end-string-aux ((seq seq)
@@ -486,11 +493,11 @@ function called by END-STRING.)"))
                      :case-insensitive-p :void))
     (t
       ;; (ALTERNATION, BACK-REFERENCE, BRANCH, CHAR-CLASS, EVERYTHING,
-      ;; REPETITION, FILTER)
+      ;; REPETITION, FILTER, SUBPATTERN-REFERENCE)
       nil)))
 
 (defun end-string (regex)
-  (declare (special end-string-offset))
+  (declare (special end-string-offset subpattern-refs))
   (declare #.*standard-optimize-settings*)
   "Returns the constant string (if it exists) REGEX ends with wrapped
 into a STR object, otherwise NIL."
@@ -502,7 +509,10 @@ into a STR object, otherwise NIL."
     (declare (special continuep last-str))
     (prog1
       (end-string-aux regex)
-      (when last-str
+      ;; don't set START-OF-END-STRING-P when subpattern references
+      ;; are present: otherwise we may think we're at the end of a
+      ;; string when we're actually in a forward subpattern reference
+      (when (and last-str (null subpattern-refs))
         ;; if we've found something set the START-OF-END-STRING-P of
         ;; the leftmost STR collected accordingly and remember the
         ;; OFFSET of this STR (in a special variable provided by the
@@ -573,6 +583,6 @@ objects."))
     ((or char-class everything)
       (1+ current-min-rest))
     (t
-      ;; zero min-len and no embedded regexes (ANCHOR,
-      ;; BACK-REFERENCE, VOID, and WORD-BOUNDARY)
+      ;; zero min-len and no embedded regexes (ANCHOR, BACK-REFERENCE,
+      ;; SUBPATTERN-REFERENCE, VOID, and WORD-BOUNDARY)
       current-min-rest)))

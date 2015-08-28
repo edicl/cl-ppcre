@@ -99,34 +99,10 @@ NEXT_RE: while (1) {
 
     eval <<"END";
 if (\$x =~ ${pattern}) {
-  push \@subs,\$&;
-  push \@subs,\$1;
-  push \@subs,\$2;
-  push \@subs,\$3;
-  push \@subs,\$4;
-  push \@subs,\$5;
-  push \@subs,\$6;
-  push \@subs,\$7;
-  push \@subs,\$8;
-  push \@subs,\$9;
-  push \@subs,\$10;
-  push \@subs,\$11;
-  push \@subs,\$12;
-  push \@subs,\$13;
-  push \@subs,\$14;
-  push \@subs,\$15;
-  push \@subs,\$16;
+  push \@subs, \$&;
+  push \@subs, map { \$\$_ } (1 .. \$#-)
+      if \$#-;
 }
-
-\$test = sub {
-  my \$times = shift;
-
-  my \$start = time;
-  for (my \$i = 0; \$i < \$times; \$i++) {
-    \$x =~ ${pattern};
-  }
-  return time - \$start;
-};
 END
 
     $counter++;
@@ -142,18 +118,14 @@ END
     if (!@subs) {
       print 'nil nil';
     } else {
-      print string_for_lisp($subs[0]) . ' (';
-      undef $not_first;
-      for ($i = 1; $i <= 16; $i++) {
-        print ' '
-          unless $i == 1;
-        if (defined $subs[$i]) {
-          print string_for_lisp $subs[$i];
-        } else {
-          print 'nil';
-        }
+      print string_for_lisp($subs[0]), ' ';
+      shift @subs;
+      if (@subs) {
+        @lisp_strings = map { defined($_) ? string_for_lisp($_) : 'nil' } @subs;
+        print '(', join(' ', @lisp_strings), ')';
+      } else {
+        print 'nil';
       }
-      print ')';
     }
     print ")\n";
   }

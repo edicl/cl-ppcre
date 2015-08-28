@@ -123,7 +123,11 @@ register."))
 This is the index into *REGS-START* and *REGS-END*.")
    (name :initarg :name
          :reader name
-         :documentation "Name of this register or NIL."))
+         :documentation "Name of this register or NIL.")
+   (inner-register-count :initarg :inner-register-count
+                         :reader inner-register-count
+                         :type fixnum
+                         :documentation "The number of registers nested within this register."))
   (:documentation "REGISTER objects represent register groups."))
 
 (defmethod print-object ((register register) stream)
@@ -254,6 +258,19 @@ defined by the user."))
 (defclass void (regex)
   ()
   (:documentation "VOID objects represent empty regular expressions."))
+
+(defclass subpattern-reference (regex)
+  ((num :initarg :num
+        :accessor num
+        :type fixnum
+        :documentation "The number of the register this subpattern reference
+refers to.")
+   (name :initarg :name
+         :accessor name
+         :documentation "The name of the register this subpattern reference
+refers to or NIL."))
+  (:documentation "SUBPATTERN-REFERENCE objects represent subpattern references
+  for matching self-similar strings like nested parentheses."))
 
 (defmethod initialize-instance :after ((str str) &rest init-args)
   (declare #.*standard-optimize-settings*)

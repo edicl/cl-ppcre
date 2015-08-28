@@ -142,14 +142,17 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
               ;; that this value will _never_ be decremented - this
               ;; is crucial to the scanning process
               (*end-string-pos* (1- *start-pos*))
-              ;; the next five will shadow the variables defined by
+              ;; the next eight will shadow the variables defined by
               ;; DEFPARAMETER; at this point, we don't know if we'll
               ;; actually use them, though
               (*repeat-counters* *repeat-counters*)
               (*last-pos-stores* *last-pos-stores*)
               (*reg-starts* *reg-starts*)
+              (*reg-starts-stacks* *reg-starts-stacks*)
               (*regs-maybe-start* *regs-maybe-start*)
+              (*regs-maybe-start-stacks* *regs-maybe-start-stacks*)
               (*reg-ends* *reg-ends*)
+              (*reg-ends-stacks* *reg-ends-stacks*)
               ;; we might be able to optimize the scanning process by
               ;; (virtually) shifting *START-POS* to the right
               (scan-start-pos *start-pos*)
@@ -158,8 +161,7 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
                                  nil))
               ;; we don't need to try further than MAX-END-POS
               (max-end-pos (- *end-pos* min-len)))
-         (declare (fixnum scan-start-pos)
-                  (function match-fn))
+         (declare (fixnum scan-start-pos) (function match-fn))
          ;; definition of ADVANCE-FN will be inserted here by macrology
          (labels ((advance-fn-definition))
            (declare (inline advance-fn))
@@ -175,10 +177,14 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
              (setq *last-pos-stores* (make-array zero-length-num
                                                  :initial-element nil)))
            (when (plusp reg-num)
-             ;; we have registers in our regular expression
              (setq *reg-starts* (make-array reg-num :initial-element nil)
                    *regs-maybe-start* (make-array reg-num :initial-element nil)
-                   *reg-ends* (make-array reg-num :initial-element nil)))
+                   *reg-ends* (make-array reg-num :initial-element nil))
+             (when subpattern-refs
+               ;; we have subpattern references
+               (setq *reg-starts-stacks* (make-array reg-num :initial-element nil)
+                     *regs-maybe-start-stacks* (make-array reg-num :initial-element nil)
+                     *reg-ends-stacks* (make-array reg-num :initial-element nil))))
            (when end-anchored-p
              ;; the regular expression has a constant end string which
              ;; is anchored at the very end of the target string
@@ -324,9 +330,12 @@ ADVANCE-FN.  This is a utility macro used by CREATE-SCANNER-AUX."
 actually a closure).  Used by CREATE-SCANNER."
   (declare #.*standard-optimize-settings*)
   (declare (fixnum min-len zero-length-num rep-num reg-num))
+  (declare (special subpattern-refs))
   (let ((starts-with-len (if (typep starts-with 'str)
                            (len starts-with)))
-        (starts-with-everything (typep starts-with 'everything)))
+        (starts-with-everything (typep starts-with 'everything))
+        ;; make lexical copy of SUBPATTERN-REFS for closing over
+        (subpattern-refs subpattern-refs))
     (cond
       ;; this COND statement dispatches on the different versions we
       ;; have for ADVANCE-FN and creates different closures for each;

@@ -103,8 +103,9 @@ modify its first argument \(but only if it's a parse tree)."))
     (when flags
       (setq parse-tree (list :group (cons :flags flags) parse-tree))))
   (let ((*syntax-error-string* nil))
-    (multiple-value-bind (regex reg-num starts-with reg-names)
+    (multiple-value-bind (regex reg-num starts-with reg-names subpattern-refs)
         (convert parse-tree)
+      (declare (special subpattern-refs))
       ;; simplify REGEX by flattening nested SEQ and ALTERNATION
       ;; constructs and gathering STR objects
       (let ((regex (gather-strings (flatten regex))))
@@ -132,6 +133,9 @@ modify its first argument \(but only if it's a parse tree)."))
                ;; initialize the counters for CREATE-MATCHER-AUX
                (*rep-num* 0)
                (*zero-length-num* 0)
+               ;; keep track of the matcher functions of registers
+               ;; referenced by subpattern references
+               (register-matchers (cons nil nil))
                ;; create the actual matcher function (which does all the
                ;; work of matching the regular expression) corresponding
                ;; to REGEX and at the same time set the special
@@ -148,7 +152,10 @@ modify its first argument \(but only if it's a parse tree)."))
                                          (create-bmh-matcher
                                           (str starts-with)
                                           (case-insensitive-p starts-with))))))
-          (declare (special end-string-offset end-anchored-p end-string))
+          (declare (special end-string-offset
+                            end-anchored-p
+                            end-string
+                            register-matchers))
           ;; now create the scanner and return it
           (values (create-scanner-aux match-fn
                                       (regex-min-length regex)

@@ -364,3 +364,95 @@ characters if there's a match."
            (regex-replace-all (create-scanner "\\p{even}") "abcd" "+")
            (regex-replace-all (create-scanner "\\p{true}") "abcd" "+")))
    '("+b+d" "a+c+" "++++")))
+
+(equalp (multiple-value-list
+         (scan (create-scanner `(:sequence
+                                 "f"
+                                 (:filter ,(lambda (pos) pos))
+                                 (:named-register "reg" "o")
+                                 (:filter ,(lambda (pos) pos))
+                                 (:subpattern-reference "reg")))
+               "foo"))
+        '(0 3 #(1) #(2)))
+
+;; The next sixteen tests correspond to tests 1787, 1788, 1797-1802, 1809-1812,
+;; 1815-1818 in perltestdata.  We reproduce them here because Perl itself gets
+;; these wrong.
+;;
+;; Cf. Perl RT #121299 and the discussion at
+;; http://www.nntp.perl.org/group/perl.perl5.porters/2014/02/msg212894.html for
+;; an overview of of Perl's handling of these up through version 5.19 at least.
+(equalp (multiple-value-list
+         (scan "(.)(((?5))(\\1))((?4))" "ffff"))
+        '(0 4 #(0 1 1 2 3) #(1 3 2 3 4)))
+
+(let ((*allow-named-registers* t)
+      (regex "(?<regOne>.)(((?&regFive))(?<regFour>\\k<regOne>))(?<regFive>(?&regFour))"))
+  (equalp (multiple-value-list
+           (scan regex "ffff"))
+          '(0 4 #(0 1 1 2 3) #(1 3 2 3 4))))
+
+(equalp (multiple-value-list
+         (scan "(?1)((.)(?3)(\\2))" "ffffff"))
+        '(0 6 #(3 3 5) #(6 4 6)))
+
+(let ((*allow-named-registers* t)
+      (regex "(?&regOne)(?<regOne>(?<regTwo>.)(?&regThree)(?<regThree>\\k<regTwo>))"))
+  (equalp (multiple-value-list
+           (scan regex "ffffff"))
+          '(0 6 #(3 3 5) #(6 4 6))))
+
+(equalp (multiple-value-list
+         (scan "(.)(?2)((.)(?4)(\\1))" "foffoff"))
+        '(0 7 #(0 4 4 6) #(1 7 5 7)))
+
+(let ((*allow-named-registers* t)
+      (regex "(?<regOne>.)(?&regTwo)(?<regTwo>(.)(?&regFour)(?<regFour>\\k<regOne>))"))
+  (equalp (multiple-value-list
+           (scan regex "foffoff"))
+          '(0 7 #(0 4 4 6) #(1 7 5 7))))
+
+(equalp (multiple-value-list
+         (scan "(.)(?2)((\\1)(?4)(\\1))" "fffffff"))
+        '(0 7 #(0 4 4 6) #(1 7 5 7)))
+
+(let ((*allow-named-registers* t)
+      (regex "(?<regOne>.)(?&regTwo)(?<regTwo>(\\k<regOne>)(?&regFour)(?<regFour>\\k<regOne>))"))
+  (equalp (multiple-value-list
+           (scan regex "fffffff"))
+          '(0 7 #(0 4 4 6) #(1 7 5 7))))
+
+(null (scan "^(.\\1?)(?1)$" "aba"))
+
+(let ((*allow-named-registers* t)
+      (regex "^(?<regOne>.\\k<regOne>?)(?&regOne)$"))
+  (null (scan regex "aba")))
+
+(equalp (multiple-value-list
+         (scan "^(.\\2?)(.)(?1)$" "abcb"))
+        '(0 4 #(0 1) #(1 2)))
+
+;; Cf. #17
+;; (let ((*allow-named-registers* t)
+;;       (regex "^(?<regOne>.\\k<regTwo>?)(?<regTwo>.)(?&regOne)$"))
+;;   (equalp (multiple-value-list
+;;            (scan regex "abcb"))
+;;           '(0 4 #(0 1) #(1 2))))
+
+(equalp (multiple-value-list
+         (scan "^(\\3(?2)\\3)?((.))(?1)$" "aaba"))
+        '(0 4 #(nil 0 0) #(nil 1 1)))
+
+;; Cf. #17
+;; (let ((*allow-named-registers* t)
+;;       (regex "^(?<regOne>\\k<regThree>(?&regTwo)\\k<regThree>)?(?<regTwo>(?<regThree>.))(?&regOne)$"))
+;;   (equalp (multiple-value-list
+;;            (scan regex "aaba"))
+;;           '(0 4 #(nil 0 0) #(nil 1 1))))
+
+(null (scan "^(a|\\3(?1)\\2|(?2))((b|c)(?4)?)(?1)(d(?1))$" "abbcdcabbda"))
+
+;; Cf. #17
+;; (let ((*allow-named-registers* t)
+;;       (regex "^(?<regOne>a|\\k<regThree>(?&regOne)\\k<regTwo>|(?&regTwo))(?<regTwo>(?<regThree>b|c)(?&regFour)?)(?&regOne)(?<regFour>d(?&regOne))$"))
+;;   (null (scan regex "abbcdcabbda")))

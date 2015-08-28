@@ -146,7 +146,8 @@ which are not of type STR."))
   (make-instance 'register
                  :regex (copy-regex (regex register))
                  :num (num register)
-                 :name (name register)))
+                 :name (name register)
+                 :inner-register-count (inner-register-count register)))
 
 (defmethod copy-regex ((standalone standalone))
   (declare #.*standard-optimize-settings*)
@@ -158,6 +159,12 @@ which are not of type STR."))
   (make-instance 'back-reference
                  :num (num back-reference)
                  :case-insensitive-p (case-insensitive-p back-reference)))
+
+(defmethod copy-regex ((subpattern-reference subpattern-reference))
+  (declare #.*standard-optimize-settings*)
+  (make-instance 'subpattern-reference
+                 :num (num subpattern-reference)
+                 :name (name subpattern-reference)))
 
 (defmethod copy-regex ((char-class char-class))
   (declare #.*standard-optimize-settings*)
@@ -312,8 +319,9 @@ to this object, otherwise NIL.  So, \"(.){1}\" would return true
 
 (defmethod everythingp ((regex regex))
   (declare #.*standard-optimize-settings*)
-  ;; the general case for ANCHOR, BACK-REFERENCE, BRANCH, CHAR-CLASS,
-  ;; LOOKAHEAD, LOOKBEHIND, STR, VOID, FILTER, and WORD-BOUNDARY
+  ;; the general case for ANCHOR, BACK-REFERENCE,
+  ;; SUBPATTERN-REFERENCE, BRANCH, CHAR-CLASS, LOOKAHEAD, LOOKBEHIND,
+  ;; STR, VOID, FILTER, and WORD-BOUNDARY
   nil)
 
 (defgeneric regex-length (regex)
@@ -373,6 +381,13 @@ to this object, otherwise NIL.  So, \"(.){1}\" would return true
   (declare #.*standard-optimize-settings*)
   ;; with enough effort we could possibly do better here, but
   ;; currently we just give up and return NIL
+  nil)
+
+(defmethod regex-length ((subpattern-reference subpattern-reference))
+  (declare #.*standard-optimize-settings*)
+  ;; as with back references, this is possible for certain use cases;
+  ;; but it's impossible for recursive patterns, which are the main
+  ;; reason for subpattern references to begin with
   nil)
     
 (defmethod regex-length ((char-class char-class))
@@ -456,7 +471,7 @@ to this object, otherwise NIL.  So, \"(.){1}\" would return true
 (defmethod regex-min-length ((regex regex))
   (declare #.*standard-optimize-settings*)
   ;; the general case for ANCHOR, BACK-REFERENCE, LOOKAHEAD,
-  ;; LOOKBEHIND, VOID, and WORD-BOUNDARY
+  ;; LOOKBEHIND, SUBPATTERN-REFERENCE, VOID, and WORD-BOUNDARY
   0)
 
 (defgeneric compute-offsets (regex start-pos)
@@ -539,6 +554,14 @@ slots of STR objects further down the tree."))
   ;; with enough effort we could possibly do better here, but
   ;; currently we just give up and return NIL
   (declare (ignore start-pos))
+  nil)
+
+(defmethod compute-offsets ((subpattern-reference subpattern-reference) start-pos)
+  (declare #.*standard-optimize-settings*)
+  (declare (ignore start-pos))
+  ;; this is doable in limited cases but impossible for the most
+  ;; useful application of subpattern references, namely, recursive
+  ;; matching
   nil)
 
 (defmethod compute-offsets ((filter filter) start-pos)
