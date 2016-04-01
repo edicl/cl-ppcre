@@ -277,11 +277,13 @@ internal purposes."))
                (values (car match) (cdr match) reg-starts reg-ends))))))
 
 #-:cormanlisp
-(define-compiler-macro scan (&whole form &environment env regex target-string &rest rest)
+(define-compiler-macro scan (&whole form regex target-string &rest rest)
   "Make sure that constant forms are compiled into scanners at compile time."
-  (cond ((constantp regex env)
-          `(scan (load-time-value (create-scanner ,regex))
-                 ,target-string ,@rest))
+  ;; Don't pass &environment to CONSTANTP, it may not be digestable by
+  ;; LOAD-TIME-VALUE, e.g., MACROLETs.
+  (cond ((constantp regex)
+         `(scan (load-time-value (create-scanner ,regex))
+                ,target-string ,@rest))
         (t form)))
 
 (defun scan-to-strings (regex target-string &key (start 0)
@@ -311,11 +313,11 @@ share structure with TARGET-STRING."
 
 #-:cormanlisp
 (define-compiler-macro scan-to-strings
-    (&whole form &environment env regex target-string &rest rest)
+    (&whole form regex target-string &rest rest)
   "Make sure that constant forms are compiled into scanners at compile time."
-  (cond ((constantp regex env)
-          `(scan-to-strings (load-time-value (create-scanner ,regex))
-                            ,target-string ,@rest))
+  (cond ((constantp regex)
+         `(scan-to-strings (load-time-value (create-scanner ,regex))
+                           ,target-string ,@rest))
         (t form)))
 
 (defmacro register-groups-bind (var-list (regex target-string
@@ -524,12 +526,12 @@ the scan is continued one position behind this match."
       (push match-end result-list))))
 
 #-:cormanlisp
-(define-compiler-macro all-matches (&whole form &environment env regex &rest rest)
+(define-compiler-macro all-matches (&whole form regex &rest rest)
    "Make sure that constant forms are compiled into scanners at
 compile time."
-   (cond ((constantp regex env)
-           `(all-matches (load-time-value (create-scanner ,regex))
-                         ,@rest))
+   (cond ((constantp regex)
+          `(all-matches (load-time-value (create-scanner ,regex))
+                        ,@rest))
          (t form)))
 
 (defun all-matches-as-strings (regex target-string
@@ -547,13 +549,13 @@ share structure with TARGET-STRING."
       (push match result-list))))
 
 #-:cormanlisp
-(define-compiler-macro all-matches-as-strings (&whole form &environment env regex &rest rest)
+(define-compiler-macro all-matches-as-strings (&whole form regex &rest rest)
    "Make sure that constant forms are compiled into scanners at
 compile time."
-   (cond ((constantp regex env)
-           `(all-matches-as-strings
-             (load-time-value (create-scanner ,regex))
-             ,@rest))
+   (cond ((constantp regex)
+          `(all-matches-as-strings
+            (load-time-value (create-scanner ,regex))
+            ,@rest))
          (t form)))
 
 (defun split (regex target-string
@@ -628,11 +630,11 @@ structure with TARGET-STRING."
                      nil)))))
 
 #-:cormanlisp
-(define-compiler-macro split (&whole form &environment env regex target-string &rest rest)
+(define-compiler-macro split (&whole form regex target-string &rest rest)
   "Make sure that constant forms are compiled into scanners at compile time."
-  (cond ((constantp regex env)
-          `(split (load-time-value (create-scanner ,regex))
-                  ,target-string ,@rest))
+  (cond ((constantp regex)
+         `(split (load-time-value (create-scanner ,regex))
+                 ,target-string ,@rest))
         (t form)))
 
 (defun string-case-modifier (str from to start end)
@@ -996,11 +998,11 @@ match.
 
 #-:cormanlisp
 (define-compiler-macro regex-replace
-    (&whole form &environment env regex target-string replacement &rest rest)
+    (&whole form regex target-string replacement &rest rest)
   "Make sure that constant forms are compiled into scanners at compile time."
-  (cond ((constantp regex env)
-          `(regex-replace (load-time-value (create-scanner ,regex))
-                          ,target-string ,replacement ,@rest))
+  (cond ((constantp regex)
+         `(regex-replace (load-time-value (create-scanner ,regex))
+                         ,target-string ,replacement ,@rest))
         (t form)))
 
 (defun regex-replace-all (regex target-string replacement &key
@@ -1060,11 +1062,11 @@ match.
 
 #-:cormanlisp
 (define-compiler-macro regex-replace-all
-    (&whole form &environment env regex target-string replacement &rest rest)
+    (&whole form regex target-string replacement &rest rest)
   "Make sure that constant forms are compiled into scanners at compile time."
-  (cond ((constantp regex env)
-          `(regex-replace-all (load-time-value (create-scanner ,regex))
-                              ,target-string ,replacement ,@rest))
+  (cond ((constantp regex)
+         `(regex-replace-all (load-time-value (create-scanner ,regex))
+                             ,target-string ,replacement ,@rest))
         (t form)))
 
 #-:cormanlisp

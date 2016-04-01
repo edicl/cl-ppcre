@@ -364,3 +364,11 @@ characters if there's a match."
            (regex-replace-all (create-scanner "\\p{even}") "abcd" "+")
            (regex-replace-all (create-scanner "\\p{true}") "abcd" "+")))
    '("+b+d" "a+c+" "++++")))
+
+(macrolet ((z () "(a)*b"))
+  (equalp (multiple-value-list (scan (z) "xaaabd"))
+          (list 1 5 #(3) #(4))))
+
+(macrolet ((z () "[^b]*b"))
+  (equalp (multiple-value-list (scan-to-strings (z)  "aaabd"))
+          (list "aaab" #())))
