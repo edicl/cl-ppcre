@@ -36,11 +36,9 @@
 (defvar *standard-optimize-settings*
   '(optimize
     speed
-    (safety 0)
     (space 0)
     (debug 1)
-    (compilation-speed 0)
-    #+:lispworks (hcl:fixnum-safety 0))
+    (compilation-speed 0))
   "The standard optimize settings used by most declaration expressions.")
 
 (defvar *special-optimize-settings*
