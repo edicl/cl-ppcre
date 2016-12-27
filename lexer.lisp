@@ -672,37 +672,39 @@ closing #\> will also be consumed."
                           ;; might be a look-behind assertion or a named group, so
                           ;; check next character
                           (let ((next-char (next-char-non-extended lexer)))
-                            (if (alpha-char-p next-char)
-                                (progn
-                                  ;; we have encountered a named group
-                                  ;; are we supporting register naming?
-                                  (unless *allow-named-registers*
-                                    (signal-syntax-error* (1- (lexer-pos lexer))
-                                                          "Character '~A' may not follow '(?<'."
-                                                          next-char))
-                                  ;; put the letter back
-                                  (decf (lexer-pos lexer))
-                                  ;; named group
-                                  :open-paren-less-letter)
-                                (case next-char
-                                  ((#\=)
-                                   ;; positive look-behind
-                                   :open-paren-less-equal)
-                                  ((#\!)
-                                   ;; negative look-behind
-                                   :open-paren-less-exclamation)
-                                  ((#\))
-                                   ;; Perl allows "(?<)" and treats
-                                   ;; it like a null string
-                                   :void)
-                                  ((nil)
-                                   ;; syntax error
-                                   (signal-syntax-error "End of string following '(?<'."))
+                            (cond ((and next-char
+                                        (alpha-char-p next-char))
+                                   ;; we have encountered a named group
+                                   ;; are we supporting register naming?
+                                   (unless *allow-named-registers*
+                                     (signal-syntax-error* (1- (lexer-pos lexer))
+                                                           "Character '~A' may not follow '(?<' (because ~a = NIL)"
+                                                           next-char
+                                                           '*allow-named-registers*))
+                                   ;; put the letter back
+                                   (decf (lexer-pos lexer))
+                                   ;; named group
+                                   :open-paren-less-letter)
                                   (t
-                                   ;; also syntax error
-                                   (signal-syntax-error* (1- (lexer-pos lexer))
-                                                         "Character '~A' may not follow '(?<'."
-                                                         next-char ))))))
+                                   (case next-char
+                                     ((#\=)
+                                      ;; positive look-behind
+                                      :open-paren-less-equal)
+                                     ((#\!)
+                                      ;; negative look-behind
+                                      :open-paren-less-exclamation)
+                                     ((#\))
+                                      ;; Perl allows "(?<)" and treats
+                                      ;; it like a null string
+                                      :void)
+                                     ((nil)
+                                      ;; syntax error
+                                      (signal-syntax-error "End of string following '(?<'."))
+                                     (t
+                                      ;; also syntax error
+                                      (signal-syntax-error* (1- (lexer-pos lexer))
+                                                            "Character '~A' may not follow '(?<'."
+                                                            next-char )))))))
                          (otherwise
                           (signal-syntax-error* (1- (lexer-pos lexer))
                                                 "Character '~A' may not follow '(?'."
