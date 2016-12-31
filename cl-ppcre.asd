@@ -29,14 +29,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-user)
-
-(defpackage :cl-ppcre-asd
-  (:use :cl :asdf))
-
-(in-package :cl-ppcre-asd)
-
-(defsystem :cl-ppcre
+(defsystem "cl-ppcre"
   :version "2.0.11"
   :description "Perl-compatible regular expression library"
   :author "Dr. Edi Weitz"
@@ -67,19 +60,17 @@
                (:file "repetition-closures")
                #-:use-acl-regexp2-engine
                (:file "scanner")
-               (:file "api")))
+               (:file "api"))
+  :in-order-to ((test-op (test-op "cl-ppcre/test"))))
 
-(defsystem :cl-ppcre-test
+(defsystem "cl-ppcre/test"
   :description "Perl-compatible regular expression library tests"
   :author "Dr. Edi Weitz"
   :license "BSD"
-  :depends-on (:cl-ppcre :flexi-streams)
+  :depends-on ("cl-ppcre" "flexi-streams")
   :components ((:module "test"
                         :serial t
                         :components ((:file "packages")
                                      (:file "tests")
-                                     (:file "perl-tests")))))
-
-(defmethod perform ((o test-op) (c (eql (find-system :cl-ppcre))))
-  (operate 'load-op :cl-ppcre-test)
-  (funcall (intern (symbol-name :run-all-tests) (find-package :cl-ppcre-test))))
+                                     (:file "perl-tests"))))
+  :perform (test-op (o c) (symbol-call :cl-ppcre-test :run-all-tests)))
