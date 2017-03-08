@@ -142,6 +142,9 @@ frob")
 (equal (split ":" "a:b:c:d:e:f:g::" :limit 1000)
        '("a" "b" "c" "d" "e" "f" "g" "" ""))
 
+(equal (split ":" "a:b:c:d:e:f:g::" :limit -1)
+       '("a" "b" "c" "d" "e" "f" "g" "" ""))
+
 (equal (multiple-value-list (regex-replace "fo+" "foo bar" "frob"))
        (list "frob bar" t))
 
