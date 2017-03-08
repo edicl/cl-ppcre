@@ -594,6 +594,11 @@ structure with TARGET-STRING."
         ;; push start of match on list unless this would be an empty
         ;; string adjacent to the last element pushed onto the list
         (when (and limit
+                   ;; perlfunc(1) says
+                   ;;   If LIMIT is negative, it is treated as if
+                   ;;   it were instead arbitrarily large;
+                   ;;   as many fields as possible are produced.
+                   (plusp limit)
                    (>= (incf counter) limit))
           (return))
         (push match-start pos-list)
