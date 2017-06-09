@@ -241,7 +241,7 @@ handled elsewhere."
         ;; \cx means control-x in Perl
         (let ((next-char (next-char-non-extended lexer)))
           (unless next-char
-            (signal-syntax-error* (lexer-pos lexer) "Character missing after '\\c' at position ~A."))
+            (signal-syntax-error* (lexer-pos lexer) "Character missing after '\\c'"))
           (code-char (logxor #x40 (char-code (char-upcase next-char))))))
       ((#\x)
         ;; \x should be followed by a hexadecimal char code,
