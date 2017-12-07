@@ -514,6 +514,25 @@ declarations."
                                            nil))))
             ,@body))))))
 
+(defun count-matches (regex target-string
+                      &key (start 0)
+                           (end (length target-string)))
+  "Returns a count of all substrings of TARGET-STRING which match REGEX."
+  (declare #.*standard-optimize-settings*)
+  (let ((count 0))
+    (do-matches (s e regex target-string count
+                 :start start :end end)
+      (incf count))))
+
+#-:cormanlisp
+(define-compiler-macro count-matches (&whole form regex &rest rest)
+  "Make sure that constant forms are compiled into scanners at
+compile time."
+  (cond ((constantp regex)
+         `(count-matches (load-time-value (create-scanner ,regex))
+                         ,@rest))
+        (t form)))
+
 (defun all-matches (regex target-string
                           &key (start 0)
                                (end (length target-string)))

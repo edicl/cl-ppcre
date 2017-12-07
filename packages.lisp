@@ -45,6 +45,7 @@
            :do-scans
            :do-matches
            :do-matches-as-strings
+           :count-matches
            :all-matches
            :all-matches-as-strings
            :split
