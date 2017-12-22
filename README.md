@@ -26,5 +26,5 @@ CL-PPCRE has been used successfully in various applications like
 [Eboy](http://www.eboy.com/), or
 [The Regex Coach](http://weitz.de/regex-coach/).
 
-Further documentation can be found in `doc/index.html`, or on
-[the cl-ppcre homepage](http://weitz.de/cl-ppcre/).
+Further documentation can be found in `docs/index.html`, or on
+[the cl-ppcre homepage](https://edicl.github.io/cl-ppcre/).
