@@ -1,5 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<html> 
+<html>
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
@@ -9,19 +8,20 @@
   h3, h4 { text-decoration: underline; }
   a { text-decoration: none; padding: 1px 2px 1px 2px; }
   a:visited { text-decoration: none; padding: 1px 2px 1px 2px; }
-  a:hover { text-decoration: none; padding: 1px 1px 1px 1px; border: 1px solid #000000; } 
+  a:hover { text-decoration: none; padding: 1px 1px 1px 1px; border: 1px solid #000000; }
   a:focus { text-decoration: none; padding: 1px 2px 1px 2px; border: none; }
   a.none { text-decoration: none; padding: 0; }
-  a.none:visited { text-decoration: none; padding: 0; } 
-  a.none:hover { text-decoration: none; border: none; padding: 0; } 
-  a.none:focus { text-decoration: none; border: none; padding: 0; } 
-  a.noborder { text-decoration: none; padding: 0; } 
-  a.noborder:visited { text-decoration: none; padding: 0; } 
-  a.noborder:hover { text-decoration: none; border: none; padding: 0; } 
-  a.noborder:focus { text-decoration: none; border: none; padding: 0; }  
+  a.none:visited { text-decoration: none; padding: 0; }
+  a.none:hover { text-decoration: none; border: none; padding: 0; }
+  a.none:focus { text-decoration: none; border: none; padding: 0; }
+  a.noborder { text-decoration: none; padding: 0; }
+  a.noborder:visited { text-decoration: none; padding: 0; }
+  a.noborder:hover { text-decoration: none; border: none; padding: 0; }
+  a.noborder:focus { text-decoration: none; border: none; padding: 0; }
   pre.none { padding:5px; background-color:#ffffff }
   </style>
   <meta name="description" content="Fast and portable perl-compatible regular expressions for Common Lisp.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 </head>
 
 <body bgcolor=white>
@@ -56,14 +56,14 @@ license</b></a> so you can basically do with it whatever you want.
 </ul>
 
 CL-PPCRE has been used successfully in various applications like <a
-href="http://nostoc.stanford.edu/Docs/">BioBike</a>, 
+href="http://nostoc.stanford.edu/Docs/">BioBike</a>,
 <a href="http://clutu.com/">clutu</a>,
 <a
 href="http://www.hpc.unm.edu/~download/LoGS/">LoGS</a>, <a href="http://cafespot.net/">CafeSpot</a>, <a href="http://www.eboy.com/">Eboy</a>, or <a
 href="http://weitz.de/regex-coach/">The Regex Coach</a>.
 
 <p>
-<font color=red>Download shortcut:</font> <a href="http://weitz.de/files/cl-ppcre.tar.gz">http://weitz.de/files/cl-ppcre.tar.gz</a>.
+<font color=red><a href="https://github.com/edicl/cl-ppcre/archive/master.zip">Download current version</a></font> or visit the <a href="https://github.com/edicl/cl-ppcre/">project on Github</a>.
 
 </blockquote>
 
@@ -150,14 +150,14 @@ href="http://weitz.de/regex-coach/">The Regex Coach</a>.
 <br>&nbsp;<br><h3><a name="install" class=none>Download and installation</a></h3>
 
 CL-PPCRE together with this documentation can be downloaded from <a
-href="http://weitz.de/files/cl-ppcre.tar.gz">http://weitz.de/files/cl-ppcre.tar.gz</a>. The
+href="https://github.com/edicl/cl-ppcre/archive/master.zip">Github</a>. The
 current version is 2.0.11.
 <p>
 CL-PPCRE comes with a system definition
 for <a href="http://www.cliki.net/asdf">ASDF</a> and you compile and
 load it in the usual way.  There are no dependencies (except that the
 <a href="#test">test suite</a> which is not needed for normal operation depends
-on <a href="http://weitz.de/flexi-streams/">FLEXI-STREAMS</a>).
+on <a href="https://github.com/edicl/flexi-streams/">FLEXI-STREAMS</a>).
 <p>
   The preferred way to install CL-PPCRE is
 through <a href="http://www.quicklisp.org/" target="_new">Quicklisp</a>:
@@ -170,7 +170,7 @@ through <a href="http://www.quicklisp.org/" target="_new">Quicklisp</a>:
 </pre>
 <p>
 The current development version of CL-PPCRE can be found
-at <a href="https://github.com/edicl/cl-ppcre">https://github.com/edicl/cl-ppcre</a>. If you want to send patches, please fork the github repository and send pull requests. 
+at <a href="https://github.com/edicl/cl-ppcre">https://github.com/edicl/cl-ppcre</a>. If you want to send patches, please fork the github repository and send pull requests.
 <p>
 
 <br>&nbsp;<br><h3><a name="support" class=none>Support</a></h3>
@@ -215,7 +215,7 @@ they obviously don't make sense in Lisp.
 <li><code>\N{name}</code> (named characters), <code>\x{263a}</code>
 (wide hex characters), <code>\l</code>, <code>\u</code>,
 <code>\L</code>, and <code>\U</code>
-because they're actually not part of Perl's <em>regex</em> syntax - but see <a href="http://weitz.de/cl-interpol/">CL-INTERPOL</a>.
+because they're actually not part of Perl's <em>regex</em> syntax - but see <a href="https://github.com/edicl/cl-interpol/">CL-INTERPOL</a>.
 
 <li><code>\X</code> (extended Unicode), and <code>\C</code> (single
 character). But you can of course use all characters
@@ -728,10 +728,10 @@ match. If <code><i>sharedp</i></code> is true, the substrings may share structur
 * (do-register-groups (first second third fourth)
       (&quot;((a)|(b)|(c))&quot; &quot;abababc&quot; nil :start 2 :sharedp t)
     (print (list first second third fourth)))
-(&quot;a&quot; &quot;a&quot; NIL NIL) 
-(&quot;b&quot; NIL &quot;b&quot; NIL) 
-(&quot;a&quot; &quot;a&quot; NIL NIL) 
-(&quot;b&quot; NIL &quot;b&quot; NIL) 
+(&quot;a&quot; &quot;a&quot; NIL NIL)
+(&quot;b&quot; NIL &quot;b&quot; NIL)
+(&quot;a&quot; &quot;a&quot; NIL NIL)
+(&quot;b&quot; NIL &quot;b&quot; NIL)
 (&quot;c&quot; NIL NIL &quot;c&quot;)
 NIL
 
@@ -1628,7 +1628,7 @@ convert a parse tree).
 <br>&nbsp;<br><h3><a name="unicode" class=none>Unicode properties</a></h3>
 
 You can add support for Unicode properties to CL-PPCRE by loading
-the CL-PPCRE-UNICODE system (which depends on <a href="http://weitz.de/cl-unicode/">CL-UNICODE</a>):
+the CL-PPCRE-UNICODE system (which depends on <a href="https://github.com/edicl/cl-unicode/">CL-UNICODE</a>):
 <pre>
 (asdf:oos 'asdf:load-op :cl-ppcre-unicode)
 </pre>
@@ -1636,7 +1636,7 @@ This will automatically
 install <a href="#unicode-property-resolver"><code>UNICODE-PROPERTY-RESOLVER</code></a>
 as your <a href="#*property-resolver*">property resolver</a>.
 <p>
-See the <a href="http://weitz.de/cl-unicode/">CL-UNICODE</a>
+See the <a href="https://github.com/edicl/cl-unicode/">CL-UNICODE</a>
 documentation for information about the supported Unicode properties
 and how they are named.
 
@@ -1644,7 +1644,7 @@ and how they are named.
 <blockquote><br>
 A <a href="#*property-resolver*">property
 resolver</a> which understands Unicode properties using
-<a href="http://weitz.de/cl-unicode/">CL-UNICODE</a>'s <a href="http://weitz.de/cl-unicode/#property-test"><code>PROPERTY-TEST</code></a>
+<a href="https://github.com/edicl/cl-unicode/">CL-UNICODE</a>'s <code>PROPERTY-TEST</code>
 function.  This resolver is automatically installed
 in <a href="#*property-resolver*"><code>*PROPERTY-RESOLVER*</code></a>
 when the <a href="#unicode">CL-PPCRE-UNICODE</a> system is loaded.
@@ -1881,10 +1881,10 @@ report it.
 <h4><a name="uprops" class=none>Different names for Unicode properties</a></h4>
 
 The names of <a href="#unicode">Unicode properties</a> are derived
-from <a href="http://weitz.de/cl-unicode/">CL-UNICODE</a> and might
+from <a href="https://github.com/edicl/cl-unicode/">CL-UNICODE</a> and might
 differ slightly from the names in Perl.  Most of them should be
 identical, though.
-Also, <a href="http://weitz.de/cl-unicode/">CL-UNICODE</a> is based on
+Also, <a href="https://github.com/edicl/cl-unicode/">CL-UNICODE</a> is based on
 Unicode&nbsp;5.1 while your installed Perl version might be not.
 
 <h4><a name="mac" class=none><code>&quot;\r&quot;</code> doesn't work with MCL</a></h4>
@@ -1940,7 +1940,7 @@ Bummer!
 <p>
 What gives? <code>&quot;\\Q...\\E&quot;</code> in CL-PPCRE should only
 be used in literal strings. If you want to quote arbitrary strings,
-try <a href="http://weitz.de/cl-interpol/">CL-INTERPOL</a> or use <a
+try <a href="https://github.com/edicl/cl-interpol/">CL-INTERPOL</a> or use <a
 href="#quote-meta-chars"><code>QUOTE-META-CHARS</code></a>:
 <pre>
 * (let ((a &quot;\\E*&quot;))
@@ -1983,7 +1983,7 @@ $a =~ /$a/;
 
 which should explain why it doesn't match.
 <p>
-Still confused? You might want to try <a href="http://weitz.de/cl-interpol/">CL-INTERPOL</a>.
+Still confused? You might want to try <a href="https://github.com/edicl/cl-interpol/">CL-INTERPOL</a>.
 
 <br>&nbsp;<br><h3><a class=none name="allegro">AllegroCL compatibility mode</a></h3>
 
@@ -2031,7 +2031,7 @@ To use the AllegroCL compatibility mode you have to
 
 <br>&nbsp;<br><h3><a class=none name="blabla">Hints, comments, performance considerations</a></h3>
 
-Here are, in no particular order, a couple of things about CL-PPCRE 
+Here are, in no particular order, a couple of things about CL-PPCRE
 and regular expressions in general that you might or might not want to
 read.
 
@@ -2184,10 +2184,9 @@ as the output of Perl's <code>use re &quot;debug&quot;</code> pragma
 have been very helpful in optimizing the scanners created by CL-PPCRE.
 
 <p>The list of people who participated in this project in one way or
-the other has grown too long to maintain it here.  See
-the <a href="http://weitz.de/cl-ppcre/CHANGELOG">ChangeLog</a> for all
-the people who helped with patches, bug reports, or in other ways.
-Thanks to all of them!
+the other has grown too long to maintain it here.  See the ChangeLog
+for all the people who helped with patches, bug reports, or in other
+ways.  Thanks to all of them!
 
 <p>
 Thanks to the guys at
@@ -2200,7 +2199,7 @@ OpenMCL.
 
 <p>
 $Header: /usr/local/cvsrep/cl-ppcre/doc/index.html,v 1.200 2009/10/28 07:36:31 edi Exp $
-<p><a href="http://weitz.de/index.html">BACK TO MY HOMEPAGE</a>
+<p><a href="https://edicl.github.io">BACK TO THE HOMEPAGE</a>
 
 </body>
 </html>
