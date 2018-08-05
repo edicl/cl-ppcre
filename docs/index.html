@@ -103,6 +103,7 @@ href="http://weitz.de/regex-coach/">The Regex Coach</a>.
       <li><a href="#*optimize-char-classes*"><code>*optimize-char-classes*</code></a>
       <li><a href="#*allow-quoting*"><code>*allow-quoting*</code></a>
       <li><a href="#*allow-named-registers*"><code>*allow-named-registers*</code></a>
+      <li><a href="#*look-ahead-for-suffix*"><code>*look-ahead-for-suffix*</code></a>
     </ol>
     <li><a href="#misc">Miscellaneous</a>
     <ol>
@@ -1390,6 +1391,31 @@ lexical environment</a> at load time or at compile time so be careful
 to which value <code>*ALLOW-NAMED-REGISTERS*</code> is bound at that
 time.</blockquote>
 </blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*look-ahead-for-suffix*"><b>*look-ahead-for-suffix*</b></a>
+
+<blockquote><br>Given a regular expression which has a constant
+suffix, such as <code>(a|b)+x</code> whose constant suffix
+is <code>x</code>, the scanners created
+by <a href="#create-scanner"><code>CREATE-SCANNER</code></a> will
+attempt to optimize by searching for the position of the suffix prior
+to performing the full match. In many cases, this is an optimization,
+especially when backtracking is involved on small strings. However, in
+other cases, such as incremental parsing of a very large string, this
+can cause a degradation in performance, because the entire string is
+searched for the suffix before an otherwise easy prefix match failure
+can occur. The variable <code>*LOOK-AHEAD-FOR-SUFFIX*</code>, whose
+default is <code>T</code>, can be used to selectively control this
+behavior.
+<p>
+Note: Due to the nature of <a href="http://www.lispworks.com/documentation/HyperSpec/Body/s_ld_tim.htm"><code>LOAD-TIME-VALUE</code></a> and the <a
+href="#compiler-macro">compiler macro for <code>SCAN</code> and other functions</a>, some
+scanners might be created in a <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_n.htm#null_lexical_environment">null
+lexical environment</a> at load time or at compile time so be careful
+to which value <code>*LOOK-AHEAD-FOR-SUFFIX*</code> is bound at that
+time.</blockquote>
 
 <h4><a name="misc" class=none>Miscellaneous</a></h4>
 

@@ -59,6 +59,7 @@
            :*allow-named-registers*
            :*optimize-char-classes*
            :*property-resolver*
+           :*look-ahead-for-suffix*
            :ppcre-error
            :ppcre-invocation-error
            :ppcre-syntax-error

@@ -31,6 +31,10 @@
 
 (in-package :cl-ppcre)
 
+(defvar *look-ahead-for-suffix* t
+  "Controls whether scanners will optimistically look ahead for a
+  constant suffix of a regular expression, if there is one.")
+
 (defgeneric create-scanner (regex &key case-insensitive-mode
                                        multi-line-mode
                                        single-line-mode
@@ -120,7 +124,8 @@ modify its first argument \(but only if it's a parse tree)."))
                (end-string (end-string regex))
                ;; if we found a non-zero-length end-string we create an
                ;; efficient search function for it
-               (end-string-test (and end-string
+               (end-string-test (and *look-ahead-for-suffix*
+                                     end-string
                                      (plusp (len end-string))
                                      (if (= 1 (len end-string))
                                        (create-char-searcher
