@@ -54,7 +54,17 @@ their associated character classes."
     ((#\s)
       :whitespace-char-class)
     ((#\S)
-      :non-whitespace-char-class)))
+      :non-whitespace-char-class)
+    ((#\h)
+      :horizontal-whitespace-char-class)
+    ((#\H)
+      :non-horizontal-whitespace-char-class)
+    ((#\v)
+      :vertical-whitespace-char-class)
+    ((#\V)
+      :non-vertical-whitespace-char-class)
+    ((#\N)
+      :non-newline-char-class)))
 
 (declaim (inline make-lexer-internal))
 (defstruct (lexer (:constructor make-lexer-internal))
@@ -321,7 +331,7 @@ we're inside a range or not."
                  ;; we've seen a backslash
                  (let ((next-char (next-char-non-extended lexer)))
                    (case next-char
-                     ((#\d #\D #\w #\W #\s #\S)
+                     ((#\d #\D #\w #\W #\s #\S #\h #\H #\v #\V #\N)
                       ;; a special character class
                       (push (map-char-to-special-char-class next-char) list)
                       ;; if the last character was a hyphen
@@ -583,7 +593,7 @@ closing #\> will also be consumed."
                          (t
                           ;; false alarm, just unescape \k
                           #\k)))
-                  ((#\d #\D #\w #\W #\s #\S)
+                  ((#\d #\D #\w #\W #\s #\S #\v #\V #\h #\H #\N)
                    ;; these will be treated like character classes
                    (map-char-to-special-char-class next-char))
                   ((#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
