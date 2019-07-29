@@ -5,6 +5,14 @@
 ;;; in the CL-PPCRE-TEST package; all forms are expected to return a
 ;;; true value on success when EVALuated
 
+(equalp (parse-string "\\s") ':whitespace-char-class)
+(equalp (parse-string "\\S") ':non-whitespace-char-class)
+(equalp (parse-string "\\v") ':vertical-whitespace-char-class)
+(equalp (parse-string "\\S") ':non-vertical-whitespace-char-class)
+(equalp (parse-string "\\h") ':horizontal-whitespace-char-class)
+(equalp (parse-string "\\H") ':non-horizontal-whitespace-char-class)
+(equalp (parse-string "\\N") ':non-newline-char-class)
+
 (equalp (multiple-value-list (scan "(a)*b" "xaaabd"))
         (list 1 5 #(3) #(4)))
 
@@ -104,6 +112,19 @@
 
 (equal (all-matches-as-strings "\\w*" "foo bar baz")
        (list "foo" "" "bar" "" "baz" ""))
+
+(equal (all-matches-as-strings "\\h+" (format nil "x y  z~Cw~%v" #\Tab))
+       (list " " "  " (string #\Tab)))
+
+(equal (all-matches-as-strings "\\H+" (format nil "x y  z~Cw~%v" #\Tab))
+       (list "x" "y" "z" "w
+v"))
+
+(equal (all-matches-as-strings "\\V+" (format nil "x x~%y  z~Cz~%~%w~%v" #\Tab))
+       ("x x" "y  z	z" "w" "v"))
+
+(equal (all-matches-as-strings "\\N" (format nil "X~%Y"))
+       (list "X" "Y"))
 
 (equal (split "\\s+" "foo   bar baz
 frob")

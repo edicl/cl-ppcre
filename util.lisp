@@ -122,8 +122,44 @@ Perl's [\\w]."
   (or (alphanumericp chr)
       (char= chr #\_)))
 
+;;; Various kinds of whitespace characters as defined by Perl
+;;; according to their ASCII or Unicode code points.
+;;;
+;;; Documentation: https://perldoc.perl.org/perlrecharclass.html
+(defconstant +ascii-horizontal-whitespace-char-string+
+  (map 'string #'code-char '(#x0009 #x0020 #x00a0)))
+
+#+asdf-unicode
+(defconstant +unicode-horizontal-whitespace-char-string+
+  (map 'string #'code-char '(#x1680 #x2000 #x2001 #x2002 #x2003
+                             #x2004 #x2005 #x2006 #x2007 #x2008
+                             #x2009 #x200a #x202f #x205f #x3000)))
+
+(defconstant +horizontal-whitespace-char-string+
+  (concatenate 'string
+               +ascii-horizontal-whitespace-char-string+
+               #+asdf-unicode +unicode-horizontal-whitespace-char-string+)
+  "A string of all characters which are considered to be horizontal
+whitespace. Same as Perl's [\\h].")
+
+(defconstant +ascii-vertical-whitespace-char-string+
+  (map 'string #'code-char '(#x000a #x000b #x000c #x000d #x0085)))
+
+#+asdf-unicode
+(defconstant +unicode-vertical-whitespace-char-string+
+  (map 'string #'code-char '(#x2028 #x2029)))
+
+(defconstant +vertical-whitespace-char-string+
+  (concatenate 'string
+               +ascii-vertical-whitespace-char-string+
+               #+asdf-unicode +unicode-vertical-whitespace-char-string+)
+  "A string of all characters which are considered to be vertical
+whitespace. Same as Perl's [\\s]."  )
+
 (defconstant +whitespace-char-string+
-  (coerce '(#\Space #\Tab #\Linefeed #\Return #\Page) 'string)
+  (concatenate 'string
+               +horizontal-whitespace-char-string+
+               +vertical-whitespace-char-string+)
   "A string of all characters which are considered to be whitespace.
 Same as Perl's [\\s].")
 
@@ -132,6 +168,23 @@ Same as Perl's [\\s].")
   "Tests whether a character is whitespace, i.e. whether it would
 match [\\s] in Perl."
   (find chr +whitespace-char-string+ :test #'char=))
+
+(defun horizontal-whitespace-p (chr)
+  (declare #.*special-optimize-settings*)
+  "Tests whether a character is \"horizontal whitespace\", i.e. whether
+it would match [\\h] in Perl. "
+  (find chr +horizontal-whitespace-char-string+ :test #'char=))
+
+(defun vertical-whitespace-p (chr)
+  (declare #.*special-optimize-settings*)
+  "Tests whether a character is \"vertical whitespace\", i.e. whether
+it would match [\\v] in Perl. "
+  (find chr +vertical-whitespace-char-string+ :test #'char=))
+
+(defun newline-char-p (chr)
+  (declare #.*special-optimize-settings*)
+  "Tests whether a character is a newline (\\n) character."
+  (char= #\Linefeed chr))
 
 (defmacro maybe-coerce-to-simple-string (string)
   "Coerces STRING to a simple STRING unless it already is one."
