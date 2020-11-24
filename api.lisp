@@ -325,6 +325,32 @@ share structure with TARGET-STRING."
                            ,target-string ,@rest))
         (t form)))
 
+(defun scan-to-register-strings (regex target-string &key (start 0)
+                                (end (length target-string))
+                                sharedp)
+  "Like SCAN but returns substrings of TARGET-STRING instead of
+positions, i.e. this function returns one value on success:
+a list of substrings (or NILs) corresponding
+to the matched registers.  If SHAREDP is true, the substrings may
+share structure with TARGET-STRING."
+  (declare #.*standard-optimize-settings*)
+  (declare (simple-string target-string))
+  (multiple-value-bind (match-start match-end reg-starts reg-ends)
+      (scan regex target-string :start start :end end)
+  (declare (ignore match-end))
+  (declare ((or null simple-vector) reg-starts reg-ends))
+    (unless match-start
+      (return-from scan-to-register-strings nil))
+    (let ((substr-fn (if sharedp #'nsubseq #'subseq)))
+        (map 'list
+          (lambda (reg-start reg-end)
+            (if reg-start
+              (funcall substr-fn
+                  target-string reg-start reg-end)
+                nil))
+          reg-starts
+          reg-ends))))
+
 (defmacro register-groups-bind (var-list (regex target-string
                                                 &key start end sharedp)
                                 &body body)
@@ -683,7 +709,7 @@ that \(<= START FROM TO END)."
                          ;; an uppercase character
                          (setq current-result
                                  (if last-char-both-case
-                                   ;; not the first character in a 
+                                   ;; not the first character in a
                                    (case current-result
                                      ((:undecided) :upcase)
                                      ((:downcase :capitalize) (return nil))
@@ -771,7 +797,7 @@ S-expression."))
 (defmethod build-replacement-template ((replacement-function-symbol symbol))
   (declare #.*standard-optimize-settings*)
   (list replacement-function-symbol))
-        
+
 #-:cormanlisp
 (defmethod build-replacement-template ((replacement-list list))
   (declare #.*standard-optimize-settings*)
@@ -825,7 +851,7 @@ S-expression."))
         replacement)
       (t
         (list replacement)))))
-        
+
 (defun build-replacement (replacement-template
                           target-string
                           start end
@@ -862,7 +888,7 @@ corresponding string."
                                    :start (svref reg-starts token)
                                    :end (svref reg-ends token))))
                  (function
-                   (write-string 
+                   (write-string
                     (cond (simple-calls
                            (apply token
                                   (nsubseq target-string match-start match-end)

@@ -42,6 +42,7 @@
            :define-parse-tree-synonym
            :scan
            :scan-to-strings
+           :scan-to-register-strings
            :do-scans
            :do-matches
            :do-matches-as-strings
