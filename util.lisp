@@ -128,10 +128,13 @@ Perl's [\\w]."
 Same as Perl's [\\s].")
 
 (defun whitespacep (chr)
-  (declare #.*special-optimize-settings*)
+  (declare #. *special-optimize-settings*)
   "Tests whether a character is whitespace, i.e. whether it would
-match [\\s] in Perl."
-  (find chr +whitespace-char-string+ :test #'char=))
+  match [\\s] in Perl."
+  (macrolet ((expand ()
+               `(or . ,(loop for ch across +whitespace-char-string+
+                             collect `(char= chr ,ch)))))
+    (expand)))
 
 (defmacro maybe-coerce-to-simple-string (string)
   "Coerces STRING to a simple STRING unless it already is one."
