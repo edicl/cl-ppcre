@@ -84,6 +84,7 @@ href="http://weitz.de/regex-coach/">The Regex Coach</a>.
       <li><a href="#do-matches"><code>do-matches</code></a>
       <li><a href="#do-matches-as-strings"><code>do-matches-as-strings</code></a>
       <li><a href="#do-register-groups"><code>do-register-groups</code></a>
+      <li><a href="#count-matches"><code>count-matches</code></a>
       <li><a href="#all-matches"><code>all-matches</code></a>
       <li><a href="#all-matches-as-strings"><code>all-matches-as-strings</code></a>
     </ol>
@@ -745,6 +746,26 @@ NIL
 (12 * 15 - 42 / 3)
 </pre>
 </blockquote>
+
+
+
+
+<p><br>[Function]
+<br><a class=none name="count-matches"><b>count-matches</b> <i>regex target-string <tt>&amp;key</tt> start end</i> =&gt; <i>list</i></a>
+
+<blockquote><br>
+Returns a count of all matches of <code><i>regex</i></code> against
+<code><i>target-string</i></code>.
+
+<pre>
+* (count-matches "a" "foo bar baz")
+2
+
+* (count-matches "\\w*" "foo bar baz")
+6
+</pre></blockquote>
+
+
 
 
 <p><br>[Function]
