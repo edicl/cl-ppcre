@@ -29,13 +29,6 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-user)
-
-(defpackage :cl-ppcre-unicode-asd
-  (:use :cl :asdf))
-
-(in-package :cl-ppcre-unicode-asd)
-
 (defsystem :cl-ppcre-unicode
   :description "Perl-compatible regular expression library (Unicode)"
   :author "Dr. Edi Weitz"
@@ -44,21 +37,19 @@
                         :serial t
                         :components ((:file "packages")
                                      (:file "resolver"))))
-  :depends-on (:cl-ppcre :cl-unicode))
+  :depends-on (:cl-ppcre :cl-unicode)
+  :in-order-to ((test-op (test-op :cl-ppcre-unicode/test))))
 
-(defsystem :cl-ppcre-unicode-test
+(defsystem :cl-ppcre-unicode/test
   :description "Perl-compatible regular expression library tests (Unicode)"
   :author "Dr. Edi Weitz"
   :license "BSD"
-  :depends-on (:cl-ppcre-unicode :cl-ppcre-test)
+  :depends-on (:cl-ppcre-unicode :cl-ppcre/test)
   :components ((:module "test"
                         :serial t
-                        :components ((:file "unicode-tests")))))
-
-(defmethod perform ((o test-op) (c (eql (find-system :cl-ppcre-unicode))))
-  ;; we must load CL-PPCRE explicitly so that the CL-PPCRE-TEST system
-  ;; will be found
-  (operate 'load-op :cl-ppcre)
-  (operate 'load-op :cl-ppcre-unicode-test)
-  (funcall (intern (symbol-name :run-all-tests) (find-package :cl-ppcre-test))
-           :more-tests (intern (symbol-name :unicode-test) (find-package :cl-ppcre-test))))
+                        :components ((:file "unicode-tests"))))
+  :perform (test-op (o c)
+             (funcall (intern (symbol-name :run-all-tests)
+                              (find-package :cl-ppcre-test))
+                      :more-tests (intern (symbol-name :unicode-test)
+                                          (find-package :cl-ppcre-test)))))
