@@ -31,7 +31,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-ppcre)
+(in-package #:cl-ppcre)
 
 ;;; The flags that represent the "ism" modifiers are always kept
 ;;; together in a three-element list. We use the following macros to

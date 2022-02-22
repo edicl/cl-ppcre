@@ -27,7 +27,7 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-ppcre-unicode)
+(in-package #:cl-ppcre-unicode)
 
 (defun unicode-property-resolver (property-name)
   "A property resolver which understands Unicode properties using
