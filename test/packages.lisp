@@ -27,11 +27,12 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-user)
+(in-package #:cl-user)
 
-(defpackage :cl-ppcre-test
-  #+genera (:shadowing-import-from :common-lisp :lambda)
-  (:use #-:genera :cl #+:genera :future-common-lisp :cl-ppcre)
-  (:import-from :cl-ppcre :*standard-optimize-settings*
-                          :string-list-to-simple-string)
-  (:export :run-all-tests :unicode-test))
+(defpackage #:cl-ppcre-test
+  #+genera
+  (:shadowing-import-from #:common-lisp #:lambda)
+  (:use #-:genera #:cl #+:genera #:future-common-lisp #:cl-ppcre)
+  (:import-from #:cl-ppcre #:*standard-optimize-settings*
+                          #:string-list-to-simple-string)
+  (:export #:run-all-tests #:unicode-test))
