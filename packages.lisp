@@ -32,7 +32,7 @@
 (defpackage :cl-ppcre
   (:nicknames :ppcre)
   #+:genera
-  (:shadowing-import-from #:common-lisp #:lambda #:simple-string #:string)
+  (:shadowing-import-from :common-lisp #:lambda #:simple-string #:string)
   (:use #-:genera :cl #+:genera :future-common-lisp)
   (:shadow #:digit-char-p #:defconstant)
   (:export #:parse-string
