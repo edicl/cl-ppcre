@@ -27,12 +27,12 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(in-package #:cl-user)
+(in-package :cl-user)
 
-(defpackage #:cl-ppcre-unicode
+(defpackage :cl-ppcre-unicode
   #+:genera
   (:shadowing-import-from #:common-lisp #:lambda #:string)
-  (:use #-:genera #:cl #+:genera #:future-common-lisp
-        #:cl-ppcre #:cl-unicode)
+  (:use #-:genera :cl #+:genera :future-common-lisp
+        :cl-ppcre :cl-unicode)
   (:import-from #:cl-ppcre #:signal-syntax-error)
   (:export #:unicode-property-resolver))
