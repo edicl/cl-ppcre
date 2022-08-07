@@ -61,9 +61,9 @@
                #-:use-acl-regexp2-engine
                (:file "scanner")
                (:file "api"))
-  :in-order-to ((test-op (test-op :cl-ppcre/test))))
+  :in-order-to ((test-op (test-op "cl-ppcre/test"))))
 
-(defsystem :cl-ppcre/test
+(defsystem "cl-ppcre/test"
   :description "Perl-compatible regular expression library tests"
   :author "Dr. Edi Weitz"
   :license "BSD"
@@ -74,5 +74,4 @@
                                      (:file "tests")
                                      (:file "perl-tests"))))
   :perform (test-op (o c)
-             (funcall (intern (symbol-name :run-all-tests)
-                              (find-package :cl-ppcre-test)))))
+             (symbol-call '#:cl-ppcre-test '#:run-all-tests)))
