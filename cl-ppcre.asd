@@ -42,24 +42,15 @@
                (:file "charset")
                (:file "charmap")
                (:file "chartest")
-               #-:use-acl-regexp2-engine
-               (:file "lexer")
-               #-:use-acl-regexp2-engine
-               (:file "parser")
-               #-:use-acl-regexp2-engine
-               (:file "regex-class")
-               #-:use-acl-regexp2-engine
-               (:file "regex-class-util")
-               #-:use-acl-regexp2-engine
-               (:file "convert")
-               #-:use-acl-regexp2-engine
-               (:file "optimize")
-               #-:use-acl-regexp2-engine
-               (:file "closures")
-               #-:use-acl-regexp2-engine
-               (:file "repetition-closures")
-               #-:use-acl-regexp2-engine
-               (:file "scanner")
+               (:file "lexer" :if-feature (:not :use-acl-regexp2-engine))
+               (:file "parser" :if-feature (:not :use-acl-regexp2-engine))
+               (:file "regex-class" :if-feature (:not :use-acl-regexp2-engine))
+               (:file "regex-class-util" :if-feature (:not :use-acl-regexp2-engine))
+               (:file "convert" :if-feature (:not :use-acl-regexp2-engine))
+               (:file "optimize" :if-feature (:not :use-acl-regexp2-engine))
+               (:file "closures" :if-feature (:not :use-acl-regexp2-engine))
+               (:file "repetition-closures" :if-feature (:not :use-acl-regexp2-engine))
+               (:file "scanner" :if-feature (:not :use-acl-regexp2-engine))
                (:file "api"))
   :in-order-to ((test-op (test-op :cl-ppcre/test))))
 
