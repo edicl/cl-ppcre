@@ -30,8 +30,9 @@
 (in-package :cl-user)
 
 (defpackage :cl-ppcre-test
-  #+genera (:shadowing-import-from :common-lisp :lambda)
+  #+genera
+  (:shadowing-import-from :common-lisp #:lambda)
   (:use #-:genera :cl #+:genera :future-common-lisp :cl-ppcre)
-  (:import-from :cl-ppcre :*standard-optimize-settings*
-                          :string-list-to-simple-string)
-  (:export :run-all-tests :unicode-test))
+  (:import-from :cl-ppcre #:*standard-optimize-settings*
+                          #:string-list-to-simple-string)
+  (:export #:run-all-tests #:unicode-test))
