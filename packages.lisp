@@ -48,6 +48,7 @@
            :count-matches
            :all-matches
            :all-matches-as-strings
+           :all-scans-as-strings
            :split
            :regex-replace
            :regex-replace-all
