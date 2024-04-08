@@ -346,11 +346,14 @@ substrings may share structure with TARGET-STRING."
                       collect `(,var (let ((,start-index
                                              (aref ,reg-starts ,counter)))
                                        (if ,start-index
-                                           (funcall ,function
-                                                    (funcall ,substr-fn
-                                                             ,target-string
-                                                             ,start-index
-                                                             (aref ,reg-ends ,counter)))
+                                           ,(if (equal function '#'parse-integer)
+                                                `(parse-integer ,target-string :start ,start-index
+                                                                               :end (aref ,reg-ends ,counter))
+                                                `(funcall ,function
+                                                         (funcall ,substr-fn
+                                                                  ,target-string
+                                                                  ,start-index
+                                                                  (aref ,reg-ends ,counter))))
                                            nil))))))
         `(multiple-value-bind (,match-start ,match-end ,reg-starts ,reg-ends)
              (scan ,regex ,target-string :start (or ,start 0)
