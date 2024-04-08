@@ -37,7 +37,7 @@
 
 (in-package :cl-ppcre)
 
-(declaim (inline map-char-to-special-class))
+(declaim (inline map-char-to-special-char-class))
 (defun map-char-to-special-char-class (chr)
   (declare #.*standard-optimize-settings*)
   "Maps escaped characters like \"\\d\" to the tokens which represent
