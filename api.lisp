@@ -339,22 +339,23 @@ substrings may share structure with TARGET-STRING."
   (with-rebinding (target-string)
     (with-unique-names (match-start match-end reg-starts reg-ends
                                     start-index substr-fn)
-      (let ((var-bindings
-              (loop for (function var) in (normalize-var-list var-list)
-                    for counter from 0
-                    when var
-                      collect `(,var (let ((,start-index
-                                             (aref ,reg-starts ,counter)))
-                                       (if ,start-index
-                                           ,(if (equal function '#'parse-integer)
-                                                `(parse-integer ,target-string :start ,start-index
-                                                                               :end (aref ,reg-ends ,counter))
-                                                `(funcall ,function
-                                                         (funcall ,substr-fn
+      (let* (substr-needed
+             (var-bindings
+               (loop for (function var) in (normalize-var-list var-list)
+                     for counter from 0
+                     when var
+                     collect `(,var (let ((,start-index
+                                            (aref ,reg-starts ,counter)))
+                                      (if ,start-index
+                                          ,(if (equal function '#'parse-integer)
+                                               `(parse-integer ,target-string :start ,start-index
+                                                                              :end (aref ,reg-ends ,counter))
+                                               `(funcall ,function
+                                                         (funcall ,(setf substr-needed substr-fn)
                                                                   ,target-string
                                                                   ,start-index
                                                                   (aref ,reg-ends ,counter))))
-                                           nil))))))
+                                          nil))))))
         `(multiple-value-bind (,match-start ,match-end ,reg-starts ,reg-ends)
              (scan ,regex ,target-string :start (or ,start 0)
                                          :end (or ,end (length ,target-string)))
@@ -363,9 +364,9 @@ substrings may share structure with TARGET-STRING."
                `((declare (ignore ,reg-starts ,reg-ends))))
            (when ,match-start
              ,@(if var-bindings
-                   `((let* ,(list*
-                             `(,substr-fn (if ,sharedp #'nsubseq #'subseq))
-                             var-bindings)
+                   `((let* (,@(and substr-needed
+                                   `((,substr-fn (if ,sharedp #'nsubseq #'subseq))))
+                            ,@var-bindings)
                        ,@body))
                    body)))))))
 
