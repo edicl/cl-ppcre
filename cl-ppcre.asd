@@ -30,7 +30,7 @@
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (defsystem :cl-ppcre
-  :version "2.1.1"
+  :version "2.1.2"
   :description "Perl-compatible regular expression library"
   :author "Dr. Edi Weitz"
   :license "BSD"
