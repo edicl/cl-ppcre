@@ -31,8 +31,8 @@
 
 (defpackage :cl-ppcre-unicode
   #+:genera
-  (:shadowing-import-from :common-lisp :lambda :string)
+  (:shadowing-import-from :common-lisp #:lambda #:string)
   (:use #-:genera :cl #+:genera :future-common-lisp
         :cl-ppcre :cl-unicode)
-  (:import-from :cl-ppcre :signal-syntax-error)
-  (:export :unicode-property-resolver))
+  (:import-from :cl-ppcre #:signal-syntax-error)
+  (:export #:unicode-property-resolver))
