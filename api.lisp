@@ -586,6 +586,49 @@ compile time."
             ,@rest))
          (t form)))
 
+(defun all-scans-as-strings (regex string &key start end)
+  "Returns two values: 1. A list of all matches, 2. A list of lists for
+all of the group matches."
+  (let ((start (or start 0))
+        (end (or end (length string)))
+        (mresult NIL)
+        (mlast NIL)
+        (sresult NIL)
+        (slast NIL))
+    (labels ((macc (v)
+               (if (null mresult)
+                   (setf mresult (cons v nil)
+                         mlast mresult)
+                   (setf (cdr mlast) (cons v nil)
+                         mlast (cdr mlast))))
+             (sacc (v)
+               (if (null sresult)
+                   (setf sresult (cons v nil)
+                         slast sresult)
+                   (setf (cdr slast) (cons v nil)
+                         slast (cdr slast)))))
+      (apply #'values
+             (ppcre:do-scans (ms me
+                              rs re
+                              regex string
+                              (list mresult sresult)
+                              :start start
+                              :end end)
+               (macc (subseq string ms me))
+               (sacc (loop for s across rs
+                           for e across re
+                           collecting (subseq string s e))))))))
+
+#-:cormanlisp
+(define-compiler-macro all-scans-as-strings (&whole form regex &rest rest)
+  "Make sure that constant forms are compiled into scanners at
+compile time."
+  (cond ((constantp regex)
+         `(all-scans-as-strings
+           (load-time-value (create-scanner ,regex))
+           ,@rest))
+        (t form)))
+
 (defun split (regex target-string
                     &key (start 0)
                          (end (length target-string))
