@@ -209,17 +209,35 @@ we don't tolerate whitespace in front of the number."
                             :no-whitespace-p no-whitespace-p)))
     (or number (fail lexer))))
 
+(declaim (inline %make-char-from-code))
+(defun %make-char-from-code (number error-pos &key (just-first-octet t))
+  (declare #.*standard-optimize-settings*)
+  "Create character from char-code NUMBER. NUMBER can be NIL
+which is interpreted as 0. ERROR-POS is the position where
+the corresponding number started within the regex string."
+  ;; only look at rightmost eight bits in compliance with Perl
+  (let ((code (if just-first-octet
+                  (logand #xff (the fixnum (or number 0)))
+                  number)))
+    (or (and (< code char-code-limit)
+             (code-char code))
+        (signal-syntax-error* error-pos "No character for hex-code ~X." number))))
+
 (declaim (inline make-char-from-code))
 (defun make-char-from-code (number error-pos)
   (declare #.*standard-optimize-settings*)
   "Create character from char-code NUMBER. NUMBER can be NIL
 which is interpreted as 0. ERROR-POS is the position where
 the corresponding number started within the regex string."
-  ;; only look at rightmost eight bits in compliance with Perl
-  (let ((code (logand #o377 (the fixnum (or number 0)))))
-    (or (and (< code char-code-limit)
-             (code-char code))
-        (signal-syntax-error* error-pos "No character for hex-code ~X." number))))
+  (%make-char-from-code number error-pos :just-first-octet t))
+
+(declaim (inline make-char-from-code-extended))
+(defun make-char-from-code-extended (number error-pos)
+  (declare #.*standard-optimize-settings*)
+  "Create character from char-code NUMBER. NUMBER can be NIL
+which is interpreted as 0. ERROR-POS is the position where
+the corresponding number started within the regex string."
+  (%make-char-from-code number error-pos :just-first-octet nil))
 
 (defun unescape-char (lexer)
   (declare #.*standard-optimize-settings*)
@@ -244,12 +262,22 @@ handled elsewhere."
             (signal-syntax-error* (lexer-pos lexer) "Character missing after '\\c'"))
           (code-char (logxor #x40 (char-code (char-upcase next-char))))))
       ((#\x)
-        ;; \x should be followed by a hexadecimal char code,
-        ;; two digits or less
-        (let* ((error-pos (lexer-pos lexer))
-               (number (get-number lexer :radix 16 :max-length 2 :no-whitespace-p t)))
-          ;; note that it is OK if \x is followed by zero digits
-          (make-char-from-code number error-pos)))
+       (if (looking-at-p lexer #\{) ; parsing \x{####...}
+           (let ((*extended-mode-p* t)
+                 (error-pos (lexer-pos lexer)))
+             (next-char-non-extended lexer) ; discard #\{
+             (let* ((number        (get-number lexer :radix 16))
+                    (character     (make-char-from-code-extended number error-pos))
+                    (closing-brace (next-char lexer)))
+               (if (char= closing-brace #\})
+                   character
+                   (signal-syntax-error* (lexer-pos lexer) "Missing closing brace (#\\})"))))
+           ;; \x should be followed by a hexadecimal char code,
+           ;; two digits or less
+           (let* ((error-pos (lexer-pos lexer))
+                  (number (get-number lexer :radix 16 :max-length 2 :no-whitespace-p t)))
+             ;; note that it is OK if \x is followed by zero digits
+             (make-char-from-code number error-pos))))
       ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
         ;; \x should be followed by an octal char code,
         ;; three digits or less
