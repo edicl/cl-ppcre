@@ -201,7 +201,7 @@ against CHR-EXPR."
          (start-of-end-string-p (start-of-end-string-p str))
          (skip (skip str))
          (str (str str))
-         (chr (schar str 0))
+         (chr (unless (zerop len) (schar str 0)))
          (end-string (and end-string (str end-string)))
          (end-string-len (if end-string
                            (length end-string)
@@ -239,6 +239,9 @@ against CHR-EXPR."
                               (*string*= end-string start-pos test-end-pos
                                          0 end-string-len)))
                      (funcall next-fn (+ start-pos len))))))
+          ((= len 0)
+            ;; empty STR is same as VOID
+            next-fn)
           (skip
             ;; a STR which can be skipped because some other function
             ;; has already confirmed that it matches
