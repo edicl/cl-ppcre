@@ -390,6 +390,14 @@ characters if there's a match."
   (equalp (multiple-value-list (scan s "abcfooxy"))
           (list 3 6 #() #())))
 
+(let ((s (create-scanner '(:alternation ""))))
+  (equalp (multiple-value-list (scan s "abcfooxy"))
+          (list 0 0 #() #())))
+
 (let ((s (create-scanner '(:alternation "foo" ""))))
   (equalp (multiple-value-list (scan s "abcfooxy"))
           (list 0 0 #() #())))
+
+(let ((s (create-scanner '(:alternation "foo"))))
+  (equalp (multiple-value-list (scan s "abcfooxy"))
+          (list 3 6 #() #())))
