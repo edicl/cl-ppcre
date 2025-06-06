@@ -381,3 +381,15 @@ characters if there's a match."
 (macrolet ((z () "[^b]*b"))
   (equalp (multiple-value-list (scan-to-strings (z)  "aaabd"))
           (list "aaab" #())))
+
+(let ((s (create-scanner '(:sequence ""))))
+  (equalp (multiple-value-list (scan s "abcfooxy"))
+          (list 0 0 #() #())))
+
+(let ((s (create-scanner '(:sequence "foo" ""))))
+  (equalp (multiple-value-list (scan s "abcfooxy"))
+          (list 3 6 #() #())))
+
+(let ((s (create-scanner '(:alternation "foo" ""))))
+  (equalp (multiple-value-list (scan s "abcfooxy"))
+          (list 0 0 #() #())))

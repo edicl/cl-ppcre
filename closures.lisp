@@ -201,7 +201,9 @@ against CHR-EXPR."
          (start-of-end-string-p (start-of-end-string-p str))
          (skip (skip str))
          (str (str str))
-         (chr (schar str 0))
+         (chr (if (zerop len) ;; empty STR is same as VOID
+                  (return-from create-matcher-aux next-fn)
+                  (schar str 0)))
          (end-string (and end-string (str end-string)))
          (end-string-len (if end-string
                            (length end-string)
